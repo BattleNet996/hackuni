@@ -1,0 +1,228 @@
+'use client';
+import React from 'react';
+import Link from 'next/link';
+import { ThreeGlobe } from '../components/ThreeGlobe';
+import { Button } from '../components/ui/Button';
+import { HackerCard } from '../components/ui/HackerCard';
+import { Tag, Badge } from '../components/ui/Badge';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { MOCK_STATS, MOCK_HACKATHONS, MOCK_PROJECTS, MOCK_BUILDERS } from '../data/mock';
+
+export default function Home() {
+  const { t } = useLanguage();
+  const [likedProjects, setLikedProjects] = React.useState<Set<string>>(new Set());
+  const [projectLikes, setProjectLikes] = React.useState<Record<string, number>>(
+    MOCK_PROJECTS.reduce((acc, proj) => ({ ...acc, [proj.id]: proj.like_count }), {})
+  );
+
+  const handleLike = (projectId: string) => {
+    const newLikedProjects = new Set(likedProjects);
+    if (likedProjects.has(projectId)) {
+      newLikedProjects.delete(projectId);
+      setProjectLikes(prev => ({ ...prev, [projectId]: prev[projectId] - 1 }));
+    } else {
+      newLikedProjects.add(projectId);
+      setProjectLikes(prev => ({ ...prev, [projectId]: prev[projectId] + 1 }));
+    }
+    setLikedProjects(newLikedProjects);
+  };
+
+  // Prepare hackathon data for the globe
+  const hackathonMarkers = MOCK_HACKATHONS.map(h => ({
+    lat: h.latitude,
+    lon: h.longitude,
+    title: h.title,
+  }));
+
+  return (
+    <main style={{ position: 'relative', overflowX: 'hidden' }}>
+      {/* 3D Global component moved into the Hero div specifically */}
+
+      {/* Hero Section (100vh) */}
+      <div style={{
+        height: 'calc(100vh - 70px)', // Minus navbar
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        padding: '0 var(--sp-6)',
+        position: 'relative',
+      }}>
+        {/* The Earth now dominates exactly this container and is fully interactive */}
+        <ThreeGlobe hackathons={hackathonMarkers} />
+
+        <div style={{ maxWidth: '800px', pointerEvents: 'none', position: 'relative', zIndex: 10 }}>
+          <h1 style={{
+            fontFamily: 'var(--font-hero)',
+            fontSize: 'var(--text-display)',
+            margin: 0,
+            letterSpacing: '-0.02em',
+            lineHeight: 1.05,
+            textShadow: '4px 4px 0 rgba(0,0,0,0.5)'
+          }}>
+            {t('home.hero.title')}<br/>{t('home.hero.subtitle')}
+          </h1>
+          <p style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '16px',
+            color: 'var(--text-main)',
+            marginTop: 'var(--sp-4)',
+            background: 'rgba(0,0,0,0.6)',
+            display: 'inline-block',
+            padding: '4px 8px'
+          }}>
+            {t('home.hero.tagline')}
+          </p>
+        </div>
+
+        {/* Vibe Metrics Dashboard */}
+        <div style={{
+          marginTop: 'var(--sp-8)',
+          background: 'rgba(26, 26, 26, 0.8)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid var(--border-base)',
+          padding: 'var(--sp-4)',
+          width: 'max-content',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '13px',
+          pointerEvents: 'auto'
+        }}>
+          <div style={{ marginBottom: 'var(--sp-2)', color: 'var(--text-muted)' }}>{t('home.vibe_metrics')}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 'var(--sp-5)', rowGap: 'var(--sp-2)' }}>
+            <div>&gt; {t('home.metrics.builders')} : <span style={{color: 'var(--brand-green)'}}>{MOCK_STATS.buildersConnected.toLocaleString()}</span></div>
+            <div>&gt; {t('home.metrics.projects')} : <span style={{color: 'var(--brand-green)'}}>{MOCK_STATS.projectsShipped.toLocaleString()}</span></div>
+            <div>&gt; {t('home.metrics.cities')} : <span style={{color: 'var(--brand-coral)'}}>{MOCK_STATS.citiesCovered.toLocaleString()}</span></div>
+            <div>&gt; {t('home.metrics.badges')} : <span style={{color: 'var(--brand-coral)'}}>{MOCK_STATS.badgesEarned.toLocaleString()}</span></div>
+          </div>
+          <div style={{ marginTop: 'var(--sp-2)', color: 'var(--text-muted)' }}>
+            {t('home.connection_active')} <span style={{ color: 'var(--brand-coral)', animation: 'blink-border 1s infinite' }}>█</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Content Streams: Three-column layout */}
+      <div style={{
+        padding: 'var(--sp-8) var(--sp-6)',
+        position: 'relative',
+        zIndex: 10,
+        background: 'var(--bg-pure)'
+      }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--sp-6)' }}>
+
+          {/* Left Col: Featured Hackathons */}
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'var(--sp-4)' }}>
+              <h2 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h2)', margin: 0, textTransform: 'uppercase' }}>
+                {t('home.featured_ops')}
+              </h2>
+              <Link href="/hackathons"><Button variant="ghost">{t('home.view_all')}</Button></Link>
+            </div>
+            <div className="divider-dashed" style={{ marginBottom: 'var(--sp-5)' }}></div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
+              {MOCK_HACKATHONS.map(hack => (
+                <HackerCard key={hack.id} className="responsive-flex-col desktop-row" style={{ gap: 'var(--sp-4)' }}>
+                  <div style={{
+                    width: '150px', height: '150px',
+                    background: `url(https://picsum.photos/seed/${hack.id}/300/300) center/cover`,
+                    border: '1px solid var(--border-base)', flexShrink: 0
+                  }} className="hover-color">
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <h3 style={{ margin: '0 0 var(--sp-2) 0', fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)' }}>{hack.title}</h3>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '16px', color: 'var(--brand-coral)' }}>{hack.level_score}</div>
+                    </div>
+                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-small)', margin: '0 0 var(--sp-3) 0' }}>{hack.short_desc}</p>
+
+                    <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-4)' }}>
+                      {hack.tags_json.map(tag => <Tag key={tag} label={tag} />)}
+                    </div>
+
+                    <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+                      <span>{t('hackathon.location')}: {hack.city}, {hack.country}</span>
+                      <span style={{ color: hack.registration_status === t('status.registration_open') ? 'var(--brand-coral)' : 'var(--text-disabled)' }}>
+                        {t('hackathon.status')}: {hack.registration_status}
+                      </span>
+                    </div>
+                  </div>
+                </HackerCard>
+              ))}
+            </div>
+          </section>
+
+          {/* Middle Col: Trending Projects */}
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'var(--sp-4)' }}>
+              <h2 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h2)', margin: 0, textTransform: 'uppercase' }}>
+                {t('home.trending')}
+              </h2>
+              <Link href="/goat-hunt"><Button variant="ghost">{t('home.goats')}</Button></Link>
+            </div>
+            <div className="divider-dashed" style={{ marginBottom: 'var(--sp-5)' }}></div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
+              {MOCK_PROJECTS.map(proj => (
+                <HackerCard key={proj.id} className="responsive-flex-col desktop-row" style={{ alignItems: 'center', gap: 'var(--sp-4)', padding: 'var(--sp-3)' }}>
+                  <div style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--text-muted)', width: '40px', textAlign: 'center' }}>
+                    {proj.rank_score}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ margin: '0 0 4px 0', fontFamily: 'var(--font-hero)', fontSize: '18px' }}>{proj.title}</h4>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-muted)' }}>{proj.short_desc}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+                      <span style={{ color: 'var(--brand-coral)' }}>{proj.team_member_text}</span>
+                      {proj.is_awarded && <Badge type="award" label={proj.award_text} style={{ transform: 'scale(0.8)', transformOrigin: 'left center' }} />}
+                    </div>
+                  </div>
+                  <div>
+                    <Button
+                      variant={likedProjects.has(proj.id) ? 'upvote-active' : 'upvote'}
+                      onClick={() => handleLike(proj.id)}
+                      style={{ padding: '8px', minWidth: '50px', textAlign: 'center', cursor: 'pointer' }}
+                    >
+                      ▲<br/>{projectLikes[proj.id]}
+                    </Button>
+                  </div>
+                </HackerCard>
+              ))}
+            </div>
+          </section>
+
+          {/* Right Col: GOAT Builders */}
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'var(--sp-4)' }}>
+              <h2 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h2)', margin: 0, textTransform: 'uppercase' }}>
+                &gt; GOAT_Builders
+              </h2>
+            </div>
+            <div className="divider-dashed" style={{ marginBottom: 'var(--sp-5)' }}></div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
+              {MOCK_BUILDERS.map(builder => (
+                <HackerCard key={builder.id} style={{ padding: 'var(--sp-3)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+                    <div style={{
+                      width: '50px', height: '50px',
+                      background: `url(https://picsum.photos/seed/${builder.id}/100/100) center/cover`,
+                      borderRadius: '50%',
+                      border: '2px solid var(--brand-coral)'
+                    }}></div>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: '0 0 4px 0', fontFamily: 'var(--font-hero)', fontSize: '16px' }}>{builder.display_name}</h4>
+                      <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: 'var(--text-muted)' }}>{builder.bio}</p>
+                      <div style={{ display: 'flex', gap: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
+                        <span style={{ color: 'var(--brand-green)' }}>{builder.total_work_count} {t('profile.projects')}</span>
+                        <span style={{ color: 'var(--brand-coral)' }}>{builder.total_award_count} {t('profile.awards')}</span>
+                      </div>
+                    </div>
+                  </div>
+                </HackerCard>
+              ))}
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </main>
+  );
+}
