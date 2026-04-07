@@ -5,13 +5,13 @@ import { MOCK_STORIES, MOCK_BUILDERS } from '@/data/mock';
 import { Tag } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLike } from '@/contexts/LikeContext';
 
 export default function StoryDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { t, language } = useLanguage();
+  const { isStoryLiked, toggleLikeStory, getStoryLikes } = useLike();
   const [story, setStory] = React.useState<any>(null);
   const [comments, setComments] = React.useState<any[]>([]);
-  const [liked, setLiked] = React.useState(false);
-  const [likeCount, setLikeCount] = React.useState(0);
   const [commentText, setCommentText] = React.useState('');
   const [copied, setCopied] = React.useState(false);
 
@@ -20,7 +20,6 @@ export default function StoryDetailPage({ params }: { params: Promise<{ slug: st
       const foundStory = MOCK_STORIES.find(s => s.slug === resolvedParams.slug);
       setStory(foundStory);
       if (foundStory) {
-        setLikeCount(foundStory.like_count);
         // Mock comments
         setComments([
           {
@@ -39,11 +38,6 @@ export default function StoryDetailPage({ params }: { params: Promise<{ slug: st
       }
     });
   }, [params, language]);
-
-  const handleLike = () => {
-    setLiked(!liked);
-    setLikeCount(liked ? likeCount - 1 : likeCount + 1);
-  };
 
   const handleShare = async () => {
     try {
@@ -220,11 +214,11 @@ export default function StoryDetailPage({ params }: { params: Promise<{ slug: st
         {/* Engagement Section */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 'var(--sp-4)', marginBottom: 'var(--sp-8)', flexWrap: 'wrap' }}>
           <Button
-            variant={liked ? 'upvote-active' : 'upvote'}
-            onClick={handleLike}
+            variant={isStoryLiked(story.id) ? 'upvote-active' : 'upvote'}
+            onClick={() => toggleLikeStory(story.id)}
             style={{ cursor: 'pointer' }}
           >
-            ▲ {likeCount} {t('stories.opinions')}
+            ▲ {getStoryLikes(story.id)} {t('stories.opinions')}
           </Button>
           <Button
             variant="ghost"

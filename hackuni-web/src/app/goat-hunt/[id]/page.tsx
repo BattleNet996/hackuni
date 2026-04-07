@@ -5,9 +5,11 @@ import { MOCK_PROJECTS, MOCK_HACKATHONS, MOCK_BUILDERS } from '@/data/mock';
 import { Tag, Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLike } from '@/contexts/LikeContext';
 
 export default function GoatItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { t } = useLanguage();
+  const { isProjectLiked, toggleLikeProject, getProjectLikes } = useLike();
   const [project, setProject] = React.useState<any>(null);
   const [comments, setComments] = React.useState<any[]>([]);
 
@@ -72,8 +74,12 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
-              <Button variant="upvote" style={{ padding: '16px 32px', fontSize: '24px' }}>
-                ▲ {project.like_count}
+              <Button
+                variant={isProjectLiked(project.id) ? 'upvote-active' : 'upvote'}
+                onClick={() => toggleLikeProject(project.id)}
+                style={{ padding: '16px 32px', fontSize: '24px', cursor: 'pointer' }}
+              >
+                ▲ {getProjectLikes(project.id)}
               </Button>
               <Button variant="primary">VISIT DEMO</Button>
               <Button variant="ghost">GITHUB</Button>

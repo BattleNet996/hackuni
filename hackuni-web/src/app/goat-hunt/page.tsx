@@ -1,11 +1,15 @@
+'use client';
 import React from 'react';
 import Link from 'next/link';
 import { MOCK_PROJECTS } from '@/data/mock';
 import { HackerCard } from '@/components/ui/HackerCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { useLike } from '@/contexts/LikeContext';
 
 export default function GoatHuntPage() {
+  const { isProjectLiked, toggleLikeProject, getProjectLikes } = useLike();
+
   return (
     <main style={{ padding: 'var(--sp-8) var(--sp-6)', maxWidth: '1000px', margin: '0 auto' }}>
       <div style={{ textAlign: 'center', marginBottom: 'var(--sp-8)' }}>
@@ -15,8 +19,15 @@ export default function GoatHuntPage() {
         <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: 'var(--sp-2)' }}>
           Discover and upvote the most unhinged outlier engineering.
         </p>
+        <div style={{ marginTop: 'var(--sp-4)' }}>
+          <Link href="/publish">
+            <Button variant="primary" style={{ cursor: 'pointer' }}>
+              + Publish Project
+            </Button>
+          </Link>
+        </div>
       </div>
-      
+
       <div className="divider-dashed" style={{ marginBottom: 'var(--sp-6)' }}></div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
@@ -51,9 +62,13 @@ export default function GoatHuntPage() {
             </div>
             
             <div>
-              <Button variant="upvote" style={{ padding: '16px 24px', fontSize: '18px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Button
+                variant={isProjectLiked(proj.id) ? 'upvote-active' : 'upvote'}
+                onClick={() => toggleLikeProject(proj.id)}
+                style={{ padding: '16px 24px', fontSize: '18px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}
+              >
                 <span style={{ fontSize: '24px', lineHeight: 1 }}>▲</span>
-                <span style={{ marginTop: 'var(--sp-1)' }}>{proj.like_count}</span>
+                <span style={{ marginTop: 'var(--sp-1)' }}>{getProjectLikes(proj.id)}</span>
               </Button>
             </div>
           </HackerCard>

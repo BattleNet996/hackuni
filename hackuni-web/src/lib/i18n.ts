@@ -13,7 +13,7 @@ export const translations = {
 
     // Homepage
     'home.hero.title': '构建下一个',
-    'home.hero.subtitle': '异类档案',
+    'home.hero.subtitle': 'Outlier档案',
     'home.hero.tagline': '> 我们工程那些「不必要」的东西 _',
     'home.vibe_metrics': '// 氛围指标_',
     'home.metrics.builders': '构建者',
@@ -64,7 +64,7 @@ export const translations = {
 
     // GOAT Hunt
     'goat_hunt.title': '> GOAT榜单',
-    'goat_hunt.subtitle': '发现并投票给最疯狂的异类工程',
+    'goat_hunt.subtitle': '发现并投票给最疯狂的Outlier工程',
     'goat_hunt.readme': '项目说明',
     'goat_hunt.key_features': '核心功能',
     'goat_hunt.tech_stack': '技术栈',
@@ -80,6 +80,7 @@ export const translations = {
     'profile.projects': '项目',
     'profile.awards': '奖项',
     'profile.badges': '徽章',
+    'profile.certifications': '认证',
     'profile.footprints': '足迹',
     'profile.heatmap': '热力图',
     'profile.records': '记录',
@@ -151,6 +152,26 @@ export const translations = {
     'common.search': '搜索',
     'common.show_all': '显示全部',
     'common.show_less': '收起',
+    'common.optional': '可选',
+
+    // Authentication
+    'auth.email': '邮箱',
+    'auth.password': '密码',
+    'auth.confirm_password': '确认密码',
+    'auth.display_name': '显示名称',
+    'auth.login.title': '登录',
+    'auth.login.subtitle': '欢迎回来，Outlier构建者',
+    'auth.login.submit': '登录',
+    'auth.login.no_account': '还没有账号？',
+    'auth.login.register_link': '立即注册',
+    'auth.register.title': '注册',
+    'auth.register.subtitle': '加入Outlier构建者社区',
+    'auth.register.submit': '创建账号',
+    'auth.register.has_account': '已有账号？',
+    'auth.register.login_link': '立即登录',
+    'auth.register.terms_notice': '注册即表示您同意我们的服务条款和隐私政策',
+    'auth.logout': '登出',
+    'auth.forgot_password': '忘记密码？',
 
     // Status
     'status.verified': '已认证',
@@ -272,6 +293,7 @@ export const translations = {
     'profile.projects': 'PROJECTS',
     'profile.awards': 'AWARDS',
     'profile.badges': 'BADGES',
+    'profile.certifications': 'CERTIFICATIONS',
     'profile.footprints': 'FOOTPRINTS',
     'profile.heatmap': 'HEATMAP',
     'profile.records': 'RECORDS',
@@ -343,6 +365,26 @@ export const translations = {
     'common.search': 'Search',
     'common.show_all': 'Show All',
     'common.show_less': 'Show Less',
+    'common.optional': 'Optional',
+
+    // Authentication
+    'auth.email': 'Email',
+    'auth.password': 'Password',
+    'auth.confirm_password': 'Confirm Password',
+    'auth.display_name': 'Display Name',
+    'auth.login.title': 'Login',
+    'auth.login.subtitle': 'Welcome back, Outlier Builder',
+    'auth.login.submit': 'Login',
+    'auth.login.no_account': 'Don\'t have an account?',
+    'auth.login.register_link': 'Register now',
+    'auth.register.title': 'Register',
+    'auth.register.subtitle': 'Join the Outlier Builder Community',
+    'auth.register.submit': 'Create Account',
+    'auth.register.has_account': 'Already have an account?',
+    'auth.register.login_link': 'Login now',
+    'auth.register.terms_notice': 'By registering, you agree to our Terms of Service and Privacy Policy',
+    'auth.logout': 'Logout',
+    'auth.forgot_password': 'Forgot password?',
 
     // Status
     'status.verified': 'VERIFIED',

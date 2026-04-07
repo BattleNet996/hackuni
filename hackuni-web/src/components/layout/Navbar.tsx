@@ -2,10 +2,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { Button } from '@/components/ui/Button';
 
 export function Navbar() {
   const { t } = useLanguage();
+  const { user, logout } = useAuth();
 
   return (
     <nav style={{
@@ -38,11 +41,38 @@ export function Navbar() {
       </div>
       <div style={{ display: 'flex', gap: 'var(--sp-3)', alignItems: 'center' }}>
         <LanguageSwitcher />
-        <Link href="/profile">
-          <button className="btn-ghost" style={{ padding: '8px 16px', fontSize: '13px' }}>
-            {t('nav.profile')}
-          </button>
-        </Link>
+
+        {user ? (
+          <>
+            {/* Logged in */}
+            <Link href="/profile">
+              <Button variant="ghost" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                {t('nav.profile')}
+              </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              onClick={logout}
+              style={{ padding: '8px 16px', fontSize: '13px' }}
+            >
+              {t('auth.logout')}
+            </Button>
+          </>
+        ) : (
+          <>
+            {/* Not logged in */}
+            <Link href="/login">
+              <Button variant="ghost" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                {t('auth.login.title')}
+              </Button>
+            </Link>
+            <Link href="/register">
+              <Button variant="primary" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                {t('auth.register.title')}
+              </Button>
+            </Link>
+          </>
+        )}
       </div>
     </nav>
   );

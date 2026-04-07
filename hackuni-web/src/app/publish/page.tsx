@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { MOCK_HACKATHONS } from '@/data/mock';
+import { MOCK_HACKATHONS, MOCK_PROJECTS } from '@/data/mock';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -22,17 +22,52 @@ export default function PublishProjectPage() {
     tags_json: [] as string[],
   });
   const [submitting, setSubmitting] = React.useState(false);
+  const [uploadedImages, setUploadedImages] = React.useState<string[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Create image placeholder for display
+    const imagePlaceholders = uploadedImages.map((_, index) => `[IMAGE:${index}]`);
+    const finalLongDesc = uploadedImages.length > 0
+      ? formData.long_desc + '\n\n[IMAGES]\n' + imagePlaceholders.join('\n')
+      : formData.long_desc;
 
-    // Show success message and redirect
-    alert(t('publish.success'));
-    router.push('/goat-hunt');
+    // Create new project object
+    const newProject = {
+      id: `p${Date.now()}`,
+      title: formData.title,
+      short_desc: formData.short_desc,
+      long_desc: finalLongDesc,
+      images: uploadedImages, // Store actual base64 images separately
+      demo_url: formData.demo_url,
+      github_url: formData.github_url,
+      website_url: formData.website_url,
+      team_member_text: formData.team_name,
+      related_hackathon: formData.hackathon_id,
+      is_awarded: formData.is_awarded,
+      award_text: formData.award_text,
+      tags_json: formData.tags_json,
+      like_count: 0,
+      rank_score: MOCK_PROJECTS.length + 1,
+    };
+
+    // Save to localStorage
+    try {
+      const savedProjects = localStorage.getItem('userPublishedProjects');
+      const projects = savedProjects ? JSON.parse(savedProjects) : [];
+      projects.push(newProject);
+      localStorage.setItem('userPublishedProjects', JSON.stringify(projects));
+
+      // Show success message and redirect
+      alert(t('publish.success'));
+      router.push('/goat-hunt');
+    } catch (error) {
+      console.error('Failed to save project:', error);
+      alert('Failed to save project. Please try again.');
+    }
+
     setSubmitting(false);
   };
 
@@ -42,6 +77,58 @@ export default function PublishProjectPage() {
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     }));
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            setUploadedImages(prev => [...prev, event.target!.result as string]);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  };
+
+  const insertImageAtCursor = (imageIndex: number) => {
+    const textarea = document.querySelector('textarea[name="long_desc"]') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = formData.long_desc;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+    const placeholder = `[IMAGE:${imageIndex}]`;
+
+    setFormData(prev => ({
+      ...prev,
+      long_desc: before + placeholder + after,
+    }));
+
+    // Set cursor position after the inserted image
+    setTimeout(() => {
+      textarea.selectionStart = textarea.selectionEnd = start + placeholder.length;
+      textarea.focus();
+    }, 0);
+  };
+
+  const removeImage = (index: number) => {
+    setUploadedImages(prev => {
+      const newImages = prev.filter((_, i) => i !== index);
+      // Also remove references to this image in the description
+      setFormData(prev => ({
+        ...prev,
+        long_desc: prev.long_desc.replace(new RegExp(`\\[IMAGE:${index}\\]`, 'g'), ''),
+      }));
+      return newImages;
+    });
   };
 
   return (
@@ -109,18 +196,136 @@ export default function PublishProjectPage() {
           />
         </div>
 
-        {/* Long Description */}
+        {/* Long Description with Image Upload */}
         <div>
           <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)', marginBottom: 'var(--sp-2)' }}>
             {t('publish.long_desc')} *
           </label>
+
+          {/* Image Upload Section */}
+          <div style={{ marginBottom: 'var(--sp-3)' }}>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
+              style={{ display: 'none' }}
+              id="image-upload"
+            />
+            <label
+              htmlFor="image-upload"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 'var(--sp-2)',
+                padding: 'var(--sp-2) var(--sp-3)',
+                background: 'var(--bg-elevated)',
+                border: '1px dashed var(--brand-coral)',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--brand-coral)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--brand-coral)';
+                e.currentTarget.style.color = '#fff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'var(--bg-elevated)';
+                e.currentTarget.style.color = 'var(--brand-coral)';
+              }}
+            >
+              📷 {language === 'zh' ? '上传图片' : 'Upload Images'}
+            </label>
+            <span style={{ marginLeft: 'var(--sp-2)', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+              {language === 'zh' ? '支持单张或多张图片' : 'Support single or multiple images'}
+            </span>
+          </div>
+
+          {/* Uploaded Images Preview */}
+          {uploadedImages.length > 0 && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+              gap: 'var(--sp-3)',
+              marginBottom: 'var(--sp-3)',
+            }}>
+              {uploadedImages.map((imageUrl, index) => (
+                <div key={index} style={{ position: 'relative' }}>
+                  <img
+                    src={imageUrl}
+                    alt={`Upload ${index + 1}`}
+                    style={{
+                      width: '100%',
+                      height: '100px',
+                      objectFit: 'cover',
+                      border: '1px solid var(--border-base)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    top: '4px',
+                    left: '4px',
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    color: '#fff',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontFamily: 'var(--font-mono)',
+                  }}>
+                    #{index + 1}
+                  </div>
+                  <div style={{ display: 'flex', gap: 'var(--sp-1)', marginTop: 'var(--sp-1)' }}>
+                    <button
+                      type="button"
+                      onClick={() => insertImageAtCursor(index)}
+                      style={{
+                        flex: 1,
+                        padding: '4px',
+                        fontSize: '11px',
+                        background: 'var(--brand-green)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
+                      {language === 'zh' ? '插入' : 'Insert'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      style={{
+                        flex: 1,
+                        padding: '4px',
+                        fontSize: '11px',
+                        background: 'var(--brand-coral)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
+                      {language === 'zh' ? '删除' : 'Delete'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <textarea
             name="long_desc"
             value={formData.long_desc}
             onChange={handleInputChange}
             required
-            placeholder={language === 'zh' ? '详细描述你的项目。它解决了什么问题？你是如何构建的？' : 'Describe your project in detail. What problem does it solve? How did you build it?'}
-            rows={6}
+            placeholder={language === 'zh' ? '详细描述你的项目。它解决了什么问题？你是如何构建的？\n\n点击上方"插入"按钮可以在光标位置插入图片标记，格式：[IMAGE:1]' : 'Describe your project in detail. What problem does it solve? How did you build it?\n\nClick "Insert" above to insert image markers at cursor position. Format: [IMAGE:1]'}
+            rows={8}
             style={{
               width: '100%',
               padding: 'var(--sp-3)',
@@ -133,6 +338,9 @@ export default function PublishProjectPage() {
               resize: 'vertical',
             }}
           />
+          <div style={{ marginTop: 'var(--sp-2)', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+            💡 {language === 'zh' ? '提示：上传图片后点击"插入"按钮，会在光标位置插入 [IMAGE:数字] 标记，实际图片数据会被自动隐藏' : 'Tip: After uploading images, click "Insert" to add [IMAGE:number] markers at cursor position. Actual image data is hidden'}
+          </div>
         </div>
 
         {/* Links */}

@@ -4,10 +4,13 @@ import Link from 'next/link';
 import { MOCK_STORIES } from '@/data/mock';
 import { HackerCard } from '@/components/ui/HackerCard';
 import { Tag } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLike } from '@/contexts/LikeContext';
 
 export default function StoriesPage() {
   const { t, language } = useLanguage();
+  const { isStoryLiked, toggleLikeStory, getStoryLikes } = useLike();
   const [filterTag, setFilterTag] = React.useState<string | null>(null);
 
   // Get all unique tags
@@ -130,9 +133,13 @@ export default function StoriesPage() {
                       <Tag label={tag} />
                     </button>
                   ))}
-                  <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
-                    ▲ {story.like_count} {t('stories.opinions')}
-                  </span>
+                  <Button
+                    variant={isStoryLiked(story.id) ? 'upvote-active' : 'upvote'}
+                    onClick={() => toggleLikeStory(story.id)}
+                    style={{ marginLeft: 'auto', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}
+                  >
+                    ▲ {getStoryLikes(story.id)}
+                  </Button>
                 </div>
 
                 {/* Source attribution */}

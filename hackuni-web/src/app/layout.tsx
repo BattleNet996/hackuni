@@ -4,6 +4,8 @@ import { Navbar } from "../components/layout/Navbar";
 import { Footer } from "../components/layout/Footer";
 import { LanguageProvider } from "../contexts/LanguageContext";
 import { LikeProvider } from "../contexts/LikeContext";
+import { CommentProvider } from "../contexts/CommentContext";
+import { AuthProvider } from "../contexts/AuthContext";
 import "./globals.css";
 import "./components.css";
 
@@ -54,11 +56,15 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`${spaceGrotesk.variable} ${inter.variable} ${jetBrainsMono.variable} ${caveat.variable}`}>
       <body style={{ fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <LanguageProvider>
-          <LikeProvider>
-            <Navbar />
-            <div style={{ flex: 1 }}>{children}</div>
-            <Footer />
-          </LikeProvider>
+          <AuthProvider>
+            <LikeProvider>
+              <CommentProvider>
+                <Navbar />
+                <div style={{ flex: 1 }}>{children}</div>
+                <Footer />
+              </CommentProvider>
+            </LikeProvider>
+          </AuthProvider>
         </LanguageProvider>
       </body>
     </html>

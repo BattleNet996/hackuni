@@ -6,26 +6,19 @@ import { Button } from '../components/ui/Button';
 import { HackerCard } from '../components/ui/HackerCard';
 import { Tag, Badge } from '../components/ui/Badge';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLike } from '@/contexts/LikeContext';
 import { MOCK_STATS, MOCK_HACKATHONS, MOCK_PROJECTS, MOCK_BUILDERS } from '../data/mock';
 
 export default function Home() {
   const { t } = useLanguage();
-  const [likedProjects, setLikedProjects] = React.useState<Set<string>>(new Set());
-  const [projectLikes, setProjectLikes] = React.useState<Record<string, number>>(
-    MOCK_PROJECTS.reduce((acc, proj) => ({ ...acc, [proj.id]: proj.like_count }), {})
-  );
+  const { isProjectLiked, toggleLikeProject, getProjectLikes } = useLike();
 
-  const handleLike = (projectId: string) => {
-    const newLikedProjects = new Set(likedProjects);
-    if (likedProjects.has(projectId)) {
-      newLikedProjects.delete(projectId);
-      setProjectLikes(prev => ({ ...prev, [projectId]: prev[projectId] - 1 }));
-    } else {
-      newLikedProjects.add(projectId);
-      setProjectLikes(prev => ({ ...prev, [projectId]: prev[projectId] + 1 }));
-    }
-    setLikedProjects(newLikedProjects);
-  };
+  // Limit trending and builders to 6 items each
+  const trendingProjects = MOCK_PROJECTS.slice(0, 6);
+  const topBuilders = MOCK_BUILDERS.slice(0, 6);
+
+  // Limit to 6 items each section
+  const featuredHackathons = MOCK_HACKATHONS.slice(0, 6);
 
   // Prepare hackathon data for the globe
   const hackathonMarkers = MOCK_HACKATHONS.map(h => ({
@@ -47,10 +40,10 @@ export default function Home() {
         padding: '0 var(--sp-6)',
         position: 'relative',
       }}>
-        {/* The Earth now dominates exactly this container and is fully interactive */}
+        {/* The Earth positioned to the right side */}
         <ThreeGlobe hackathons={hackathonMarkers} />
 
-        <div style={{ maxWidth: '800px', pointerEvents: 'none', position: 'relative', zIndex: 10 }}>
+        <div style={{ maxWidth: '800px', pointerEvents: 'none', position: 'relative', zIndex: 10, marginRight: 'auto' }}>
           <h1 style={{
             fontFamily: 'var(--font-hero)',
             fontSize: 'var(--text-display)',
@@ -119,7 +112,7 @@ export default function Home() {
             <div className="divider-dashed" style={{ marginBottom: 'var(--sp-5)' }}></div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
-              {MOCK_HACKATHONS.map(hack => (
+              {featuredHackathons.map(hack => (
                 <HackerCard key={hack.id} className="responsive-flex-col desktop-row" style={{ gap: 'var(--sp-4)' }}>
                   <div style={{
                     width: '150px', height: '150px',
@@ -161,7 +154,7 @@ export default function Home() {
             <div className="divider-dashed" style={{ marginBottom: 'var(--sp-5)' }}></div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
-              {MOCK_PROJECTS.map(proj => (
+              {trendingProjects.map(proj => (
                 <HackerCard key={proj.id} className="responsive-flex-col desktop-row" style={{ alignItems: 'center', gap: 'var(--sp-4)', padding: 'var(--sp-3)' }}>
                   <div style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--text-muted)', width: '40px', textAlign: 'center' }}>
                     {proj.rank_score}
@@ -176,11 +169,11 @@ export default function Home() {
                   </div>
                   <div>
                     <Button
-                      variant={likedProjects.has(proj.id) ? 'upvote-active' : 'upvote'}
-                      onClick={() => handleLike(proj.id)}
+                      variant={isProjectLiked(proj.id) ? 'upvote-active' : 'upvote'}
+                      onClick={() => toggleLikeProject(proj.id)}
                       style={{ padding: '8px', minWidth: '50px', textAlign: 'center', cursor: 'pointer' }}
                     >
-                      ▲<br/>{projectLikes[proj.id]}
+                      ▲<br/>{getProjectLikes(proj.id)}
                     </Button>
                   </div>
                 </HackerCard>
@@ -198,7 +191,7 @@ export default function Home() {
             <div className="divider-dashed" style={{ marginBottom: 'var(--sp-5)' }}></div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
-              {MOCK_BUILDERS.map(builder => (
+              {topBuilders.map(builder => (
                 <HackerCard key={builder.id} style={{ padding: 'var(--sp-3)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
                     <div style={{
