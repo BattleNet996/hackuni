@@ -10,8 +10,9 @@
 !.yarn/releases
 !.yarn/versions
 
-# md
+# md (ignore all but README.md)
 *.md
+!README.md
 
 # testing
 /coverage
