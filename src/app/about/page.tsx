@@ -183,7 +183,7 @@ export default function AboutPage() {
               <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>
                 {isZh
                   ? '相信团队的力量，尊重每个人的贡献，共同创造更大的价值。'
-                  : 'Believe in the power of teams, respect everyone's contribution, and create greater value together.'}
+                  : 'Believe in the power of teams, respect everyone\'s contribution, and create greater value together.'}
               </p>
             </div>
             <div style={{
