@@ -22,9 +22,9 @@ const titleStyle = {
 };
 
 export default function AboutPage() {
-  const { lang, t } = useLanguage();
+  const { language, t } = useLanguage();
 
-  const isZh = lang === 'zh';
+  const isZh = language === 'zh';
 
   return (
     <div style={container}>
@@ -267,8 +267,8 @@ export default function AboutPage() {
                 transition: 'all 0.3s',
                 cursor: 'pointer'
               }}
-              onMouseEnter={(e) => e.target.style.background = '#764ba2'}
-              onMouseLeave={(e) => e.target.style.background = '#667eea'}
+              onMouseEnter={(e) => (e.target as HTMLAnchorElement).style.background = '#764ba2'}
+              onMouseLeave={(e) => (e.target as HTMLAnchorElement).style.background = '#667eea'}
             >
               {isZh ? '探索黑客松' : 'Explore Hackathons'}
             </a>
@@ -284,8 +284,8 @@ export default function AboutPage() {
                 transition: 'all 0.3s',
                 cursor: 'pointer'
               }}
-              onMouseEnter={(e) => e.target.style.background = '#667eea'}
-              onMouseLeave={(e) => e.target.style.background = '#764ba2'}
+              onMouseEnter={(e) => (e.target as HTMLAnchorElement).style.background = '#667eea'}
+              onMouseLeave={(e) => (e.target as HTMLAnchorElement).style.background = '#764ba2'}
             >
               {isZh ? '浏览项目' : 'Browse Projects'}
             </a>
@@ -301,8 +301,8 @@ export default function AboutPage() {
                 transition: 'all 0.3s',
                 cursor: 'pointer'
               }}
-              onMouseEnter={(e) => e.target.style.background = '#f97316'}
-              onMouseLeave={(e) => e.target.style.background = '#ed64a6'}
+              onMouseEnter={(e) => (e.target as HTMLAnchorElement).style.background = '#f97316'}
+              onMouseLeave={(e) => (e.target as HTMLAnchorElement).style.background = '#ed64a6'}
             >
               {isZh ? '查看徽章' : 'View Badges'}
             </a>
