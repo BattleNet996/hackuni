@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hackathonDAO } from '@/lib/dao';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
-import { getDb } from '@/lib/db/client';
+import { adminAuthService } from '@/lib/services';
 
 // GET /api/admin/hackathons - Get all hackathons
 export async function GET(request: NextRequest) {
@@ -15,9 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -49,9 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -64,43 +59,48 @@ export async function POST(request: NextRequest) {
 
     // Create hackathon
     const id = `h_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const stmt = db.prepare(`
-      INSERT INTO hackathons (
-        id, title, short_desc, description, start_time, end_time,
-        registration_deadline, city, country, latitude, longitude,
-        location_detail, tags_json, level_score, level_code,
-        registration_status, poster_url, organizer, organizer_url,
-        registration_url, requirements, prizes, fee
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
 
-    stmt.run(
+    // Helper function to convert date to ISO string
+    const parseDate = (dateValue: any): string | null => {
+      if (!dateValue) return null;
+      if (typeof dateValue === 'string') {
+        // Already a string, ensure it's valid ISO format
+        const date = new Date(dateValue);
+        return isNaN(date.getTime()) ? null : date.toISOString();
+      }
+      if (dateValue instanceof Date) {
+        return isNaN(dateValue.getTime()) ? null : dateValue.toISOString();
+      }
+      return null;
+    };
+
+    const hackathon = await hackathonDAO.create({
       id,
-      data.title,
-      data.short_desc || '',
-      data.description || '',
-      data.start_time || null,
-      data.end_time || null,
-      data.registration_deadline || null,
-      data.city || '',
-      data.country || '',
-      data.latitude || null,
-      data.longitude || null,
-      data.location_detail || '',
-      JSON.stringify(data.tags_json || []),
-      data.level_score || '0',
-      data.level_code || 'B',
-      data.registration_status || 'upcoming',
-      data.poster_url || '',
-      data.organizer || '',
-      data.organizer_url || null,
-      data.registration_url || null,
-      data.requirements || null,
-      data.prizes || null,
-      data.fee || null
-    );
-
-    const hackathon = hackathonDAO.findById(id);
+      title: data.title || '',
+      short_desc: data.short_desc || '',
+      description: data.description || '',
+      start_time: parseDate(data.start_time),
+      end_time: parseDate(data.end_time),
+      registration_deadline: parseDate(data.registration_deadline),
+      city: data.city || '',
+      country: data.country || '',
+      latitude: data.latitude ? parseFloat(data.latitude) : null,
+      longitude: data.longitude ? parseFloat(data.longitude) : null,
+      location_detail: data.location_detail || '',
+      tags_json: Array.isArray(data.tags_json) ? data.tags_json : [],
+      level_score: String(data.level_score || '0'),
+      level_code: String(data.level_code || 'B'),
+      registration_status: data.registration_status || 'upcoming',
+      poster_url: data.poster_url || '',
+      organizer: data.organizer || '',
+      organizer_url: data.organizer_url || null,
+      registration_url: data.registration_url || null,
+      requirements: data.requirements || null,
+      prizes: data.prizes || null,
+      fee: data.fee || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    });
 
     return NextResponse.json({
       data: hackathon

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { userDAO } from '@/lib/dao';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
-import { getDb } from '@/lib/db/client';
+import { adminAuthService } from '@/lib/services';
 
 // GET /api/admin/users - Get all users
 export async function GET(request: NextRequest) {
@@ -15,9 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -27,7 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all users (without password_hash)
-    const users = userDAO.findAll();
+    const users = await userDAO.findAll();
     const sanitizedUsers = users.map(u => {
       const { password_hash, ...rest } = u as any;
       return rest;

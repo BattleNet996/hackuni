@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
+import { adminAuthService } from '@/lib/services';
 import { AdminLogsService } from '@/lib/services/admin-logs.service';
 import { getDb } from '@/lib/db/client';
 
@@ -15,9 +15,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -26,6 +24,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const db = getDb();
     // Get pending projects (status = 'pending')
     const pendingProjectsStmt = db.prepare(`
       SELECT

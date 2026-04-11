@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { userDAO } from '@/lib/dao';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
-import { getDb } from '@/lib/db/client';
+import { adminAuthService } from '@/lib/services';
 
 // PATCH /api/admin/users/[id] - Update user
 export async function PATCH(
@@ -19,9 +18,7 @@ export async function PATCH(
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -33,7 +30,7 @@ export async function PATCH(
     const updateData = await request.json();
 
     // Update user
-    const updatedUser = userDAO.update(userId, updateData);
+    const updatedUser = await userDAO.update(userId, updateData);
 
     if (!updatedUser) {
       return NextResponse.json(
@@ -72,9 +69,7 @@ export async function DELETE(
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -87,7 +82,7 @@ export async function DELETE(
     // This check doesn't make sense here since adminUser is from admin_users table
     // but keeping it for safety if needed in future
 
-    const deleted = userDAO.delete(userId);
+    const deleted = await userDAO.delete(userId);
 
     if (!deleted) {
       return NextResponse.json(

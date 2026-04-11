@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
+import { adminAuthService } from '@/lib/services';
 import { getDb } from '@/lib/db/client';
 import { createHash, randomBytes } from 'crypto';
 
@@ -15,9 +15,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -26,6 +24,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const db = getDb();
     const stmt = db.prepare(`
       SELECT id, username, email, is_active, last_login_at, created_at, updated_at
       FROM admin_users
@@ -56,9 +55,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -77,6 +74,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const db = getDb();
     // Check if username already exists
     const existingStmt = db.prepare('SELECT id FROM admin_users WHERE username = ?');
     const existing = existingStmt.get(data.username);
@@ -93,12 +91,13 @@ export async function POST(request: NextRequest) {
 
     // Create admin user
     const id = `admin_${Date.now()}_${randomBytes(8).toString('hex')}`;
+    const now = new Date().toISOString();
     const stmt = db.prepare(`
-      INSERT INTO admin_users (id, username, password_hash, email, is_active)
-      VALUES (?, ?, ?, ?, 1)
+      INSERT INTO admin_users (id, username, password_hash, email, is_active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 1, ?, ?)
     `);
 
-    stmt.run(id, data.username, passwordHash, data.email || null);
+    stmt.run(id, data.username, passwordHash, data.email || null, now, now);
 
     const newAdmin = db.prepare('SELECT id, username, email, is_active, created_at FROM admin_users WHERE id = ?').get(id);
 

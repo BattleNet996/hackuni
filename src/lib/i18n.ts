@@ -72,6 +72,13 @@ export const translations = {
     'goat_hunt.origin_point': '来源活动',
     'goat_hunt.award_won': '获得奖项',
     'goat_hunt.share_project': '分享项目',
+    'goat_hunt.publish_project': '发布项目',
+    'goat_hunt.visit_demo': '访问演示',
+    'goat_hunt.github': 'GitHub',
+    'goat_hunt.play_demo': '播放演示',
+    'goat_hunt.comments': '评论',
+    'goat_hunt.share_twitter': '分享到Twitter',
+    'goat_hunt.copy_link': '复制链接',
 
     // Profile
     'profile.octo_avatar': '[八爪头像]',
@@ -92,9 +99,17 @@ export const translations = {
     'profile.badge_wall': '徽章墙',
     'profile.claim_badge': '申请徽章',
     'profile.journey_around_world': '全球黑客松之旅',
+    'profile.journey_around_world_subtitle': '全球黑客松之旅记录',
     'profile.hackathon_records': '黑客松记录',
+    'profile.hackathon_records_subtitle': '黑客松参与记录',
     'profile.project_portfolio': '项目作品集',
+    'profile.project_portfolio_subtitle': '项目作品集展示',
+    'profile.view_all': '查看全部',
     'profile.connect': '联系方式',
+    'profile.no_footprints': '暂无足迹',
+    'profile.no_heatmap': '暂无活动记录',
+    'profile.no_records': '暂无黑客松记录',
+    'profile.no_portfolio': '暂无项目作品',
 
     // Badges
     'badges.earned': '已获得',
@@ -286,6 +301,13 @@ export const translations = {
     'goat_hunt.origin_point': 'ORIGIN_POINT',
     'goat_hunt.award_won': 'AWARD_WON',
     'goat_hunt.share_project': 'SHARE_PROJECT',
+    'goat_hunt.publish_project': 'PUBLISH PROJECT',
+    'goat_hunt.visit_demo': 'VISIT DEMO',
+    'goat_hunt.github': 'GITHUB',
+    'goat_hunt.play_demo': 'PLAY DEMO',
+    'goat_hunt.comments': 'COMMENTS',
+    'goat_hunt.share_twitter': 'Twitter',
+    'goat_hunt.copy_link': 'Copy Link',
 
     // Profile
     'profile.octo_avatar': '[OCTO_AVATAR]',
@@ -306,9 +328,17 @@ export const translations = {
     'profile.badge_wall': 'BADGE_WALL',
     'profile.claim_badge': 'CLAIM BADGE',
     'profile.journey_around_world': 'JOURNEY_AROUND_THE_WORLD',
+    'profile.journey_around_world_subtitle': 'Global Hackathon Journey Records',
     'profile.hackathon_records': 'HACKATHON_RECORDS',
+    'profile.hackathon_records_subtitle': 'Hackathon Participation Records',
     'profile.project_portfolio': 'PROJECT_PORTFOLIO',
+    'profile.project_portfolio_subtitle': 'Project Portfolio Showcase',
+    'profile.view_all': 'View All',
     'profile.connect': 'CONNECT',
+    'profile.no_footprints': 'No footprints yet',
+    'profile.no_heatmap': 'No activity records yet',
+    'profile.no_records': 'No hackathon records yet',
+    'profile.no_portfolio': 'No projects yet',
 
     // Badges
     'badges.earned': 'EARNED',

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { commentDAO, likeDAO } from '@/lib/dao';
-import { AuthService } from '@/lib/services/auth.service';
-import { getDb } from '@/lib/db/client';
+import { authService } from '@/lib/services';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,16 +17,16 @@ export async function GET(request: NextRequest) {
 
     let comments;
     if (projectId) {
-      comments = commentDAO.getProjectComments(projectId);
+      comments = await commentDAO.getProjectComments(projectId);
     } else {
-      comments = commentDAO.getStoryComments(storyId!);
+      comments = await commentDAO.getStoryComments(storyId!);
     }
 
     // Get replies for each comment
-    const commentsWithReplies = comments.map(comment => ({
+    const commentsWithReplies = await Promise.all(comments.map(async comment => ({
       ...comment,
-      replies: commentDAO.getReplies(comment.id)
-    }));
+      replies: await commentDAO.getReplies(comment.id)
+    })));
 
     return NextResponse.json({
       data: commentsWithReplies
@@ -53,9 +52,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const authService = new AuthService(db);
-    const user = authService.verifyToken(token);
+    const user = await authService.verifyToken(token);
 
     if (!user) {
       return NextResponse.json(
@@ -80,8 +77,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const comment = commentDAO.create(
-      { project_id, story_id, content, parent_comment_id },
+    // Convert to target_id/target_type format
+    const target_id = project_id || story_id;
+    const target_type = project_id ? 'project' : 'hackathon';
+
+    const comment = await commentDAO.create(
+      { target_id, target_type, content, parent_comment_id } as any,
       user.id,
       user.display_name || user.email
     );

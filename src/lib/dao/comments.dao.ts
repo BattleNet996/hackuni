@@ -65,16 +65,17 @@ export class CommentDAO extends BaseDAO<Comment> {
   /**
    * Create new comment
    */
-  create(input: CommentCreateInput, authorId: string, authorName: string): Comment {
+  createWithAuthor(input: CommentCreateInput, authorId: string, authorName: string): Comment {
     const id = `c_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     const stmt = this.db.prepare(`
       INSERT INTO comments (
         id, project_id, story_id, author_id, author_name,
-        content, parent_comment_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        content, parent_comment_id, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
+    const now = new Date().toISOString();
     stmt.run(
       id,
       input.project_id || null,
@@ -82,7 +83,9 @@ export class CommentDAO extends BaseDAO<Comment> {
       authorId,
       authorName,
       input.content,
-      input.parent_comment_id || null
+      input.parent_comment_id || null,
+      now,
+      now
     );
 
     return this.findById(id)!;

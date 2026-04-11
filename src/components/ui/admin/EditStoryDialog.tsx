@@ -50,13 +50,19 @@ export function EditStoryDialog({ isOpen, onClose, story, onSuccess }: EditStory
     setMessage('');
 
     try {
+      // Prepare the data - keep both summary and content separate
+      const submitData: any = {
+        ...formData,
+        tags_json: formData.tags_json ? formData.tags_json.toString().split(',').map(t => t.trim()) : [],
+      };
+
+      // Don't map content to summary - keep them separate
+      // The API will handle both fields
+
       const response = await fetch(`/api/admin/stories/${story.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          tags_json: formData.tags_json ? formData.tags_json.toString().split(',').map(t => t.trim()) : [],
-        }),
+        body: JSON.stringify(submitData),
       });
 
       const data = await response.json();

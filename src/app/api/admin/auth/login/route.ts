@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db/client';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
+import { adminAuthService } from '@/lib/services';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,13 +14,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-
     // Clean up expired sessions
-    adminAuthService.cleanupExpiredSessions();
+    await adminAuthService.cleanupExpiredSessions();
 
-    const result = adminAuthService.login(username, password);
+    const result = await adminAuthService.login(username, password);
     console.log('[ADMIN LOGIN] Result:', result ? 'SUCCESS' : 'FAILED');
 
     if (!result) {

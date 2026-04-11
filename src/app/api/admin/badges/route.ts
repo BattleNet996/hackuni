@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { badgeDAO } from '@/lib/dao';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
-import { getDb } from '@/lib/db/client';
+import { adminAuthService } from '@/lib/services';
 
 // GET /api/admin/badges - Get all badges
 export async function GET(request: NextRequest) {
@@ -15,9 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -26,7 +23,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const badges = badgeDAO.findAll();
+    const badges = await badgeDAO.findAll();
     return NextResponse.json({ data: badges });
   } catch (error: any) {
     console.error('Get badges error:', error);
@@ -49,9 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -64,28 +59,21 @@ export async function POST(request: NextRequest) {
 
     // Create badge
     const id = `badge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const stmt = db.prepare(`
-      INSERT INTO badges (
-        id, badge_code, badge_name, badge_name_en, badge_type,
-        badge_desc, badge_desc_en, icon_url, rule_desc, rule_desc_en, source_type
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
 
-    stmt.run(
+    const badge = await badgeDAO.create({
       id,
-      data.badge_code,
-      data.badge_name,
-      data.badge_name_en || '',
-      data.badge_type || 'milestone',
-      data.badge_desc || '',
-      data.badge_desc_en || '',
-      data.icon_url || '',
-      data.rule_desc || '',
-      data.rule_desc_en || '',
-      data.source_type || 'activity'
-    );
-
-    const badge = badgeDAO.findById(id);
+      badge_code: data.badge_code,
+      badge_name: data.badge_name,
+      badge_name_en: data.badge_name_en || '',
+      badge_type: data.badge_type || 'milestone',
+      badge_desc: data.badge_desc || '',
+      badge_desc_en: data.badge_desc_en || '',
+      icon_url: data.icon_url || '',
+      rule_desc: data.rule_desc || '',
+      rule_desc_en: data.rule_desc_en || '',
+      source_type: data.source_type || 'activity',
+      created_at: new Date().toISOString()
+    });
 
     return NextResponse.json({
       data: badge

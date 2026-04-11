@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { projectDAO } from '@/lib/dao';
-import { AuthService } from '@/lib/services/auth.service';
-import { getDb } from '@/lib/db/client';
+import { authService } from '@/lib/services';
 
 // GET /api/projects/[id] - Get single project
 export async function GET(
@@ -11,7 +10,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const project = projectDAO.findById(id);
+    const project = await projectDAO.findById(id);
 
     if (!project) {
       return NextResponse.json(
@@ -45,9 +44,7 @@ export async function PATCH(
       );
     }
 
-    const db = getDb();
-    const authService = new AuthService(db);
-    const user = authService.verifyToken(token);
+    const user = await authService.verifyToken(token);
 
     if (!user) {
       return NextResponse.json(
@@ -59,7 +56,7 @@ export async function PATCH(
     const { id } = await params;
 
     // Check if project exists
-    const existingProject = projectDAO.findById(id);
+    const existingProject = await projectDAO.findById(id);
     if (!existingProject) {
       return NextResponse.json(
         { error: { code: 'NOT_FOUND', message: 'Project not found' } },
@@ -78,7 +75,7 @@ export async function PATCH(
     const data = await request.json();
 
     // Update project
-    const updatedProject = projectDAO.update(id, {
+    const updatedProject = await projectDAO.update(id, {
       title: data.title,
       short_desc: data.short_desc,
       long_desc: data.long_desc,
@@ -118,9 +115,7 @@ export async function DELETE(
       );
     }
 
-    const db = getDb();
-    const authService = new AuthService(db);
-    const user = authService.verifyToken(token);
+    const user = await authService.verifyToken(token);
 
     if (!user) {
       return NextResponse.json(
@@ -132,7 +127,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Check if project exists
-    const existingProject = projectDAO.findById(id);
+    const existingProject = await projectDAO.findById(id);
     if (!existingProject) {
       return NextResponse.json(
         { error: { code: 'NOT_FOUND', message: 'Project not found' } },
@@ -149,7 +144,7 @@ export async function DELETE(
     }
 
     // Delete project
-    const deleted = projectDAO.delete(id);
+    const deleted = await projectDAO.delete(id);
 
     if (deleted) {
       return NextResponse.json({ success: true });

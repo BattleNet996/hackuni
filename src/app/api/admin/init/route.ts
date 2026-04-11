@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db/client';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
+import { adminAuthService } from '@/lib/services';
 
 /**
  * Initialize admin system
@@ -48,8 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create initial admin user
-    const adminAuthService = new AdminAuthService(db);
-    adminAuthService.createInitialAdminUser();
+    await adminAuthService.createInitialAdminUser();
 
     return NextResponse.json({
       data: {

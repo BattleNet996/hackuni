@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { likeDAO } from '@/lib/dao';
-import { AuthService } from '@/lib/services/auth.service';
-import { getDb } from '@/lib/db/client';
+import { authService } from '@/lib/services';
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -15,9 +14,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const authService = new AuthService(db);
-    const user = authService.verifyToken(token);
+    const user = await authService.verifyToken(token);
 
     if (!user) {
       return NextResponse.json(
@@ -36,7 +33,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if user has liked this item
-    const hasLiked = likeDAO.hasUserLiked(user.id, target_type, target_id);
+    const hasLiked = await likeDAO.hasUserLiked(user.id, target_type, target_id);
 
     if (!hasLiked) {
       return NextResponse.json(
@@ -46,15 +43,15 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Toggle like (remove it)
-    likeDAO.toggleLike(user.id, target_type, target_id);
+    await likeDAO.toggleLike(user.id, target_type, target_id);
 
     // Update like count on target
     if (target_type === 'project') {
       const { projectDAO } = require('@/lib/dao');
-      projectDAO.updateLikeCount(target_id, -1);
+      await projectDAO.updateLikeCount(target_id, -1);
     }
 
-    const count = likeDAO.countLikes(target_type, target_id);
+    const count = await likeDAO.countLikes(target_type, target_id);
 
     return NextResponse.json({
       data: {

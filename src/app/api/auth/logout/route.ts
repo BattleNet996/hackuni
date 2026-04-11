@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthService } from '@/lib/services/auth.service';
-import { getDb } from '@/lib/db/client';
+import { authService } from '@/lib/services';
 
 export async function POST(request: NextRequest) {
   try {
     const token = request.cookies.get('auth_token')?.value;
 
     if (token) {
-      const db = getDb();
-      const authService = new AuthService(db);
-      authService.logout(token);
+      await authService.logout(token);
     }
 
     const response = NextResponse.json({ success: true });

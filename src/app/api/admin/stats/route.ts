@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { userDAO, hackathonDAO, projectDAO, storyDAO, badgeDAO } from '@/lib/dao';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
-import { getDb } from '@/lib/db/client';
+import { adminAuthService } from '@/lib/services';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,9 +13,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -26,11 +23,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Get real-time statistics from database
-    const totalUsers = userDAO.count();
-    const totalHackathons = hackathonDAO.count();
-    const totalProjects = projectDAO.count();
-    const totalStories = storyDAO.count();
-    const totalBadges = badgeDAO.count();
+    const totalUsers = await userDAO.count();
+    const totalHackathons = await hackathonDAO.count();
+    const totalProjects = await projectDAO.count();
+    const totalStories = await storyDAO.count();
+    const totalBadges = await badgeDAO.count();
 
     return NextResponse.json({
       data: {
@@ -40,7 +37,7 @@ export async function GET(request: NextRequest) {
         totalStories,
         totalBadges,
         pendingReviews: 0, // Can be calculated from projects/stories with status
-        pendingBadges: 0, // Can be calculated from user_badges with status 'pending'
+        pendingBadges: 0, // Can be calculated from user_badges with status 'pending',
       }
     });
   } catch (error: any) {

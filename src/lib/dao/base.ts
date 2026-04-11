@@ -16,6 +16,13 @@ export abstract class BaseDAO<T> {
   }
 
   /**
+   * Find entity by ID (async alias for compatibility)
+   */
+  async findByIdAsync(id: string): Promise<T | null> {
+    return this.findById(id);
+  }
+
+  /**
    * Find all entities with optional filters
    */
   findAll(filters?: Record<string, any>): T[] {
@@ -113,5 +120,27 @@ export abstract class BaseDAO<T> {
     const data = rows.map(row => this.mapRow(row));
 
     return { data, total: count, page };
+  }
+
+  /**
+   * Create new entity
+   */
+  create(data: any): T {
+    const keys = Object.keys(data).filter(k => k !== 'id');
+    const values = Object.values(data).filter((_, i) => i !== 0); // Filter out id if present
+
+    const placeholders = keys.map(() => '?').join(', ');
+    const sql = `INSERT INTO ${this.tableName} (${keys.join(', ')}) VALUES (${placeholders})`;
+
+    const stmt = this.db.prepare(sql);
+    stmt.run(...values);
+
+    // If data has id, return it, otherwise try to get the last inserted row
+    if (data.id) {
+      return this.findById(data.id)!;
+    }
+
+    // For SQLite, we'd need to get the last insert id, but since we're using custom IDs, return null
+    throw new Error('Entity ID is required for creation');
   }
 }

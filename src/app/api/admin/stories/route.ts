@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { storyDAO } from '@/lib/dao';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
-import { getDb } from '@/lib/db/client';
+import { adminAuthService } from '@/lib/services';
 
 // GET /api/admin/stories - Get all stories
 export async function GET(request: NextRequest) {
@@ -15,9 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -26,7 +23,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const stories = storyDAO.findAll();
+    const stories = await storyDAO.findAll();
     return NextResponse.json({ data: stories });
   } catch (error: any) {
     console.error('Get stories error:', error);
@@ -49,9 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -64,27 +59,21 @@ export async function POST(request: NextRequest) {
 
     // Create story
     const id = `s_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const stmt = db.prepare(`
-      INSERT INTO stories (
-        id, slug, title, summary, source, source_url,
-        author_name, tags_json, published_at, like_count
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
 
-    stmt.run(
+    const story = await storyDAO.create({
       id,
-      data.slug,
-      data.title,
-      data.summary || '',
-      data.source || null,
-      data.source_url || null,
-      data.author_name || adminUser.username,
-      JSON.stringify(data.tags_json || []),
-      data.published_at || new Date().toISOString(),
-      0
-    );
-
-    const story = storyDAO.findById(id);
+      slug: data.slug,
+      title: data.title,
+      summary: data.summary || '',
+      source: data.source || null,
+      source_url: data.source_url || null,
+      author_name: data.author_name || adminUser.username,
+      tags_json: data.tags_json || [],
+      published_at: data.published_at || new Date().toISOString(),
+      like_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    });
 
     return NextResponse.json({
       data: story

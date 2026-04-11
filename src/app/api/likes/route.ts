@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { likeDAO, userDAO, projectDAO, storyDAO } from '@/lib/dao';
-import { AuthService } from '@/lib/services/auth.service';
-import { getDb } from '@/lib/db/client';
+import { authService } from '@/lib/services';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,9 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const authService = new AuthService(db);
-    const user = authService.verifyToken(token);
+    const user = await authService.verifyToken(token);
 
     if (!user) {
       return NextResponse.json(
@@ -42,17 +39,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const liked = likeDAO.toggleLike(user.id, target_type, target_id);
+    const liked = await likeDAO.toggleLike(user.id, target_type, target_id);
 
     // Update like count on target
     const delta = liked ? 1 : -1;
     if (target_type === 'project') {
-      projectDAO.updateLikeCount(target_id, delta);
+      await projectDAO.updateLikeCount(target_id, delta);
     } else if (target_type === 'story') {
       // Add storyDAO.updateLikeCount if needed
     }
 
-    const count = likeDAO.countLikes(target_type, target_id);
+    const count = await likeDAO.countLikes(target_type, target_id);
 
     return NextResponse.json({
       data: {

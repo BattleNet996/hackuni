@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { storyDAO } from '@/lib/dao';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
-import { getDb } from '@/lib/db/client';
+import { adminAuthService } from '@/lib/services';
 
 // DELETE /api/admin/stories/[id] - Delete story
 export async function DELETE(
@@ -19,9 +18,7 @@ export async function DELETE(
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -31,7 +28,7 @@ export async function DELETE(
     }
 
     // Delete story
-    const deleted = storyDAO.delete(storyId);
+    const deleted = await storyDAO.delete(storyId);
 
     if (!deleted) {
       return NextResponse.json(
@@ -68,9 +65,7 @@ export async function PATCH(
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -81,8 +76,17 @@ export async function PATCH(
 
     const updateData = await request.json();
 
+    // Handle content field - don't map it to summary, keep them separate
+    // The database now has both summary and content fields
+    // Only map content to summary if summary is not provided
+    if (updateData.content !== undefined && !updateData.summary) {
+      updateData.summary = updateData.content;
+    } else if (updateData.description !== undefined && !updateData.summary) {
+      updateData.summary = updateData.description;
+    }
+
     // Update story
-    const updatedStory = storyDAO.update(storyId, updateData);
+    const updatedStory = await storyDAO.update(storyId, updateData);
 
     if (!updatedStory) {
       return NextResponse.json(

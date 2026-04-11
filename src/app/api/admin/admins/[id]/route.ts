@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
+import { adminAuthService } from '@/lib/services';
 import { getDb } from '@/lib/db/client';
 import { createHash } from 'crypto';
 
@@ -19,9 +19,7 @@ export async function PATCH(
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -32,6 +30,7 @@ export async function PATCH(
 
     const updateData = await request.json();
 
+    const db = getDb();
     // Check if admin exists
     const existingStmt = db.prepare('SELECT id FROM admin_users WHERE id = ?');
     const existing = existingStmt.get(adminId);
@@ -116,9 +115,7 @@ export async function DELETE(
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -135,6 +132,7 @@ export async function DELETE(
       );
     }
 
+    const db = getDb();
     // Check if admin exists
     const existingStmt = db.prepare('SELECT id FROM admin_users WHERE id = ?');
     const existing = existingStmt.get(adminId);

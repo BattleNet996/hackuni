@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hackathonDAO } from '@/lib/dao';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
-import { getDb } from '@/lib/db/client';
+import { adminAuthService } from '@/lib/services';
 
 // DELETE /api/admin/hackathons/[id] - Delete hackathon
 export async function DELETE(
@@ -19,9 +18,7 @@ export async function DELETE(
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -31,7 +28,7 @@ export async function DELETE(
     }
 
     // Delete hackathon
-    const deleted = hackathonDAO.delete(hackId);
+    const deleted = await hackathonDAO.delete(hackId);
 
     if (!deleted) {
       return NextResponse.json(
@@ -68,9 +65,7 @@ export async function PATCH(
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -82,7 +77,7 @@ export async function PATCH(
     const updateData = await request.json();
 
     // Update hackathon
-    const updatedHackathon = hackathonDAO.update(hackId, updateData);
+    const updatedHackathon = await hackathonDAO.update(hackId, updateData);
 
     if (!updatedHackathon) {
       return NextResponse.json(

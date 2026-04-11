@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { badgeDAO } from '@/lib/dao';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
-import { getDb } from '@/lib/db/client';
+import { adminAuthService } from '@/lib/services';
 
 // DELETE /api/admin/badges/[id] - Delete badge
 export async function DELETE(
@@ -19,9 +18,7 @@ export async function DELETE(
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -31,7 +28,7 @@ export async function DELETE(
     }
 
     // Delete badge
-    const deleted = badgeDAO.delete(badgeId);
+    const deleted = await badgeDAO.delete(badgeId);
 
     if (!deleted) {
       return NextResponse.json(
@@ -68,9 +65,7 @@ export async function PATCH(
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -82,7 +77,7 @@ export async function PATCH(
     const updateData = await request.json();
 
     // Update badge
-    const updatedBadge = badgeDAO.update(badgeId, updateData);
+    const updatedBadge = await badgeDAO.update(badgeId, updateData);
 
     if (!updatedBadge) {
       return NextResponse.json(

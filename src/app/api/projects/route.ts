@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { projectDAO } from '@/lib/dao';
-import { AuthService } from '@/lib/services/auth.service';
-import { getDb } from '@/lib/db/client';
+import { authService } from '@/lib/services';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,9 +11,9 @@ export async function GET(request: NextRequest) {
 
     let data;
     if (sort === 'like_count') {
-      data = projectDAO.getMostLiked(limit);
+      data = await projectDAO.getMostLiked(limit);
     } else {
-      data = projectDAO.getTopRanked(limit);
+      data = await projectDAO.getTopRanked(limit);
     }
 
     const paginatedData = data.slice((page - 1) * limit, page * limit);
@@ -47,9 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const authService = new AuthService(db);
-    const user = authService.verifyToken(token);
+    const user = await authService.verifyToken(token);
 
     if (!user) {
       return NextResponse.json(
@@ -69,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create project
-    const project = projectDAO.create({
+    const project = await projectDAO.create({
       title: data.title,
       short_desc: data.short_desc,
       long_desc: data.long_desc,

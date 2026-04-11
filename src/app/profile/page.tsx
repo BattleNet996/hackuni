@@ -19,21 +19,24 @@ export default function ProfilePage() {
   // Use real user data or fall back to mock data
   const displayUser = user || MOCK_USER;
 
-  // Mock data for visualization components
-  const footprintCities = MOCK_HACKATHONS.map(h => ({
+  // Check if user is Alice (the demo user with mock data)
+  const isAlice = displayUser.id === 'u1';
+
+  // Mock data for visualization components - only for Alice
+  const footprintCities = isAlice ? MOCK_HACKATHONS.map(h => ({
     city: h.city,
     country: h.country,
     date: h.start_time,
-  }));
+  })) : [];
 
-  const heatmapActivities = [
+  const heatmapActivities = isAlice ? [
     ...MOCK_HACKATHONS.map(h => ({ date: h.start_time, type: 'hackathon' })),
     ...MOCK_PROJECTS.map(() => ({ date: new Date().toISOString(), type: 'project' })),
     ...Array.from({ length: 20 }, (_, i) => ({
       date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
       type: 'activity'
     })),
-  ];
+  ] : [];
 
   return (
     <main style={{ padding: 'var(--sp-8) var(--sp-6)', maxWidth: '1200px', margin: '0 auto' }}>
@@ -142,20 +145,25 @@ export default function ProfilePage() {
         <section>
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 'var(--sp-4)', marginBottom: 'var(--sp-5)', fontFamily: 'var(--font-mono)' }}>
-            {['FOOTPRINTS', 'HEATMAP', 'RECORDS', 'PORTFOLIO'].map(tab => (
+            {[
+              { key: 'FOOTPRINTS', label: t('profile.footprints') },
+              { key: 'HEATMAP', label: t('profile.heatmap') },
+              { key: 'RECORDS', label: t('profile.records') },
+              { key: 'PORTFOLIO', label: t('profile.portfolio') }
+            ].map(tab => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: activeTab === tab ? 'var(--brand-coral)' : 'var(--text-muted)',
-                  borderBottom: activeTab === tab ? '2px solid var(--brand-coral)' : '2px solid transparent',
+                  color: activeTab === tab.key ? 'var(--brand-coral)' : 'var(--text-muted)',
+                  borderBottom: activeTab === tab.key ? '2px solid var(--brand-coral)' : '2px solid transparent',
                   padding: 'var(--sp-2) 0',
                   cursor: 'pointer',
-                  fontWeight: activeTab === tab ? 'bold' : 'normal'
+                  fontWeight: activeTab === tab.key ? 'bold' : 'normal'
                 }}>
-                {tab}
+                {tab.label}
               </button>
             ))}
           </div>
@@ -164,88 +172,114 @@ export default function ProfilePage() {
             {activeTab === 'FOOTPRINTS' && (
               <div>
                 <div style={{ marginBottom: 'var(--sp-4)', fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)' }}>
-                  // HACKATHON_JOURNEY_AROUND_THE_WORLD
+                  // {t('profile.journey_around_world')}
                 </div>
-                <FootprintMap cities={footprintCities} />
+                {footprintCities.length > 0 ? (
+                  <FootprintMap cities={footprintCities} />
+                ) : (
+                  <div style={{ textAlign: 'center', padding: 'var(--sp-8)', color: 'var(--text-muted)' }}>
+                    {t('profile.no_footprints')}
+                  </div>
+                )}
               </div>
             )}
 
             {activeTab === 'HEATMAP' && (
-              <Heatmap activities={heatmapActivities} />
+              <div>
+                {heatmapActivities.length > 0 ? (
+                  <Heatmap activities={heatmapActivities} />
+                ) : (
+                  <div style={{ textAlign: 'center', padding: 'var(--sp-8)', color: 'var(--text-muted)' }}>
+                    {t('profile.no_heatmap')}
+                  </div>
+                )}
+              </div>
             )}
 
             {activeTab === 'RECORDS' && (
               <div>
                 <h3 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)', marginTop: 0, marginBottom: 'var(--sp-4)' }}>
-                  HACKATHON_RECORDS
+                  {t('profile.hackathon_records')}
                 </h3>
-                <table style={{ width: '100%', textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: '13px', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ color: 'var(--text-muted)', borderBottom: '1px dashed var(--border-base)' }}>
-                      <th style={{ padding: 'var(--sp-2) 0' }}>{t('profile.event')}</th>
-                      <th style={{ padding: 'var(--sp-2) 0' }}>{t('profile.role')}</th>
-                      <th style={{ padding: 'var(--sp-2) 0' }}>{t('profile.status')}</th>
-                      <th style={{ padding: 'var(--sp-2) 0' }}>AWARD</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MOCK_HACKATHONS.map((h, i) => (
-                      <tr key={h.id} style={{ borderBottom: '1px solid var(--bg-elevated)' }}>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <Link href={`/hackathons/${h.id}`} style={{ textDecoration: 'none', color: 'var(--text-main)' }}>
-                            {h.title}
-                          </Link>
-                        </td>
-                        <td style={{ padding: 'var(--sp-3) 0', color: 'var(--text-muted)' }}>{i === 0 ? 'DEVELOPER' : 'PARTICIPANT'}</td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <span className={i === 0 ? "status-verified" : "status-pending"}>
-                            {i === 0 ? t('status.verified') : t('status.pending')}
-                          </span>
-                        </td>
-                        <td style={{ padding: 'var(--sp-3) 0', color: i === 0 ? 'var(--brand-coral)' : 'var(--text-muted)' }}>
-                          {i === 0 ? '🏆 GOLD' : '-'}
-                        </td>
+                {isAlice && MOCK_HACKATHONS.length > 0 ? (
+                  <table style={{ width: '100%', textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: '13px', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ color: 'var(--text-muted)', borderBottom: '1px dashed var(--border-base)' }}>
+                        <th style={{ padding: 'var(--sp-2) 0' }}>{t('profile.event')}</th>
+                        <th style={{ padding: 'var(--sp-2) 0' }}>{t('profile.role')}</th>
+                        <th style={{ padding: 'var(--sp-2) 0' }}>{t('profile.status')}</th>
+                        <th style={{ padding: 'var(--sp-2) 0' }}>{t('profile.award')}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {MOCK_HACKATHONS.map((h, i) => (
+                        <tr key={h.id} style={{ borderBottom: '1px solid var(--bg-elevated)' }}>
+                          <td style={{ padding: 'var(--sp-3) 0' }}>
+                            <Link href={`/hackathons/${h.id}`} style={{ textDecoration: 'none', color: 'var(--text-main)' }}>
+                              {h.title}
+                            </Link>
+                          </td>
+                          <td style={{ padding: 'var(--sp-3) 0', color: 'var(--text-muted)' }}>{i === 0 ? 'DEVELOPER' : 'PARTICIPANT'}</td>
+                          <td style={{ padding: 'var(--sp-3) 0' }}>
+                            <span className={i === 0 ? "status-verified" : "status-pending"}>
+                              {i === 0 ? t('status.verified') : t('status.pending')}
+                            </span>
+                          </td>
+                          <td style={{ padding: 'var(--sp-3) 0', color: i === 0 ? 'var(--brand-coral)' : 'var(--text-muted)' }}>
+                            {i === 0 ? '🏆 GOLD' : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: 'var(--sp-8)', color: 'var(--text-muted)' }}>
+                    {t('profile.no_records')}
+                  </div>
+                )}
               </div>
             )}
 
             {activeTab === 'PORTFOLIO' && (
               <div>
                 <h3 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)', marginTop: 0, marginBottom: 'var(--sp-4)' }}>
-                  PROJECT_PORTFOLIO
+                  {t('profile.project_portfolio')}
                 </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
-                  {MOCK_PROJECTS.slice(0, 6).map(proj => (
-                    <Link key={proj.id} href={`/goat-hunt/${proj.id}`} style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        background: 'var(--bg-elevated)',
-                        border: '1px solid var(--border-base)',
-                        padding: 'var(--sp-3)',
-                        cursor: 'pointer'
-                      }} className="hover-color">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <h4 style={{ margin: '0 0 4px 0', color: 'var(--text-main)' }}>{proj.title}</h4>
-                            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>{proj.short_desc}</p>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--brand-green)' }}>
-                              ▲ {proj.like_count}
+                {isAlice && MOCK_PROJECTS.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+                    {MOCK_PROJECTS.slice(0, 6).map(proj => (
+                      <Link key={proj.id} href={`/goat-hunt/${proj.id}`} style={{ textDecoration: 'none' }}>
+                        <div style={{
+                          background: 'var(--bg-elevated)',
+                          border: '1px solid var(--border-base)',
+                          padding: 'var(--sp-3)',
+                          cursor: 'pointer'
+                        }} className="hover-color">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <h4 style={{ margin: '0 0 4px 0', color: 'var(--text-main)' }}>{proj.title}</h4>
+                              <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>{proj.short_desc}</p>
                             </div>
-                            {proj.is_awarded && (
-                              <div style={{ fontSize: '11px', color: 'var(--brand-coral)', marginTop: '2px' }}>
-                                {proj.award_text}
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--brand-green)' }}>
+                                ▲ {proj.like_count}
                               </div>
-                            )}
+                              {proj.is_awarded && (
+                                <div style={{ fontSize: '11px', color: 'var(--brand-coral)', marginTop: '2px' }}>
+                                  {proj.award_text}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: 'var(--sp-8)', color: 'var(--text-muted)' }}>
+                    {t('profile.no_portfolio')}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -258,7 +292,7 @@ export default function ProfilePage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-4)' }}>
               <h3 style={{ fontFamily: 'var(--font-hero)', margin: 0, fontSize: '18px' }}>{t('profile.badge_wall')}</h3>
               <Link href="/badges" style={{ fontSize: '12px', color: 'var(--brand-coral)', textDecoration: 'none' }}>
-                View All →
+                {t('profile.view_all')} →
               </Link>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--sp-3)' }}>
@@ -310,7 +344,7 @@ export default function ProfilePage() {
             padding: 'var(--sp-4)'
           }}>
             <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)', marginBottom: 'var(--sp-3)' }}>
-              // CONNECT
+              // {t('profile.connect').toUpperCase()}
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
               {(displayUser as any).twitter_url && (

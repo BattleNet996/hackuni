@@ -9,18 +9,28 @@ let db: Database.Database | null = null;
  */
 export function getDb(): Database.Database {
   if (!db) {
-    const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'database', 'hackuni.db');
-    db = new Database(dbPath);
+    try {
+      const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'database', 'hackuni.db');
+      db = new Database(dbPath);
 
-    db.pragma('foreign_keys = ON');
-    db.pragma('journal_mode = WAL');
-    db.pragma('synchronous = NORMAL');
-    db.pragma('cache_size = -64000');
-    db.pragma('temp_store = MEMORY');
-    db.pragma('mmap_size = 30000000000');
+      db.pragma('foreign_keys = ON');
+      db.pragma('journal_mode = WAL');
+      db.pragma('synchronous = NORMAL');
+      db.pragma('cache_size = -64000');
+      db.pragma('temp_store = MEMORY');
+      db.pragma('mmap_size = 30000000000');
 
-    initializeAdminTables(db);
-    console.log(`Database connected: ${dbPath}`);
+      try {
+        initializeAdminTables(db);
+      } catch (error: any) {
+        // Ignore errors during build time (tables might not exist yet)
+        console.warn('Admin tables initialization warning:', error.message);
+      }
+      console.log(`Database connected: ${dbPath}`);
+    } catch (error: any) {
+      console.error('Database initialization failed:', error);
+      throw error;
+    }
   }
   return db;
 }
@@ -54,6 +64,37 @@ function initializeAdminTables(database: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_admin_sessions_token ON admin_sessions(token);
   `);
+
+  // Create admin_logs table
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS admin_logs (
+      id TEXT PRIMARY KEY,
+      admin_user_id TEXT NOT NULL,
+      admin_username TEXT NOT NULL,
+      action TEXT NOT NULL,
+      entity_type TEXT,
+      entity_id TEXT,
+      entity_name TEXT,
+      details TEXT,
+      ip_address TEXT,
+      user_agent TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (admin_user_id) REFERENCES admin_users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_admin_logs_admin_user_id ON admin_logs(admin_user_id);
+    CREATE INDEX IF NOT EXISTS idx_admin_logs_action ON admin_logs(action);
+    CREATE INDEX IF NOT EXISTS idx_admin_logs_entity ON admin_logs(entity_type, entity_id);
+    CREATE INDEX IF NOT EXISTS idx_admin_logs_created_at ON admin_logs(created_at);
+  `);
+
+  // Add content column to stories table if not exists
+  try {
+    database.exec(`ALTER TABLE stories ADD COLUMN content TEXT;`);
+  } catch (error: any) {
+    if (!error.message.includes('duplicate column')) {
+      console.error('Error adding content column to stories:', error);
+    }
+  }
 
   try {
     database.exec(`ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0;`);

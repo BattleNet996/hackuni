@@ -15,6 +15,8 @@ export interface Project {
   website_url: string | null;
   related_hackathon_id: string | null;
   author_id: string | null;
+  status: string;
+  hidden: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -47,6 +49,8 @@ export interface ProjectUpdateInput {
   images?: string[];
   is_awarded?: boolean;
   award_text?: string;
+  status?: string;
+  hidden?: boolean;
 }
 
 export function mapRowToProject(row: any): Project {
@@ -55,5 +59,6 @@ export function mapRowToProject(row: any): Project {
     tags_json: row.tags_json ? JSON.parse(row.tags_json) : [],
     images: row.images ? JSON.parse(row.images) : [],
     is_awarded: row.is_awarded === 1,
+    hidden: row.hidden === 1,
   };
 }

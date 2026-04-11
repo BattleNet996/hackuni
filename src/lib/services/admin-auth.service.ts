@@ -145,12 +145,13 @@ export class AdminAuthService {
       const adminId = `admin_${Date.now()}`;
       const passwordHash = this.hashPassword('cwj123'); // Default password
 
+      const now = new Date().toISOString();
       const insertStmt = this.db.prepare(`
-        INSERT INTO admin_users (id, username, password_hash, email)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO admin_users (id, username, password_hash, email, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
       `);
 
-      insertStmt.run(adminId, 'wjj', passwordHash, 'admin@hackuni.com');
+      insertStmt.run(adminId, 'wjj', passwordHash, 'admin@hackuni.com', now, now);
       console.log('Initial admin user created: wjj / cwj123');
     }
   }

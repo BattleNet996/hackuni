@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { projectDAO } from '@/lib/dao';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
-import { getDb } from '@/lib/db/client';
+import { adminAuthService } from '@/lib/services';
 
 // PATCH /api/admin/projects/[id] - Update project (hide/show)
 export async function PATCH(
@@ -19,9 +18,7 @@ export async function PATCH(
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -32,8 +29,13 @@ export async function PATCH(
 
     const updateData = await request.json();
 
+    // Ensure hidden field is properly converted to 0 or 1
+    if (updateData.hidden !== undefined) {
+      updateData.hidden = updateData.hidden ? 1 : 0;
+    }
+
     // Update project
-    const updatedProject = projectDAO.update(projectId, updateData);
+    const updatedProject = await projectDAO.update(projectId, updateData);
 
     if (!updatedProject) {
       return NextResponse.json(
@@ -70,9 +72,7 @@ export async function DELETE(
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -82,7 +82,7 @@ export async function DELETE(
     }
 
     // Delete project
-    const deleted = projectDAO.delete(projectId);
+    const deleted = await projectDAO.delete(projectId);
 
     if (!deleted) {
       return NextResponse.json(

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
+import { adminAuthService } from '@/lib/services';
 import { AdminLogsService } from '@/lib/services/admin-logs.service';
 import { getDb } from '@/lib/db/client';
 
@@ -15,9 +15,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const adminAuthService = new AdminAuthService(db);
-    const adminUser = adminAuthService.verifyToken(token);
+    const adminUser = await adminAuthService.verifyToken(token);
 
     if (!adminUser) {
       return NextResponse.json(
@@ -35,6 +33,7 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('start_date') || undefined;
     const endDate = searchParams.get('end_date') || undefined;
 
+    const db = getDb();
     const logsService = new AdminLogsService(db);
     const result = logsService.getLogs(page, limit, {
       action,

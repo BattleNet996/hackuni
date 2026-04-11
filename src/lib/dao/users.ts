@@ -23,8 +23,8 @@ export class UserDAO extends BaseDAO<User> {
       INSERT INTO users (
         id, email, password_hash, display_name, bio, looking_for,
         total_hackathon_count, total_work_count, total_award_count,
-        badge_count, certification_count
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        badge_count, certification_count, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     this.updateStmt = this.db.prepare(`
       UPDATE users
@@ -60,9 +60,10 @@ export class UserDAO extends BaseDAO<User> {
   /**
    * Create new user
    */
-  async create(input: UserCreateInput): Promise<User> {
+  async createWithPassword(input: UserCreateInput): Promise<User> {
     const id = `u_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const passwordHash = await bcrypt.hash(input.password, 10);
+    const now = new Date().toISOString();
 
     this.createStmt.run(
       id,
@@ -75,7 +76,9 @@ export class UserDAO extends BaseDAO<User> {
       0, // total_work_count
       0, // total_award_count
       0, // badge_count
-      0  // certification_count
+      0, // certification_count
+      now, // created_at
+      now  // updated_at
     );
 
     return this.findById(id)!;

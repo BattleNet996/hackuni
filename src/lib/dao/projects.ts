@@ -65,15 +65,17 @@ export class ProjectDAO extends BaseDAO<Project> {
   /**
    * Create new project
    */
-  create(input: ProjectCreateInput, authorId: string): Project {
+  createWithAuthor(input: ProjectCreateInput, authorId: string): Project {
     const id = `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    const now = new Date().toISOString();
     const stmt = this.db.prepare(`
       INSERT INTO projects (
         id, title, short_desc, long_desc, team_member_text,
         tags_json, demo_url, github_url, website_url,
-        related_hackathon_id, author_id, images, is_awarded, award_text
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        related_hackathon_id, author_id, images, is_awarded, award_text,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -90,7 +92,9 @@ export class ProjectDAO extends BaseDAO<Project> {
       authorId,
       JSON.stringify(input.images || []),
       input.is_awarded ? 1 : 0,
-      input.award_text || null
+      input.award_text || null,
+      now,
+      now
     );
 
     return this.findById(id)!;

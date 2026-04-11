@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { commentDAO } from '@/lib/dao';
-import { AuthService } from '@/lib/services/auth.service';
-import { getDb } from '@/lib/db/client';
+import { authService } from '@/lib/services';
 
 export async function DELETE(
   request: NextRequest,
@@ -19,9 +18,7 @@ export async function DELETE(
       );
     }
 
-    const db = getDb();
-    const authService = new AuthService(db);
-    const user = authService.verifyToken(token);
+    const user = await authService.verifyToken(token);
 
     if (!user) {
       return NextResponse.json(
@@ -31,7 +28,7 @@ export async function DELETE(
     }
 
     // Check if comment exists and belongs to user
-    const comment = commentDAO.findById(commentId);
+    const comment = await commentDAO.findById(commentId);
 
     if (!comment) {
       return NextResponse.json(
@@ -48,7 +45,7 @@ export async function DELETE(
       );
     }
 
-    const deleted = commentDAO.delete(commentId);
+    const deleted = await commentDAO.delete(commentId);
 
     if (!deleted) {
       return NextResponse.json(

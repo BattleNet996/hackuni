@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db/client';
-import { AdminAuthService } from '@/lib/services/admin-auth.service';
+import { adminAuthService } from '@/lib/services';
 
 export async function POST(request: NextRequest) {
   try {
     const token = request.cookies.get('admin_token')?.value;
 
     if (token) {
-      const db = getDb();
-      const adminAuthService = new AdminAuthService(db);
-      adminAuthService.logout(token);
+      await adminAuthService.logout(token);
     }
 
     const response = NextResponse.json({
