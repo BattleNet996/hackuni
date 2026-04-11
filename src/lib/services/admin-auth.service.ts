@@ -106,7 +106,7 @@ export class AdminAuthService {
 
     // Return admin user without session fields
     const { expires_at, admin_user_id, created_at, ...adminUser } = result;
-    return adminUser as AdminUser;
+    return adminUser as unknown as AdminUser;
   }
 
   /**

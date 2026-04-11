@@ -55,7 +55,7 @@ export async function PATCH(
       }
 
       // Get project details for logging
-      const project = db.prepare('SELECT title, author_id FROM projects WHERE id = ?').get(itemId);
+      const project = db.prepare('SELECT title, author_id FROM projects WHERE id = ?').get(itemId) as { title: string; author_id: string } | undefined;
 
       logsService.log(adminUser, action, {
         entity_type: 'project',
@@ -77,7 +77,7 @@ export async function PATCH(
       }
 
       // Get story details for logging
-      const story = db.prepare('SELECT title FROM stories WHERE id = ?').get(itemId);
+      const story = db.prepare('SELECT title FROM stories WHERE id = ?').get(itemId) as { title: string } | undefined;
 
       logsService.log(adminUser, action, {
         entity_type: 'story',
@@ -109,12 +109,12 @@ export async function PATCH(
         JOIN users u ON ub.user_id = u.id
         JOIN badges b ON ub.badge_id = b.id
         WHERE ub.id = ?
-      `).get(itemId);
+      `).get(itemId) as { display_name: string; badge_name: string } | undefined;
 
       logsService.log(adminUser, action, {
         entity_type: 'badge',
         entity_id: itemId,
-        entity_name: `${badgeInfo?.display_name} - ${badgeInfo?.badgege_name}`,
+        entity_name: `${badgeInfo?.display_name} - ${badgeInfo?.badge_name}`,
         details: { status: newStatus }
       });
     } else {

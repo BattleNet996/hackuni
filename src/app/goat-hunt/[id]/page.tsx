@@ -33,7 +33,8 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
         .catch(err => {
           console.error('Failed to fetch project:', err);
           // Fallback to mock data for now
-          const foundProject = MOCK_BUILDERS[0]?.projects?.find((p: any) => p.id === resolvedParams.id);
+          const builder = MOCK_BUILDERS[0] as any;
+          const foundProject = builder?.projects?.find((p: any) => p.id === resolvedParams.id);
           setProject(foundProject || null);
         });
 

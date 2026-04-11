@@ -84,9 +84,9 @@ export default function ProfilePage() {
           </p>
 
           {/* Contact Info */}
-          {displayUser.email && (
+          {(displayUser as any).email && (
             <div style={{ display: 'flex', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
-              <span>📧 {displayUser.email}</span>
+              <span>📧 {(displayUser as any).email}</span>
             </div>
           )}
 

@@ -5,9 +5,9 @@ import { Like, mapRowToLike } from '@/lib/models/like';
 export class LikeDAO extends BaseDAO<Like> {
   protected tableName = 'likes';
 
-  private checkLikeStmt: Database.Statement;
-  private countLikesStmt: Database.Statement;
-  private deleteLikeStmt: Database.Statement;
+  private checkLikeStmt!: Database.Statement;
+  private countLikesStmt!: Database.Statement;
+  private deleteLikeStmt!: Database.Statement;
 
   constructor(db: Database.Database) {
     super(db);

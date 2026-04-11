@@ -11,13 +11,13 @@ try {
   db.pragma('journal_mode = WAL');
 
   // Check if columns already exist
-  const projectsInfo = db.pragma('table_info(projects)');
+  const projectsInfo = db.pragma('table_info(projects)') as any[];
   const projectsColumns = projectsInfo.map((col: any) => col.name);
 
-  const storiesInfo = db.pragma('table_info(stories)');
+  const storiesInfo = db.pragma('table_info(stories)') as any[];
   const storiesColumns = storiesInfo.map((col: any) => col.name);
 
-  const hackathonsInfo = db.pragma('table_info(hackathons)');
+  const hackathonsInfo = db.pragma('table_info(hackathons)') as any[];
   const hackathonsColumns = hackathonsInfo.map((col: any) => col.name);
 
   // Add status and hidden to projects table
@@ -61,13 +61,13 @@ try {
   // Verify the changes
   console.log('\n📊 Verification:');
 
-  const finalProjectsColumns = db.pragma('table_info(projects)').map((col: any) => col.name);
+  const finalProjectsColumns = (db.pragma('table_info(projects)') as any[]).map((col: any) => col.name);
   console.log(`  Projects columns: ${finalProjectsColumns.join(', ')}`);
 
-  const finalStoriesColumns = db.pragma('table_info(stories)').map((col: any) => col.name);
+  const finalStoriesColumns = (db.pragma('table_info(stories)') as any[]).map((col: any) => col.name);
   console.log(`  Stories columns: ${finalStoriesColumns.join(', ')}`);
 
-  const finalHackathonsColumns = db.pragma('table_info(hackathons)').map((col: any) => col.name);
+  const finalHackathonsColumns = (db.pragma('table_info(hackathons)') as any[]).map((col: any) => col.name);
   console.log(`  Hackathons columns: ${finalHackathonsColumns.join(', ')}`);
 
   console.log('\n✨ Migration completed successfully!');

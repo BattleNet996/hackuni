@@ -22,7 +22,11 @@ if (!supabaseUrl || !supabaseKey) {
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Type narrowing: after the check, TypeScript knows these are defined
+const url: string = supabaseUrl;
+const key: string = supabaseKey;
+
+const supabase = createClient(url, key);
 
 /**
  * Execute SQL script on Supabase
@@ -45,7 +49,7 @@ async function initializeSchema(): Promise<void> {
   console.log('\n⚠️  Supabase does not support executing SQL through the JavaScript client.');
   console.log('\n📝 Please follow these steps:');
   console.log('\n   1. Go to your Supabase dashboard:');
-  console.log(`      ${supabaseUrl.replace('.supabase.co', '.supabase.co')}/project/_/sql`);
+  console.log(`      ${url.replace('.supabase.co', '.supabase.co')}/project/_/sql`);
   console.log('\n   2. Open the SQL Editor');
   console.log('\n   3. Copy and paste the SQL from:');
   console.log(`      ${schemaPath}`);

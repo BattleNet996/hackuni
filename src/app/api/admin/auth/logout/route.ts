@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Clear cookie
-    response.cookies.delete('admin_token', { path: '/' });
+    response.cookies.delete('admin_token');
 
     return response;
   } catch (error: any) {

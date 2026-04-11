@@ -219,7 +219,7 @@ export function CommentProvider({ children }: { children: React.ReactNode }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ target_type: targetType, target_id }),
+        body: JSON.stringify({ target_type: targetType, targetId }),
       });
 
       const data = await response.json();

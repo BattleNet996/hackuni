@@ -60,7 +60,7 @@ export function PublishDialog({ isOpen, onClose, type, onSuccess }: PublishDialo
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
   const renderForm = () => {
@@ -184,7 +184,7 @@ export function PublishDialog({ isOpen, onClose, type, onSuccess }: PublishDialo
               <select
                 name="registration_status"
                 value={formData.registration_status || 'upcoming'}
-                onChange={(e) => setFormData(prev => ({ ...prev, registration_status: e.target.value }))}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, registration_status: e.target.value }))}
                 style={{ width: '100%', padding: 'var(--sp-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', borderRadius: '4px', color: 'var(--text-main)' }}
               >
                 <option value="upcoming">{language === 'zh' ? '即将开始' : 'Upcoming'}</option>
@@ -231,7 +231,7 @@ export function PublishDialog({ isOpen, onClose, type, onSuccess }: PublishDialo
               type="text"
               name="tags_json"
               value={formData.tags_json || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, tags_json: e.target.value }))}
+              onChange={(e) => setFormData((prev: any) => ({ ...prev, tags_json: e.target.value }))}
               placeholder={language === 'zh' ? '#AI, #Hardware, #Web3' : '#AI, #Hardware, #Web3'}
               style={{ width: '100%', padding: 'var(--sp-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', borderRadius: '4px', color: 'var(--text-main)' }}
             />
@@ -321,7 +321,7 @@ export function PublishDialog({ isOpen, onClose, type, onSuccess }: PublishDialo
               type="text"
               name="tags_json"
               value={formData.tags_json || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, tags_json: e.target.value }))}
+              onChange={(e) => setFormData((prev: any) => ({ ...prev, tags_json: e.target.value }))}
               placeholder="#AI, #Startup, #Community"
               style={{ width: '100%', padding: 'var(--sp-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', borderRadius: '4px', color: 'var(--text-main)' }}
             />
@@ -384,7 +384,7 @@ export function PublishDialog({ isOpen, onClose, type, onSuccess }: PublishDialo
             <select
               name="badge_type"
               value={formData.badge_type || 'milestone'}
-              onChange={(e) => setFormData(prev => ({ ...prev, badge_type: e.target.value }))}
+              onChange={(e) => setFormData((prev: any) => ({ ...prev, badge_type: e.target.value }))}
               style={{ width: '100%', padding: 'var(--sp-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', borderRadius: '4px', color: 'var(--text-main)' }}
             >
               <option value="award">{language === 'zh' ? '奖项' : 'Award'}</option>

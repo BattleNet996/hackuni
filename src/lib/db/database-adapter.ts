@@ -64,7 +64,7 @@ function querySQLite<T = any>(
   const db = getDb();
   const stmt = db.prepare(text);
   const rows = params ? stmt.all(...params) : stmt.all();
-  return { rows, rowCount: rows.length };
+  return { rows: rows as T[], rowCount: rows.length };
 }
 
 /**

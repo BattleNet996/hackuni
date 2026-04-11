@@ -5,8 +5,8 @@ import { Hackathon, mapRowToHackathon } from '@/lib/models/hackathon';
 export class HackathonDAO extends BaseDAO<Hackathon> {
   protected tableName = 'hackathons';
 
-  private findUpcomingStmt: Database.Statement;
-  private findByCityStmt: Database.Statement;
+  private findUpcomingStmt!: Database.Statement;
+  private findByCityStmt!: Database.Statement;
 
   constructor(db: Database.Database) {
     super(db);
@@ -49,7 +49,7 @@ export class HackathonDAO extends BaseDAO<Hackathon> {
   /**
    * Get hackathons with pagination
    */
-  getPaginated(page: number = 1, limit: number = 20): { data: Hackathon[]; total: number } {
+  getPaginated(page: number = 1, limit: number = 20): { data: Hackathon[]; total: number; page: number } {
     const offset = (page - 1) * limit;
 
     const dataStmt = this.db.prepare(`
@@ -65,7 +65,8 @@ export class HackathonDAO extends BaseDAO<Hackathon> {
 
     return {
       data: rows.map(row => this.mapRow(row)),
-      total: count
+      total: count,
+      page
     };
   }
 }

@@ -5,9 +5,9 @@ import { Comment, CommentCreateInput, mapRowToComment } from '@/lib/models/comme
 export class CommentDAO extends BaseDAO<Comment> {
   protected tableName = 'comments';
 
-  private findByProjectStmt: Database.Statement;
-  private findByStoryStmt: Database.Statement;
-  private getRepliesStmt: Database.Statement;
+  private findByProjectStmt!: Database.Statement;
+  private findByStoryStmt!: Database.Statement;
+  private getRepliesStmt!: Database.Statement;
 
   constructor(db: Database.Database) {
     super(db);

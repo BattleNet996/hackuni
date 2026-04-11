@@ -5,9 +5,9 @@ import { Project, ProjectCreateInput, ProjectUpdateInput, mapRowToProject } from
 export class ProjectDAO extends BaseDAO<Project> {
   protected tableName = 'projects';
 
-  private getTopRankedStmt: Database.Statement;
-  private getMostLikedStmt: Database.Statement;
-  private updateLikeCountStmt: Database.Statement;
+  private getTopRankedStmt!: Database.Statement;
+  private getMostLikedStmt!: Database.Statement;
+  private updateLikeCountStmt!: Database.Statement;
 
   constructor(db: Database.Database) {
     super(db);

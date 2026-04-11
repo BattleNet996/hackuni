@@ -6,9 +6,9 @@ import bcrypt from 'bcrypt';
 export class UserDAO extends BaseDAO<User> {
   protected tableName = 'users';
 
-  private findByEmailStmt: Database.Statement;
-  private createStmt: Database.Statement;
-  private updateStmt: Database.Statement;
+  private findByEmailStmt!: Database.Statement;
+  private createStmt!: Database.Statement;
+  private updateStmt!: Database.Statement;
 
   constructor(db: Database.Database) {
     super(db);

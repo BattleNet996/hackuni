@@ -5,7 +5,7 @@ import { Badge, UserBadge, mapRowToBadge, mapRowToUserBadge } from '@/lib/models
 export class BadgeDAO extends BaseDAO<Badge> {
   protected tableName = 'badges';
 
-  private findByCodeStmt: Database.Statement;
+  private findByCodeStmt!: Database.Statement;
 
   constructor(db: Database.Database) {
     super(db);
@@ -66,5 +66,25 @@ export class BadgeDAO extends BaseDAO<Badge> {
         created_at: row.created_at,
       }
     }));
+  }
+
+  /**
+   * Update a badge
+   */
+  update(id: string, data: Partial<Badge>): Badge | null {
+    const fields = Object.keys(data).filter(key => key !== 'id');
+    if (fields.length === 0) return this.findById(id);
+
+    const setClause = fields.map(key => `${key} = ?`).join(', ');
+    const values = fields.map(key => (data as any)[key]);
+
+    const stmt = this.db.prepare(`
+      UPDATE badges
+      SET ${setClause}, updated_at = datetime('now')
+      WHERE id = ?
+    `);
+
+    stmt.run(...values, id);
+    return this.findById(id);
   }
 }

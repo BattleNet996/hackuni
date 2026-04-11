@@ -5,8 +5,8 @@ import { Story, mapRowToStory } from '@/lib/models/story';
 export class StoryDAO extends BaseDAO<Story> {
   protected tableName = 'stories';
 
-  private findBySlugStmt: Database.Statement;
-  private getLatestStmt: Database.Statement;
+  private findBySlugStmt!: Database.Statement;
+  private getLatestStmt!: Database.Statement;
 
   constructor(db: Database.Database) {
     super(db);
