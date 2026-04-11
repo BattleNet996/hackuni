@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { motion } from 'framer-motion';
 
 const container = {
   minHeight: '100vh',
@@ -29,11 +28,7 @@ export default function AboutPage() {
 
   return (
     <div style={container}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+      <div>
         {/* Title */}
         <h1 style={titleStyle}>
           {isZh ? '关于 AttraX' : 'About AttraX'}
@@ -363,7 +358,7 @@ export default function AboutPage() {
               : 'Built with ❤️ by AttraX | Build the Next Unnecessary'}
           </p>
         </footer>
-      </motion.div>
+      </div>
     </div>
   );
 }
