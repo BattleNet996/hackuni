@@ -8,6 +8,7 @@ import { EditProjectDialog } from '@/components/ui/EditProjectDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLike } from '@/contexts/LikeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { ensureTagsArray } from '@/lib/utils/data';
 
 export default function GoatItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { t, language } = useLanguage();
@@ -112,7 +113,7 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
                 {project.short_desc}
               </p>
               <div style={{ display: 'flex', gap: 'var(--sp-3)', fontFamily: 'var(--font-mono)' }}>
-                {project.tags_json.map((tag: string) => <Tag key={tag} label={tag} />)}
+                {ensureTagsArray(project.tags_json).map((tag: string) => <Tag key={tag} label={tag} />)}
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
@@ -174,7 +175,7 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
               <div style={{ color: 'var(--text-main)', lineHeight: 1.8, marginBottom: 'var(--sp-6)' }}>
                 <p>
                   This is a groundbreaking project that pushes the boundaries of what's possible in a hackathon setting.
-                  Our team built {project.title} to address a critical gap in the {project.tags_json[0] || 'technology'} space.
+                  Our team built {project.title} to address a critical gap in the {ensureTagsArray(project.tags_json)[0] || 'technology'} space.
                 </p>
                 <p>
                   The project leverages cutting-edge technologies and innovative approaches to deliver a seamless user experience.

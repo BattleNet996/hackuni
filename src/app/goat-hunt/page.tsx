@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLike } from '@/contexts/LikeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { ensureTagsArray } from '@/lib/utils/data';
 
 export default function GoatHuntPage() {
   const { t, language } = useLanguage();
@@ -59,7 +60,7 @@ export default function GoatHuntPage() {
               <div style={{ display: 'flex', gap: 'var(--sp-3)', fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
                 <span style={{ color: 'var(--brand-coral)' }}>{proj.team_member_text}</span>
                 <span className="divider-dashed" style={{ borderLeft: '1px dashed var(--border-base)', height: '14px', width: '1px' }}></span>
-                <span style={{ color: 'var(--text-muted)' }}>{proj.tags_json.join(' ')}</span>
+                <span style={{ color: 'var(--text-muted)' }}>{ensureTagsArray(proj.tags_json).join(' ')}</span>
               </div>
             </div>
             

@@ -1,5 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 interface LikeContextType {
   likedProjects: Set<string>;
@@ -19,6 +20,7 @@ interface LikeContextType {
 const LikeContext = createContext<LikeContextType | undefined>(undefined);
 
 export function LikeProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [likedProjects, setLikedProjects] = useState<Set<string>>(new Set());
   const [likedStories, setLikedStories] = useState<Set<string>>(new Set());
   const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
@@ -94,10 +96,22 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
   }, [likedComments, mounted]);
 
   const toggleLikeProject = async (id: string) => {
+    // Check if user is logged in before making the request
+    if (!user) {
+      if (typeof window !== 'undefined') {
+        const loginPrompt = confirm('Please login to like projects. Go to login page?');
+        if (loginPrompt) {
+          window.location.href = '/login';
+        }
+      }
+      return;
+    }
+
     try {
       const response = await fetch('/api/likes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies in the request
         body: JSON.stringify({ target_type: 'project', target_id: id }),
       });
 
@@ -118,15 +132,17 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
 
         setProjectLikeCounts(prev => ({ ...prev, [id]: count }));
       } else if (response.status === 401) {
-        // User not logged in - redirect to login or show message
-        console.warn('Please login to like projects');
-        // Optionally trigger a login modal or redirect
+        // Token expired or invalid - user needs to login again
+        console.warn('Session expired. Please login again.');
         if (typeof window !== 'undefined') {
-          const loginPrompt = confirm('Please login to like projects. Go to login page?');
-          if (loginPrompt) {
-            window.location.href = '/login';
-          }
+          alert('Your session has expired. Please login again.');
+          // Clear local storage and redirect to login
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          window.location.href = '/login';
         }
+      } else {
+        console.error('Like failed:', data.error?.message || 'Unknown error');
       }
     } catch (error) {
       console.error('Toggle like error:', error);
@@ -134,10 +150,22 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const toggleLikeStory = async (id: string) => {
+    // Check if user is logged in before making the request
+    if (!user) {
+      if (typeof window !== 'undefined') {
+        const loginPrompt = confirm('Please login to like stories. Go to login page?');
+        if (loginPrompt) {
+          window.location.href = '/login';
+        }
+      }
+      return;
+    }
+
     try {
       const response = await fetch('/api/likes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies in the request
         body: JSON.stringify({ target_type: 'story', target_id: id }),
       });
 
@@ -158,14 +186,17 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
 
         setStoryLikeCounts(prev => ({ ...prev, [id]: count }));
       } else if (response.status === 401) {
-        // User not logged in - redirect to login or show message
-        console.warn('Please login to like stories');
+        // Token expired or invalid - user needs to login again
+        console.warn('Session expired. Please login again.');
         if (typeof window !== 'undefined') {
-          const loginPrompt = confirm('Please login to like stories. Go to login page?');
-          if (loginPrompt) {
-            window.location.href = '/login';
-          }
+          alert('Your session has expired. Please login again.');
+          // Clear local storage and redirect to login
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          window.location.href = '/login';
         }
+      } else {
+        console.error('Like failed:', data.error?.message || 'Unknown error');
       }
     } catch (error) {
       console.error('Toggle like error:', error);
