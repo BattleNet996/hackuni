@@ -65,12 +65,15 @@ export async function POST(request: NextRequest) {
       slug: data.slug,
       title: data.title,
       summary: data.summary || '',
+      content: data.content || null,
       source: data.source || null,
       source_url: data.source_url || null,
       author_name: data.author_name || adminUser.username,
       tags_json: data.tags_json || [],
       published_at: data.published_at || new Date().toISOString(),
       like_count: 0,
+      status: data.status || 'published',
+      hidden: data.hidden ? 1 : 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     });

@@ -155,6 +155,14 @@ export class ProjectDAO extends BaseDAO<Project> {
       updates.push('award_text = ?');
       params.push(input.award_text);
     }
+    if (input.hidden !== undefined) {
+      updates.push('hidden = ?');
+      params.push(input.hidden ? 1 : 0);
+    }
+    if (input.status !== undefined) {
+      updates.push('status = ?');
+      params.push(input.status);
+    }
 
     if (updates.length > 0) {
       updates.push('updated_at = datetime(\'now\')');

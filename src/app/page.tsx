@@ -9,6 +9,20 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useLike } from '@/contexts/LikeContext';
 import { MOCK_STATS, MOCK_HACKATHONS, MOCK_PROJECTS, MOCK_BUILDERS } from '../data/mock';
 
+// Helper function to ensure tags_json is always an array
+const ensureTagsArray = (tags: any): string[] => {
+  if (Array.isArray(tags)) return tags;
+  if (typeof tags === 'string') {
+    try {
+      const parsed = JSON.parse(tags);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 export default function Home() {
   const { t } = useLanguage();
   const { isProjectLiked, toggleLikeProject, getProjectLikes } = useLike();
@@ -129,7 +143,7 @@ export default function Home() {
                       <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-small)', margin: '0 0 var(--sp-3) 0' }}>{hack.short_desc}</p>
 
                       <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-4)' }}>
-                        {hack.tags_json.map(tag => <Tag key={tag} label={tag} />)}
+                        {ensureTagsArray(hack.tags_json).map(tag => <Tag key={tag} label={tag} />)}
                       </div>
 
                       <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>

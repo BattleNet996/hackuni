@@ -1,6 +1,5 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { MOCK_PROJECTS, MOCK_STORIES } from '@/data/mock';
 
 interface LikeContextType {
   likedProjects: Set<string>;
@@ -14,6 +13,7 @@ interface LikeContextType {
   isCommentLiked: (id: string) => boolean;
   getProjectLikes: (id: string) => number;
   getStoryLikes: (id: string) => number;
+  refreshLikeCounts: () => Promise<void>;
 }
 
 const LikeContext = createContext<LikeContextType | undefined>(undefined);
@@ -24,14 +24,40 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
   const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
   const [mounted, setMounted] = useState(false);
 
-  // Initialize like counts from mock data (server and client consistent)
-  const [projectLikeCounts, setProjectLikeCounts] = useState<Record<string, number>>(() => {
-    return MOCK_PROJECTS.reduce((acc, proj) => ({ ...acc, [proj.id]: proj.like_count }), {});
-  });
+  // Initialize like counts from backend API
+  const [projectLikeCounts, setProjectLikeCounts] = useState<Record<string, number>>({});
+  const [storyLikeCounts, setStoryLikeCounts] = useState<Record<string, number>>({});
 
-  const [storyLikeCounts, setStoryLikeCounts] = useState<Record<string, number>>(() => {
-    return MOCK_STORIES.reduce((acc, story) => ({ ...acc, [story.id]: story.like_count }), {});
-  });
+  // Fetch like counts from backend
+  const refreshLikeCounts = async () => {
+    try {
+      // Fetch projects and stories to get their like counts
+      const [projectsRes, storiesRes] = await Promise.all([
+        fetch('/api/projects'),
+        fetch('/api/stories')
+      ]);
+
+      if (projectsRes.ok) {
+        const projectsData = await projectsRes.json();
+        const counts = projectsData.data?.reduce((acc: Record<string, number>, proj: any) => {
+          acc[proj.id] = proj.like_count || 0;
+          return acc;
+        }, {}) || {};
+        setProjectLikeCounts(counts);
+      }
+
+      if (storiesRes.ok) {
+        const storiesData = await storiesRes.json();
+        const counts = storiesData.data?.reduce((acc: Record<string, number>, story: any) => {
+          acc[story.id] = story.like_count || 0;
+          return acc;
+        }, {}) || {};
+        setStoryLikeCounts(counts);
+      }
+    } catch (error) {
+      console.error('Failed to fetch like counts:', error);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -40,14 +66,13 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
     const savedLikedProjects = localStorage.getItem('likedProjects');
     const savedLikedStories = localStorage.getItem('likedStories');
     const savedLikedComments = localStorage.getItem('likedComments');
-    const savedProjectCounts = localStorage.getItem('projectLikeCounts');
-    const savedStoryCounts = localStorage.getItem('storyLikeCounts');
 
     if (savedLikedProjects) setLikedProjects(new Set(JSON.parse(savedLikedProjects)));
     if (savedLikedStories) setLikedStories(new Set(JSON.parse(savedLikedStories)));
     if (savedLikedComments) setLikedComments(new Set(JSON.parse(savedLikedComments)));
-    if (savedProjectCounts) setProjectLikeCounts(JSON.parse(savedProjectCounts));
-    if (savedStoryCounts) setStoryLikeCounts(JSON.parse(savedStoryCounts));
+
+    // Fetch like counts from backend
+    refreshLikeCounts();
   }, []);
 
   useEffect(() => {
@@ -67,18 +92,6 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
     if (!mounted) return;
     localStorage.setItem('likedComments', JSON.stringify(Array.from(likedComments)));
   }, [likedComments, mounted]);
-
-  useEffect(() => {
-    // Persist like counts to localStorage only on client and after mounted
-    if (!mounted) return;
-    localStorage.setItem('projectLikeCounts', JSON.stringify(projectLikeCounts));
-  }, [projectLikeCounts, mounted]);
-
-  useEffect(() => {
-    // Persist like counts to localStorage only on client and after mounted
-    if (!mounted) return;
-    localStorage.setItem('storyLikeCounts', JSON.stringify(storyLikeCounts));
-  }, [storyLikeCounts, mounted]);
 
   const toggleLikeProject = async (id: string) => {
     try {
@@ -104,6 +117,16 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
         });
 
         setProjectLikeCounts(prev => ({ ...prev, [id]: count }));
+      } else if (response.status === 401) {
+        // User not logged in - redirect to login or show message
+        console.warn('Please login to like projects');
+        // Optionally trigger a login modal or redirect
+        if (typeof window !== 'undefined') {
+          const loginPrompt = confirm('Please login to like projects. Go to login page?');
+          if (loginPrompt) {
+            window.location.href = '/login';
+          }
+        }
       }
     } catch (error) {
       console.error('Toggle like error:', error);
@@ -134,6 +157,15 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
         });
 
         setStoryLikeCounts(prev => ({ ...prev, [id]: count }));
+      } else if (response.status === 401) {
+        // User not logged in - redirect to login or show message
+        console.warn('Please login to like stories');
+        if (typeof window !== 'undefined') {
+          const loginPrompt = confirm('Please login to like stories. Go to login page?');
+          if (loginPrompt) {
+            window.location.href = '/login';
+          }
+        }
       }
     } catch (error) {
       console.error('Toggle like error:', error);
@@ -172,6 +204,7 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
       isCommentLiked,
       getProjectLikes,
       getStoryLikes,
+      refreshLikeCounts,
     }}>
       {children}
     </LikeContext.Provider>

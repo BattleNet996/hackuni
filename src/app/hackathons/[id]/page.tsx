@@ -5,6 +5,7 @@ import { MOCK_HACKATHONS, MOCK_PROJECTS, MOCK_BUILDERS } from '@/data/mock';
 import { Tag } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { ensureTagsArray } from '@/lib/utils/data';
 
 export default function HackathonDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { t } = useLanguage();
@@ -50,7 +51,7 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
         <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-3)' }}>
-              {hack.tags_json.map((tag: string) => <Tag key={tag} label={tag} />)}
+              {ensureTagsArray(hack.tags_json).map((tag: string) => <Tag key={tag} label={tag} />)}
             </div>
             <h1 style={{ fontFamily: 'var(--font-hero)', fontSize: '64px', margin: 0, textTransform: 'uppercase', lineHeight: 1 }}>
               {hack.title}

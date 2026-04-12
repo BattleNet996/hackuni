@@ -76,16 +76,8 @@ export async function PATCH(
 
     const updateData = await request.json();
 
-    // Handle content field - don't map it to summary, keep them separate
-    // The database now has both summary and content fields
-    // Only map content to summary if summary is not provided
-    if (updateData.content !== undefined && !updateData.summary) {
-      updateData.summary = updateData.content;
-    } else if (updateData.description !== undefined && !updateData.summary) {
-      updateData.summary = updateData.description;
-    }
-
-    // Update story
+    // Update story - keep both summary and content separate
+    // The storyDAO.update() method now handles the content field properly
     const updatedStory = await storyDAO.update(storyId, updateData);
 
     if (!updatedStory) {
