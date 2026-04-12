@@ -98,6 +98,7 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
   const toggleLikeProject = async (id: string) => {
     // Check if user is logged in before making the request
     if (!user) {
+      console.log('[LikeContext] No user found in auth context');
       if (typeof window !== 'undefined') {
         const loginPrompt = confirm('Please login to like projects. Go to login page?');
         if (loginPrompt) {
@@ -106,6 +107,8 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
       }
       return;
     }
+
+    console.log('[LikeContext] User logged in:', user.id, user.email);
 
     try {
       const response = await fetch('/api/likes', {
@@ -116,6 +119,7 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
       });
 
       const data = await response.json();
+      console.log('[LikeContext] Response status:', response.status, data);
 
       if (response.ok && data.data) {
         const { liked, count } = data.data;
@@ -133,7 +137,7 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
         setProjectLikeCounts(prev => ({ ...prev, [id]: count }));
       } else if (response.status === 401) {
         // Token expired or invalid - user needs to login again
-        console.warn('Session expired. Please login again.');
+        console.warn('[LikeContext] Session expired. User needs to login again.');
         if (typeof window !== 'undefined') {
           alert('Your session has expired. Please login again.');
           // Clear local storage and redirect to login
@@ -142,10 +146,12 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
           window.location.href = '/login';
         }
       } else {
-        console.error('Like failed:', data.error?.message || 'Unknown error');
+        console.error('[LikeContext] Like failed:', data.error?.message || 'Unknown error');
+        alert(`Failed to like: ${data.error?.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Toggle like error:', error);
+      console.error('[LikeContext] Toggle like error:', error);
+      alert('Network error. Please try again.');
     }
   };
 
