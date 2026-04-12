@@ -6,23 +6,36 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "setup:db": "tsx scripts/setup-db.ts",
+    "reset:db": "tsx scripts/setup-db.ts --reset",
+    "migrate:supabase": "tsx scripts/migrate-to-supabase.ts",
+    "supabase:init": "tsx scripts/init-supabase.ts",
+    "clear:supabase": "tsx scripts/clear-supabase.ts",
+    "verify:supabase": "tsx scripts/verify-supabase.ts"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
+    "@supabase/supabase-js": "^2.103.0",
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.8.0",
+    "dotenv": "^16.6.1",
     "next": "16.2.2",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "three": "^0.183.2"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

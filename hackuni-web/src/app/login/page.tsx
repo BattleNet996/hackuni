@@ -14,6 +14,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -37,8 +38,34 @@ export default function LoginPage() {
     try {
       await login(email, password);
       router.push('/profile');
-    } catch (err) {
-      setError(language === 'zh' ? '登录失败，请重试' : 'Login failed, please try again');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      // Display specific error message from server or fallback message
+      const errorMessage = err?.message || err?.toString();
+
+      if (errorMessage) {
+        const lowerMessage = errorMessage.toLowerCase();
+
+        // Check for different error types
+        if (lowerMessage.includes('invalid credentials') ||
+            lowerMessage.includes('invalid_email') ||
+            lowerMessage.includes('invalid email or password')) {
+          setError(language === 'zh' ? '邮箱或密码错误' : 'Invalid email or password');
+        } else if (lowerMessage.includes('user_not_found') || lowerMessage.includes('user not found')) {
+          setError(language === 'zh' ? '用户不存在，请先注册' : 'User not found, please register first');
+        } else if (lowerMessage.includes('account_locked') || lowerMessage.includes('account locked')) {
+          setError(language === 'zh' ? '账户已被锁定，请联系管理员' : 'Account locked, please contact admin');
+        } else {
+          // Show the actual server message if it's short enough, otherwise fallback
+          if (errorMessage.length < 100) {
+            setError(errorMessage);
+          } else {
+            setError(language === 'zh' ? '登录失败，请重试' : 'Login failed, please try again');
+          }
+        }
+      } else {
+        setError(language === 'zh' ? '登录失败，请重试' : 'Login failed, please try again');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -108,26 +135,49 @@ export default function LoginPage() {
             }}>
               {t('auth.password')}
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              style={{
-                width: '100%',
-                padding: 'var(--sp-3)',
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border-base)',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--text-main)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '14px',
-                transition: 'border-color 0.2s ease'
-              }}
-              onFocus={(e) => e.target.style.borderColor = 'var(--brand-coral)'}
-              onBlur={(e) => e.target.style.borderColor = 'var(--border-base)'}
-              disabled={isLoading}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                style={{
+                  width: '100%',
+                  padding: 'var(--sp-3)',
+                  paddingRight: '40px',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-base)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--text-main)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '14px',
+                  transition: 'border-color 0.2s ease'
+                }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--brand-coral)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--border-base)'}
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  fontSize: '18px',
+                  padding: '5px',
+                  opacity: isLoading ? 0.5 : 1
+                }}
+              >
+                {showPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
+            </div>
           </div>
 
           {/* Error Message */}

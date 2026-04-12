@@ -1,89 +1,238 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 export interface Comment {
   id: string;
-  projectId: string;
-  storyId: string | null;
-  authorName: string;
+  project_id: string | null;
+  story_id: string | null;
+  author_id: string | null;
+  author_name: string;
   content: string;
-  createdAt: string;
+  created_at: string;
+  updated_at: string;
+  parent_comment_id: string | null;
   likes: number;
-  replies: Comment[];
+  replies?: Comment[];
 }
 
 interface CommentContextType {
   comments: Record<string, Comment[]>;
-  addComment: (comment: Omit<Comment, 'id' | 'createdAt' | 'likes' | 'replies'>) => void;
-  getProjectComments: (projectId: string) => Comment[];
-  getStoryComments: (storyId: string) => Comment[];
+  addComment: (comment: { project_id?: string; story_id?: string; content: string; parent_comment_id?: string }) => Promise<void>;
+  getProjectComments: (projectId: string) => Promise<Comment[]>;
+  getStoryComments: (storyId: string) => Promise<Comment[]>;
   getCommentCount: (projectId: string, storyId?: string) => number;
   likeComment: (commentId: string) => void;
+  deleteComment: (commentId: string) => Promise<void>;
+  unlike: (targetType: string, targetId: string) => Promise<void>;
+  isLoading: boolean;
 }
 
 const CommentContext = createContext<CommentContextType | undefined>(undefined);
 
 export function CommentProvider({ children }: { children: React.ReactNode }) {
-  const [comments, setComments] = useState<Record<string, Comment[]>>(() => {
-    // Load comments from localStorage (only on client)
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('comments');
-      return saved ? JSON.parse(saved) : {};
+  const [comments, setComments] = useState<Record<string, Comment[]>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
+
+  const addComment = async (comment: { project_id?: string; story_id?: string; content: string; parent_comment_id?: string }) => {
+    if (!user) {
+      throw new Error('You must be logged in to comment');
     }
-    return {};
-  });
 
-  useEffect(() => {
-    // Persist comments to localStorage (only on client)
-    if (typeof window === 'undefined') return;
-    localStorage.setItem('comments', JSON.stringify(comments));
-  }, [comments]);
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(comment),
+      });
 
-  const addComment = (comment: Omit<Comment, 'id' | 'createdAt' | 'likes' | 'replies'>) => {
-    const newComment: Comment = {
-      ...comment,
-      id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date().toISOString(),
-      likes: 0,
-      replies: [],
-    };
+      const data = await response.json();
 
-    const key = comment.storyId || comment.projectId;
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Failed to add comment');
+      }
 
-    setComments(prev => ({
-      ...prev,
-      [key]: [...(prev[key] || []), newComment],
-    }));
+      const newComment: Comment = data.data;
+      const key = comment.story_id || comment.project_id;
+
+      if (key) {
+        setComments(prev => ({
+          ...prev,
+          [key]: [...(prev[key] || []), newComment],
+        }));
+      }
+    } catch (error) {
+      console.error('Add comment error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const getProjectComments = (projectId: string): Comment[] => {
-    return comments[projectId] || [];
+  const getProjectComments = async (projectId: string): Promise<Comment[]> => {
+    const key = `project_${projectId}`;
+
+    // Return cached comments if available
+    if (comments[key]) {
+      return comments[key];
+    }
+
+    try {
+      const response = await fetch(`/api/comments?project_id=${projectId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        const commentsData: Comment[] = data.data;
+        setComments(prev => ({
+          ...prev,
+          [key]: commentsData,
+        }));
+        return commentsData;
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Get comments error:', error);
+      return [];
+    }
   };
 
-  const getStoryComments = (storyId: string): Comment[] => {
-    return comments[storyId] || [];
+  const getStoryComments = async (storyId: string): Promise<Comment[]> => {
+    const key = `story_${storyId}`;
+
+    // Return cached comments if available
+    if (comments[key]) {
+      return comments[key];
+    }
+
+    try {
+      const response = await fetch(`/api/comments?story_id=${storyId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        const commentsData: Comment[] = data.data;
+        setComments(prev => ({
+          ...prev,
+          [key]: commentsData,
+        }));
+        return commentsData;
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Get comments error:', error);
+      return [];
+    }
   };
 
   const getCommentCount = (projectId: string, storyId?: string): number => {
-    const key = storyId || projectId;
+    const key = storyId ? `story_${storyId}` : `project_${projectId}`;
     return (comments[key] || []).length;
   };
 
   const likeComment = (commentId: string) => {
+    // For now, keep local state management for comment likes
+    // Could be enhanced with API call in the future
     setComments(prev => {
       const newComments = { ...prev };
 
-      // Find and update the comment
       for (const key in newComments) {
         const comment = newComments[key].find(c => c.id === commentId);
         if (comment) {
           comment.likes += 1;
           break;
         }
+        // Check replies
+        if (newComments[key].some(c => c.replies?.some(r => r.id === commentId))) {
+          const parentComment = newComments[key].find(c => c.replies?.some(r => r.id === commentId));
+          if (parentComment?.replies) {
+            const reply = parentComment.replies.find(r => r.id === commentId);
+            if (reply) reply.likes += 1;
+          }
+          break;
+        }
       }
 
       return newComments;
     });
+  };
+
+  const deleteComment = async (commentId: string) => {
+    if (!user) {
+      throw new Error('You must be logged in to delete comments');
+    }
+
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Failed to delete comment');
+      }
+
+      // Remove comment from local state
+      setComments(prev => {
+        const newComments = { ...prev };
+
+        for (const key in newComments) {
+          newComments[key] = newComments[key].filter(c => c.id !== commentId);
+          // Also remove from replies
+          newComments[key] = newComments[key].map(c => ({
+            ...c,
+            replies: c.replies?.filter(r => r.id !== commentId) || [],
+          }));
+        }
+
+        return newComments;
+      });
+    } catch (error) {
+      console.error('Delete comment error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const unlike = async (targetType: string, targetId: string) => {
+    if (!user) {
+      throw new Error('You must be logged in to unlike');
+    }
+
+    try {
+      const response = await fetch('/api/likes/unlike', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ target_type: targetType, targetId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Failed to unlike');
+      }
+
+      return data.data;
+    } catch (error) {
+      console.error('Unlike error:', error);
+      throw error;
+    }
   };
 
   return (
@@ -94,6 +243,9 @@ export function CommentProvider({ children }: { children: React.ReactNode }) {
       getStoryComments,
       getCommentCount,
       likeComment,
+      deleteComment,
+      unlike,
+      isLoading,
     }}>
       {children}
     </CommentContext.Provider>

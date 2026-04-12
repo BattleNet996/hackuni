@@ -1,24 +1,50 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
-import { MOCK_PROJECTS, MOCK_HACKATHONS, MOCK_BUILDERS } from '@/data/mock';
+import { MOCK_HACKATHONS, MOCK_BUILDERS } from '@/data/mock';
 import { Tag, Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { EditProjectDialog } from '@/components/ui/EditProjectDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLike } from '@/contexts/LikeContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function GoatItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { isProjectLiked, toggleLikeProject, getProjectLikes } = useLike();
+  const { user } = useAuth();
   const [project, setProject] = React.useState<any>(null);
   const [comments, setComments] = React.useState<any[]>([]);
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
     params.then(resolvedParams => {
-      const foundProject = MOCK_PROJECTS.find(p => p.id === resolvedParams.id);
-      setProject(foundProject);
+      // Try to fetch project from API first
+      fetch(`/api/projects/${resolvedParams.id}`)
+        .then(res => {
+          if (!res.ok) {
+            throw new Error('Project not found');
+          }
+          return res.json();
+        })
+        .then(data => {
+          setProject(data.data);
+        })
+        .catch(err => {
+          console.error('Failed to fetch project from API:', err);
+          // Fallback to mock data
+          const { MOCK_PROJECTS } = require('@/data/mock');
+          const foundProject = MOCK_PROJECTS.find((p: any) => p.id === resolvedParams.id);
 
-      if (foundProject) {
+          if (foundProject) {
+            setProject(foundProject);
+          } else {
+            console.error('Project not found in mock data either');
+            setProject(null);
+          }
+        });
+
+      if (project) {
         setComments([
           {
             id: 1,
@@ -37,10 +63,12 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
     });
   }, [params]);
 
+  const isOwner = user && project && user.id === project.author_id;
+
   if (!project) return <main style={{ padding: 'var(--sp-8)', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>&gt; ERROR_404_NOT_FOUND_</main>;
 
   const relatedHackathon = MOCK_HACKATHONS[0];
-  const teamMembers = project.team_member_text.split(' @').filter((m: string) => m).map((m: string) => '@' + m);
+  const teamMembers = project.team_member_text?.split(' @').filter((m: string) => m).map((m: string) => '@' + m) || [];
 
   return (
     <main>
@@ -81,8 +109,17 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
               >
                 ▲ {getProjectLikes(project.id)}
               </Button>
-              <Button variant="primary">VISIT DEMO</Button>
-              <Button variant="ghost">GITHUB</Button>
+              <Button variant="primary">{t('goat_hunt.visit_demo')}</Button>
+              <Button variant="ghost">{t('goat_hunt.github')}</Button>
+              {isOwner && (
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsEditDialogOpen(true)}
+                  style={{ fontSize: '14px' }}
+                >
+                  {language === 'zh' ? '编辑项目' : 'Edit Project'}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -112,14 +149,14 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
                 justifyContent: 'center'
               }}>
                 <Button variant="primary" style={{ fontSize: '18px', padding: 'var(--sp-4) var(--sp-6)' }}>
-                  ▶ PLAY DEMO
+                  ▶ {t('goat_hunt.play_demo')}
                 </Button>
               </div>
             </div>
 
             {/* Description */}
             <div>
-              <h3 className="section-title" style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)', marginTop: 0 }}>README.md</h3>
+              <h3 className="section-title" style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)', marginTop: 0 }}>{t('goat_hunt.readme')}</h3>
               <div style={{ color: 'var(--text-main)', lineHeight: 1.8, marginBottom: 'var(--sp-6)' }}>
                 <p>
                   This is a groundbreaking project that pushes the boundaries of what's possible in a hackathon setting.
@@ -129,14 +166,14 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
                   The project leverages cutting-edge technologies and innovative approaches to deliver a seamless user experience.
                   Built during {relatedHackathon.title}, this prototype demonstrates the power of focused development and creative problem-solving.
                 </p>
-                <h4 style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--sp-4)', marginBottom: 'var(--sp-2)' }}>## Key Features</h4>
+                <h4 style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--sp-4)', marginBottom: 'var(--sp-2)' }}>## {t('goat_hunt.key_features')}</h4>
                 <ul style={{ paddingLeft: '20px' }}>
                   <li>Real-time data processing and visualization</li>
                   <li>Responsive design that works across all devices</li>
                   <li>Intuitive user interface with minimal learning curve</li>
                   <li>Scalable architecture ready for production deployment</li>
                 </ul>
-                <h4 style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--sp-4)', marginBottom: 'var(--sp-2)' }}>## Tech Stack</h4>
+                <h4 style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--sp-4)', marginBottom: 'var(--sp-2)' }}>## {t('goat_hunt.tech_stack')}</h4>
                 <p>Next.js, React, TypeScript, Three.js, Tailwind CSS, Supabase</p>
               </div>
             </div>
@@ -144,12 +181,12 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
             {/* Comments Section */}
             <div>
               <h3 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)', marginBottom: 'var(--sp-4)' }}>
-                COMMENTS ({comments.length})
+                {t('goat_hunt.comments')} ({comments.length})
               </h3>
 
               <div style={{ marginBottom: 'var(--sp-4)' }}>
                 <textarea
-                  placeholder="Share your thoughts..."
+                  placeholder={t('stories.share_your_thoughts')}
                   style={{
                     width: '100%',
                     minHeight: '80px',
@@ -212,7 +249,7 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
               background: 'var(--bg-card)',
               marginBottom: 'var(--sp-4)'
             }}>
-              <h4 style={{ fontFamily: 'var(--font-mono)', margin: '0 0 var(--sp-3) 0', color: 'var(--text-muted)' }}>// THE_MAKERS</h4>
+              <h4 style={{ fontFamily: 'var(--font-mono)', margin: '0 0 var(--sp-3) 0', color: 'var(--text-muted)' }}>// {t('goat_hunt.the_makers')}</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
                 {teamMembers.map((member: string) => (
                   <Link key={member} href={`/profile/${member.substring(1)}`} style={{ textDecoration: 'none' }}>
@@ -235,7 +272,7 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
 
               <div className="divider-dashed" style={{ margin: 'var(--sp-4) 0' }}></div>
 
-              <h4 style={{ fontFamily: 'var(--font-mono)', margin: '0 0 var(--sp-3) 0', color: 'var(--text-muted)' }}>// ORIGIN_POINT</h4>
+              <h4 style={{ fontFamily: 'var(--font-mono)', margin: '0 0 var(--sp-3) 0', color: 'var(--text-muted)' }}>// {t('goat_hunt.origin_point')}</h4>
               <Link href={`/hackathons/${relatedHackathon.id}`} style={{ textDecoration: 'none' }}>
                 <div style={{ cursor: 'pointer' }} className="hover-color">
                   <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--brand-coral)', fontSize: '14px', marginBottom: 'var(--sp-1)' }}>
@@ -256,7 +293,7 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
                 background: 'rgba(245, 107, 82, 0.1)',
                 marginBottom: 'var(--sp-4)'
               }}>
-                <h4 style={{ fontFamily: 'var(--font-mono)', margin: '0 0 var(--sp-2) 0', color: 'var(--brand-coral)' }}>// AWARD_WON</h4>
+                <h4 style={{ fontFamily: 'var(--font-mono)', margin: '0 0 var(--sp-2) 0', color: 'var(--brand-coral)' }}>// {t('goat_hunt.award_won')}</h4>
                 <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: 'var(--sp-1)' }}>
                   {project.award_text}
                 </div>
@@ -272,15 +309,30 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
               padding: 'var(--sp-4)',
               background: 'var(--bg-card)'
             }}>
-              <h4 style={{ fontFamily: 'var(--font-mono)', margin: '0 0 var(--sp-3) 0', color: 'var(--text-muted)' }}>// SHARE_THIS_PROJECT</h4>
+              <h4 style={{ fontFamily: 'var(--font-mono)', margin: '0 0 var(--sp-3) 0', color: 'var(--text-muted)' }}>// {t('goat_hunt.share_project')}</h4>
               <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
-                <Button variant="ghost" style={{ flex: 1, fontSize: '12px' }}>Twitter</Button>
-                <Button variant="ghost" style={{ flex: 1, fontSize: '12px' }}>Copy Link</Button>
+                <Button variant="ghost" style={{ flex: 1, fontSize: '12px' }}>{t('goat_hunt.share_twitter')}</Button>
+                <Button variant="ghost" style={{ flex: 1, fontSize: '12px' }}>{t('goat_hunt.copy_link')}</Button>
               </div>
             </div>
           </aside>
         </div>
       </div>
+
+      {/* Edit Project Dialog */}
+      <EditProjectDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        project={project}
+        onSuccess={() => {
+          // Refresh project data
+          params.then(resolvedParams => {
+            fetch(`/api/projects/${resolvedParams.id}`)
+              .then(res => res.json())
+              .then(data => setProject(data.data));
+          });
+        }}
+      />
     </main>
   );
 }

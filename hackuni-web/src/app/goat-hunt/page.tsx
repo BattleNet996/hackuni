@@ -6,23 +6,25 @@ import { HackerCard } from '@/components/ui/HackerCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLike } from '@/contexts/LikeContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function GoatHuntPage() {
+  const { t, language } = useLanguage();
   const { isProjectLiked, toggleLikeProject, getProjectLikes } = useLike();
 
   return (
     <main style={{ padding: 'var(--sp-8) var(--sp-6)', maxWidth: '1000px', margin: '0 auto' }}>
       <div style={{ textAlign: 'center', marginBottom: 'var(--sp-8)' }}>
         <h1 style={{ fontFamily: 'var(--font-hero)', fontSize: '64px', margin: 0, textTransform: 'uppercase' }}>
-          &gt; GOAT_Hunt
+          {t('goat_hunt.title')}
         </h1>
         <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: 'var(--sp-2)' }}>
-          Discover and upvote the most unhinged outlier engineering.
+          {t('goat_hunt.subtitle')}
         </p>
         <div style={{ marginTop: 'var(--sp-4)' }}>
           <Link href="/publish">
             <Button variant="primary" style={{ cursor: 'pointer' }}>
-              + Publish Project
+              + {t('goat_hunt.publish_project')}
             </Button>
           </Link>
         </div>

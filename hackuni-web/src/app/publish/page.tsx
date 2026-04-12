@@ -1,12 +1,14 @@
 'use client';
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { MOCK_HACKATHONS, MOCK_PROJECTS } from '@/data/mock';
+import { MOCK_HACKATHONS } from '@/data/mock';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function PublishProjectPage() {
   const { t, language } = useLanguage();
+  const { user } = useAuth();
   const router = useRouter();
   const [formData, setFormData] = React.useState({
     title: '',
@@ -23,49 +25,54 @@ export default function PublishProjectPage() {
   });
   const [submitting, setSubmitting] = React.useState(false);
   const [uploadedImages, setUploadedImages] = React.useState<string[]>([]);
+  const [message, setMessage] = React.useState('');
+
+  // Redirect if not logged in
+  React.useEffect(() => {
+    if (!user) {
+      router.push('/login');
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setMessage('');
 
-    // Create image placeholder for display
-    const imagePlaceholders = uploadedImages.map((_, index) => `[IMAGE:${index}]`);
-    const finalLongDesc = uploadedImages.length > 0
-      ? formData.long_desc + '\n\n[IMAGES]\n' + imagePlaceholders.join('\n')
-      : formData.long_desc;
-
-    // Create new project object
-    const newProject = {
-      id: `p${Date.now()}`,
-      title: formData.title,
-      short_desc: formData.short_desc,
-      long_desc: finalLongDesc,
-      images: uploadedImages, // Store actual base64 images separately
-      demo_url: formData.demo_url,
-      github_url: formData.github_url,
-      website_url: formData.website_url,
-      team_member_text: formData.team_name,
-      related_hackathon: formData.hackathon_id,
-      is_awarded: formData.is_awarded,
-      award_text: formData.award_text,
-      tags_json: formData.tags_json,
-      like_count: 0,
-      rank_score: MOCK_PROJECTS.length + 1,
-    };
-
-    // Save to localStorage
     try {
-      const savedProjects = localStorage.getItem('userPublishedProjects');
-      const projects = savedProjects ? JSON.parse(savedProjects) : [];
-      projects.push(newProject);
-      localStorage.setItem('userPublishedProjects', JSON.stringify(projects));
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: formData.title,
+          short_desc: formData.short_desc,
+          long_desc: formData.long_desc,
+          demo_url: formData.demo_url || null,
+          github_url: formData.github_url || null,
+          website_url: formData.website_url || null,
+          team_member_text: formData.team_name,
+          hackathon_id: formData.hackathon_id || null,
+          is_awarded: formData.is_awarded,
+          award_text: formData.award_text || null,
+          tags_json: formData.tags_json,
+          images: uploadedImages,
+        }),
+      });
 
-      // Show success message and redirect
-      alert(t('publish.success'));
-      router.push('/goat-hunt');
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage(language === 'zh' ? '发布成功！' : 'Published successfully!');
+        setTimeout(() => {
+          router.push('/goat-hunt');
+        }, 1500);
+      } else {
+        setMessage(data.error?.message || (language === 'zh' ? '发布失败' : 'Failed to publish'));
+      }
     } catch (error) {
-      console.error('Failed to save project:', error);
-      alert('Failed to save project. Please try again.');
+      console.error('Failed to publish project:', error);
+      setMessage(language === 'zh' ? '发布失败，请重试' : 'Failed to publish, please try again');
     }
 
     setSubmitting(false);
@@ -507,6 +514,23 @@ export default function PublishProjectPage() {
         </div>
 
         {/* Submit Button */}
+        {message && (
+          <div style={{
+            padding: 'var(--sp-3)',
+            borderRadius: 'var(--radius-sm)',
+            textAlign: 'center',
+            background: message.includes(language === 'zh' ? '成功' : 'success')
+              ? 'rgba(0, 255, 65, 0.1)'
+              : 'rgba(255, 65, 65, 0.1)',
+            color: message.includes(language === 'zh' ? '成功' : 'success')
+              ? 'var(--brand-green)'
+              : 'var(--brand-coral)',
+            fontSize: '14px',
+            fontFamily: 'var(--font-mono)',
+          }}>
+            {message}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: 'var(--sp-3)', justifyContent: 'flex-end', marginTop: 'var(--sp-4)' }}>
           <Button
             type="button"

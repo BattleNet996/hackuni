@@ -16,8 +16,26 @@ export function CommentDialog({ isOpen, onClose, projectId, storyId }: CommentDi
   const { user } = useAuth();
   const { addComment, getProjectComments, getStoryComments, likeComment } = useComment();
   const [newComment, setNewComment] = useState('');
+  const [comments, setComments] = useState<any[]>([]);
 
-  const comments = projectId ? getProjectComments(projectId) : getStoryComments(storyId!);
+  // Fetch comments when dialog opens or project/story changes
+  React.useEffect(() => {
+    if (isOpen) {
+      const fetchComments = async () => {
+        try {
+          const commentData = projectId
+            ? await getProjectComments(projectId)
+            : await getStoryComments(storyId!);
+          setComments(commentData);
+        } catch (error) {
+          console.error('Failed to fetch comments:', error);
+          setComments([]);
+        }
+      };
+
+      fetchComments();
+    }
+  }, [isOpen, projectId, storyId, getProjectComments, getStoryComments]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,9 +47,8 @@ export function CommentDialog({ isOpen, onClose, projectId, storyId }: CommentDi
     }
 
     addComment({
-      projectId: projectId || '',
-      storyId: storyId || null,
-      authorName: user.display_name || 'Anonymous',
+      project_id: projectId || '',
+      story_id: storyId || undefined,
       content: newComment,
     });
 

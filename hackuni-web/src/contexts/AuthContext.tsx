@@ -55,26 +55,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-      // Mock login - in production, this would call a real API
-      const mockUser: UserProfile = {
-        id: 'u_' + Date.now(),
-        email: email,
-        display_name: email.split('@')[0],
-        bio: '',
-        looking_for: [],
-        total_hackathon_count: 0,
-        total_work_count: 0,
-        total_award_count: 0,
-        badge_count: 0,
-        certification_count: 0,
-      };
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Login failed');
+      }
+
+      const { user, token } = data.data;
 
       // Store user in localStorage
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+      setUser(user);
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -86,26 +84,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (email: string, password: string, displayName?: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, display_name: displayName }),
+      });
 
-      // Mock registration - in production, this would call a real API
-      const mockUser: UserProfile = {
-        id: 'u_' + Date.now(),
-        email: email,
-        display_name: displayName || email.split('@')[0],
-        bio: '',
-        looking_for: [],
-        total_hackathon_count: 0,
-        total_work_count: 0,
-        total_award_count: 0,
-        badge_count: 0,
-        certification_count: 0,
-      };
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Registration failed');
+      }
+
+      const { user, token } = data.data;
 
       // Store user in localStorage
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+      setUser(user);
     } catch (error) {
       console.error('Registration failed:', error);
       throw error;
@@ -114,9 +110,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      setUser(null);
+    }
   };
 
   const updateProfile = (data: Partial<UserProfile>) => {

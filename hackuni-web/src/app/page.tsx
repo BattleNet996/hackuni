@@ -113,32 +113,34 @@ export default function Home() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
               {featuredHackathons.map(hack => (
-                <HackerCard key={hack.id} className="responsive-flex-col desktop-row" style={{ gap: 'var(--sp-4)' }}>
-                  <div style={{
-                    width: '150px', height: '150px',
-                    background: `url(https://picsum.photos/seed/${hack.id}/300/300) center/cover`,
-                    border: '1px solid var(--border-base)', flexShrink: 0
-                  }} className="hover-color">
-                  </div>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h3 style={{ margin: '0 0 var(--sp-2) 0', fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)' }}>{hack.title}</h3>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '16px', color: 'var(--brand-coral)' }}>{hack.level_score}</div>
+                <Link key={hack.id} href={`/hackathons/${hack.id}`} style={{ textDecoration: 'none' }}>
+                  <HackerCard className="responsive-flex-col desktop-row" style={{ gap: 'var(--sp-4)', cursor: 'pointer' }}>
+                    <div style={{
+                      width: '150px', height: '150px',
+                      background: `url(https://picsum.photos/seed/${hack.id}/300/300) center/cover`,
+                      border: '1px solid var(--border-base)', flexShrink: 0
+                    }} className="hover-color">
                     </div>
-                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-small)', margin: '0 0 var(--sp-3) 0' }}>{hack.short_desc}</p>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <h3 style={{ margin: '0 0 var(--sp-2) 0', fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)', color: 'var(--text-main)' }}>{hack.title}</h3>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '16px', color: 'var(--brand-coral)' }}>{hack.level_score}</div>
+                      </div>
+                      <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-small)', margin: '0 0 var(--sp-3) 0' }}>{hack.short_desc}</p>
 
-                    <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-4)' }}>
-                      {hack.tags_json.map(tag => <Tag key={tag} label={tag} />)}
-                    </div>
+                      <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-4)' }}>
+                        {hack.tags_json.map(tag => <Tag key={tag} label={tag} />)}
+                      </div>
 
-                    <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-                      <span>{t('hackathon.location')}: {hack.city}, {hack.country}</span>
-                      <span style={{ color: hack.registration_status === t('status.registration_open') ? 'var(--brand-coral)' : 'var(--text-disabled)' }}>
-                        {t('hackathon.status')}: {hack.registration_status}
-                      </span>
+                      <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+                        <span>{t('hackathon.location')}: {hack.city}, {hack.country}</span>
+                        <span style={{ color: hack.registration_status === t('status.registration_open') ? 'var(--brand-coral)' : 'var(--text-disabled)' }}>
+                          {t('hackathon.status')}: {hack.registration_status}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </HackerCard>
+                  </HackerCard>
+                </Link>
               ))}
             </div>
           </section>
@@ -155,28 +157,34 @@ export default function Home() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
               {trendingProjects.map(proj => (
-                <HackerCard key={proj.id} className="responsive-flex-col desktop-row" style={{ alignItems: 'center', gap: 'var(--sp-4)', padding: 'var(--sp-3)' }}>
-                  <div style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--text-muted)', width: '40px', textAlign: 'center' }}>
-                    {proj.rank_score}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ margin: '0 0 4px 0', fontFamily: 'var(--font-hero)', fontSize: '18px' }}>{proj.title}</h4>
-                    <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-muted)' }}>{proj.short_desc}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-                      <span style={{ color: 'var(--brand-coral)' }}>{proj.team_member_text}</span>
-                      {proj.is_awarded && <Badge type="award" label={proj.award_text} style={{ transform: 'scale(0.8)', transformOrigin: 'left center' }} />}
+                <Link key={proj.id} href={`/goat-hunt/${proj.id}`} style={{ textDecoration: 'none' }}>
+                  <HackerCard className="responsive-flex-col desktop-row" style={{ alignItems: 'center', gap: 'var(--sp-4)', padding: 'var(--sp-3)', cursor: 'pointer' }}>
+                    <div style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--text-muted)', width: '40px', textAlign: 'center' }}>
+                      {proj.rank_score}
                     </div>
-                  </div>
-                  <div>
-                    <Button
-                      variant={isProjectLiked(proj.id) ? 'upvote-active' : 'upvote'}
-                      onClick={() => toggleLikeProject(proj.id)}
-                      style={{ padding: '8px', minWidth: '50px', textAlign: 'center', cursor: 'pointer' }}
-                    >
-                      ▲<br/>{getProjectLikes(proj.id)}
-                    </Button>
-                  </div>
-                </HackerCard>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: '0 0 4px 0', fontFamily: 'var(--font-hero)', fontSize: '18px', color: 'var(--text-main)' }}>{proj.title}</h4>
+                      <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-muted)' }}>{proj.short_desc}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+                        <span style={{ color: 'var(--brand-coral)' }}>{proj.team_member_text}</span>
+                        {proj.is_awarded && <Badge type="award" label={proj.award_text} style={{ transform: 'scale(0.8)', transformOrigin: 'left center' }} />}
+                      </div>
+                    </div>
+                    <div style={{ pointerEvents: 'auto' }}>
+                      <Button
+                        variant={isProjectLiked(proj.id) ? 'upvote-active' : 'upvote'}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleLikeProject(proj.id);
+                        }}
+                        style={{ padding: '8px', minWidth: '50px', textAlign: 'center', cursor: 'pointer' }}
+                      >
+                        ▲<br/>{getProjectLikes(proj.id)}
+                      </Button>
+                    </div>
+                  </HackerCard>
+                </Link>
               ))}
             </div>
           </section>
@@ -185,31 +193,33 @@ export default function Home() {
           <section>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'var(--sp-4)' }}>
               <h2 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h2)', margin: 0, textTransform: 'uppercase' }}>
-                &gt; GOAT_Builders
+                &gt; {t('home.goat_builders')}
               </h2>
             </div>
             <div className="divider-dashed" style={{ marginBottom: 'var(--sp-5)' }}></div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
               {topBuilders.map(builder => (
-                <HackerCard key={builder.id} style={{ padding: 'var(--sp-3)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
-                    <div style={{
-                      width: '50px', height: '50px',
-                      background: `url(https://picsum.photos/seed/${builder.id}/100/100) center/cover`,
-                      borderRadius: '50%',
-                      border: '2px solid var(--brand-coral)'
-                    }}></div>
-                    <div style={{ flex: 1 }}>
-                      <h4 style={{ margin: '0 0 4px 0', fontFamily: 'var(--font-hero)', fontSize: '16px' }}>{builder.display_name}</h4>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: 'var(--text-muted)' }}>{builder.bio}</p>
-                      <div style={{ display: 'flex', gap: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
-                        <span style={{ color: 'var(--brand-green)' }}>{builder.total_work_count} {t('profile.projects')}</span>
-                        <span style={{ color: 'var(--brand-coral)' }}>{builder.total_award_count} {t('profile.awards')}</span>
+                <Link key={builder.id} href={`/profile/${builder.id}`} style={{ textDecoration: 'none' }}>
+                  <HackerCard style={{ padding: 'var(--sp-3)', cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+                      <div style={{
+                        width: '50px', height: '50px',
+                        background: `url(https://picsum.photos/seed/${builder.id}/100/100) center/cover`,
+                        borderRadius: '50%',
+                        border: '2px solid var(--brand-coral)'
+                      }}></div>
+                      <div style={{ flex: 1 }}>
+                        <h4 style={{ margin: '0 0 4px 0', fontFamily: 'var(--font-hero)', fontSize: '16px', color: 'var(--text-main)' }}>{builder.display_name}</h4>
+                        <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: 'var(--text-muted)' }}>{builder.bio}</p>
+                        <div style={{ display: 'flex', gap: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
+                          <span style={{ color: 'var(--brand-green)' }}>{builder.total_work_count} {t('profile.projects')}</span>
+                          <span style={{ color: 'var(--brand-coral)' }}>{builder.total_award_count} {t('profile.awards')}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </HackerCard>
+                  </HackerCard>
+                </Link>
               ))}
             </div>
           </section>
