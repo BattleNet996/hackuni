@@ -8,14 +8,14 @@ interface Story {
   slug: string;
   title: string;
   summary: string;
-  content?: string;
-  source?: string;
-  source_url?: string;
+  content?: string | null;
+  source?: string | null;
+  source_url?: string | null;
   author_name: string;
   tags_json?: string | string[];
   published_at?: string;
   status?: string;
-  hidden?: number;
+  hidden?: number | boolean;
 }
 
 interface EditStoryDialogProps {
@@ -35,6 +35,7 @@ export function EditStoryDialog({ isOpen, onClose, story, onSuccess }: EditStory
     if (story) {
       setFormData({
         ...story,
+        hidden: typeof story.hidden === 'boolean' ? (story.hidden ? 1 : 0) : (story.hidden || 0),
         tags_json: Array.isArray(story.tags_json)
           ? story.tags_json.join(', ')
           : story.tags_json || ''
@@ -213,7 +214,7 @@ export function EditStoryDialog({ isOpen, onClose, story, onSuccess }: EditStory
               </label>
               <select
                 name="hidden"
-                value={formData.hidden || 0}
+                value={formData.hidden ? 1 : 0}
                 onChange={(e) => setFormData(prev => ({ ...prev, hidden: parseInt(e.target.value) }))}
                 style={{ width: '100%', padding: 'var(--sp-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', borderRadius: '4px', color: 'var(--text-main)' }}
               >

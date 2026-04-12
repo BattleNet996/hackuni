@@ -43,13 +43,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       try {
-        setUser(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser);
+        // Verify the session is still valid by checking with the server
+        fetch('/api/auth/verify', {
+          credentials: 'include',
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.data) {
+              setUser(parsedUser);
+            } else {
+              // Session is invalid, clear local storage
+              console.log('[AuthContext] Session invalid, clearing local storage');
+              localStorage.removeItem('user');
+              localStorage.removeItem('token');
+              setUser(null);
+            }
+            setIsLoading(false);
+          })
+          .catch(err => {
+            console.error('[AuthContext] Verification failed:', err);
+            // On error, still set the user from localStorage
+            // but the user might encounter auth issues on API calls
+            setUser(parsedUser);
+            setIsLoading(false);
+          });
       } catch (error) {
         console.error('Failed to parse user data:', error);
         localStorage.removeItem('user');
+        setIsLoading(false);
       }
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -58,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Important: include cookies
         body: JSON.stringify({ email, password }),
       });
 
@@ -69,9 +96,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { user, token } = data.data;
 
+      console.log('[AuthContext] Login successful:', user.id);
+
       // Store user in localStorage
       localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('token', token);
+      localStorage.setItem('token', token); // Keep token for potential fallback use
       setUser(user);
     } catch (error) {
       console.error('Login failed:', error);

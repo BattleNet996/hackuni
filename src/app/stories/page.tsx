@@ -7,6 +7,7 @@ import { Tag } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLike } from '@/contexts/LikeContext';
+import { ensureTagsArray } from '@/lib/utils/data';
 
 export default function StoriesPage() {
   const { t, language } = useLanguage();
@@ -14,11 +15,11 @@ export default function StoriesPage() {
   const [filterTag, setFilterTag] = React.useState<string | null>(null);
 
   // Get all unique tags
-  const allTags = Array.from(new Set(MOCK_STORIES.flatMap(s => s.tags_json)));
+  const allTags = Array.from(new Set(MOCK_STORIES.flatMap(s => ensureTagsArray(s.tags_json))));
 
   // Filter stories by tag
   const filteredStories = filterTag
-    ? MOCK_STORIES.filter(story => story.tags_json.includes(filterTag))
+    ? MOCK_STORIES.filter(story => ensureTagsArray(story.tags_json).includes(filterTag))
     : MOCK_STORIES;
 
   return (
@@ -124,7 +125,7 @@ export default function StoriesPage() {
                 </p>
 
                 <div style={{ marginTop: 'auto', display: 'flex', gap: 'var(--sp-2)', alignItems: 'center', flexWrap: 'wrap' }}>
-                  {story.tags_json.map(tag => (
+                  {ensureTagsArray(story.tags_json).map(tag => (
                     <button
                       key={tag}
                       onClick={() => setFilterTag(filterTag === tag ? null : tag)}

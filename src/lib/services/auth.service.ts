@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 import bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import { generateToken, verifyToken as verifyJwtToken } from '../auth/jwt';
 import { UserDAO } from '../dao/users';
 
 export interface AuthTokens {
@@ -42,7 +42,8 @@ export class AuthService {
       display_name: displayName
     });
 
-    const token = this.generateToken(user.id);
+    // Generate JWT token (no database storage needed)
+    const token = generateToken(user.id);
 
     return {
       user: this.sanitizeUser(user),
@@ -70,7 +71,8 @@ export class AuthService {
       throw new Error('INVALID_CREDENTIALS');
     }
 
-    const token = this.generateToken(user.id);
+    // Generate JWT token (no database storage needed)
+    const token = generateToken(user.id);
 
     return {
       user: this.sanitizeUser(user),
@@ -79,40 +81,43 @@ export class AuthService {
   }
 
   /**
-   * Verify token and get user
+   * Verify token and get user using JWT
    */
   verifyToken(token: string): Omit<User, 'password_hash'> | null {
-    const db = this.userDAO['db']; // Access private property
-    const stmt = db.prepare(`
-      SELECT u.*, s.expires_at
-      FROM sessions s
-      JOIN users u ON s.user_id = u.id
-      WHERE s.token = ? AND s.expires_at > datetime('now')
-    `);
+    // Verify JWT token
+    const verified = verifyJwtToken(token);
 
-    const result = stmt.get(token) as any;
-
-    if (!result) {
+    if (!verified) {
       return null;
     }
 
-    return this.sanitizeUser(result);
+    // Get user from database
+    const user = this.userDAO.findById(verified.userId);
+
+    if (!user) {
+      return null;
+    }
+
+    return this.sanitizeUser(user);
   }
 
   /**
    * Logout user (invalidate token)
+   * Note: JWT tokens cannot be invalidated, but this is handled by cookie expiration
    */
   logout(token: string): void {
+    // For JWT, we just clear the cookie on the client side
+    // The token will expire automatically after 30 days
     const db = this.userDAO['db'];
     const stmt = db.prepare('DELETE FROM sessions WHERE token = ?');
     stmt.run(token);
   }
 
   /**
-   * Generate authentication token
+   * Generate authentication token (deprecated, kept for compatibility)
    */
   private generateToken(userId: string): string {
-    const token = randomBytes(32).toString('hex');
+    const token = require('crypto').randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
     const db = this.userDAO['db'];

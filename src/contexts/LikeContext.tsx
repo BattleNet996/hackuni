@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { MOCK_PROJECTS, MOCK_STORIES } from '@/data/mock';
+import { useAuth } from './AuthContext';
 
 interface LikeContextType {
   likedProjects: Set<string>;
@@ -14,24 +14,52 @@ interface LikeContextType {
   isCommentLiked: (id: string) => boolean;
   getProjectLikes: (id: string) => number;
   getStoryLikes: (id: string) => number;
+  refreshLikeCounts: () => Promise<void>;
 }
 
 const LikeContext = createContext<LikeContextType | undefined>(undefined);
 
 export function LikeProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [likedProjects, setLikedProjects] = useState<Set<string>>(new Set());
   const [likedStories, setLikedStories] = useState<Set<string>>(new Set());
   const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
   const [mounted, setMounted] = useState(false);
 
-  // Initialize like counts from mock data (server and client consistent)
-  const [projectLikeCounts, setProjectLikeCounts] = useState<Record<string, number>>(() => {
-    return MOCK_PROJECTS.reduce((acc, proj) => ({ ...acc, [proj.id]: proj.like_count }), {});
-  });
+  // Initialize like counts from backend API
+  const [projectLikeCounts, setProjectLikeCounts] = useState<Record<string, number>>({});
+  const [storyLikeCounts, setStoryLikeCounts] = useState<Record<string, number>>({});
 
-  const [storyLikeCounts, setStoryLikeCounts] = useState<Record<string, number>>(() => {
-    return MOCK_STORIES.reduce((acc, story) => ({ ...acc, [story.id]: story.like_count }), {});
-  });
+  // Fetch like counts from backend
+  const refreshLikeCounts = async () => {
+    try {
+      // Fetch projects and stories to get their like counts
+      const [projectsRes, storiesRes] = await Promise.all([
+        fetch('/api/projects'),
+        fetch('/api/stories')
+      ]);
+
+      if (projectsRes.ok) {
+        const projectsData = await projectsRes.json();
+        const counts = projectsData.data?.reduce((acc: Record<string, number>, proj: any) => {
+          acc[proj.id] = proj.like_count || 0;
+          return acc;
+        }, {}) || {};
+        setProjectLikeCounts(counts);
+      }
+
+      if (storiesRes.ok) {
+        const storiesData = await storiesRes.json();
+        const counts = storiesData.data?.reduce((acc: Record<string, number>, story: any) => {
+          acc[story.id] = story.like_count || 0;
+          return acc;
+        }, {}) || {};
+        setStoryLikeCounts(counts);
+      }
+    } catch (error) {
+      console.error('Failed to fetch like counts:', error);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -40,14 +68,13 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
     const savedLikedProjects = localStorage.getItem('likedProjects');
     const savedLikedStories = localStorage.getItem('likedStories');
     const savedLikedComments = localStorage.getItem('likedComments');
-    const savedProjectCounts = localStorage.getItem('projectLikeCounts');
-    const savedStoryCounts = localStorage.getItem('storyLikeCounts');
 
     if (savedLikedProjects) setLikedProjects(new Set(JSON.parse(savedLikedProjects)));
     if (savedLikedStories) setLikedStories(new Set(JSON.parse(savedLikedStories)));
     if (savedLikedComments) setLikedComments(new Set(JSON.parse(savedLikedComments)));
-    if (savedProjectCounts) setProjectLikeCounts(JSON.parse(savedProjectCounts));
-    if (savedStoryCounts) setStoryLikeCounts(JSON.parse(savedStoryCounts));
+
+    // Fetch like counts from backend
+    refreshLikeCounts();
   }, []);
 
   useEffect(() => {
@@ -68,27 +95,31 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('likedComments', JSON.stringify(Array.from(likedComments)));
   }, [likedComments, mounted]);
 
-  useEffect(() => {
-    // Persist like counts to localStorage only on client and after mounted
-    if (!mounted) return;
-    localStorage.setItem('projectLikeCounts', JSON.stringify(projectLikeCounts));
-  }, [projectLikeCounts, mounted]);
-
-  useEffect(() => {
-    // Persist like counts to localStorage only on client and after mounted
-    if (!mounted) return;
-    localStorage.setItem('storyLikeCounts', JSON.stringify(storyLikeCounts));
-  }, [storyLikeCounts, mounted]);
-
   const toggleLikeProject = async (id: string) => {
+    // Check if user is logged in before making the request
+    if (!user) {
+      console.log('[LikeContext] No user found in auth context');
+      if (typeof window !== 'undefined') {
+        const loginPrompt = confirm('Please login to like projects. Go to login page?');
+        if (loginPrompt) {
+          window.location.href = '/login';
+        }
+      }
+      return;
+    }
+
+    console.log('[LikeContext] User logged in:', user.id, user.email);
+
     try {
       const response = await fetch('/api/likes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies in the request
         body: JSON.stringify({ target_type: 'project', target_id: id }),
       });
 
       const data = await response.json();
+      console.log('[LikeContext] Response status:', response.status, data);
 
       if (response.ok && data.data) {
         const { liked, count } = data.data;
@@ -104,17 +135,43 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
         });
 
         setProjectLikeCounts(prev => ({ ...prev, [id]: count }));
+      } else if (response.status === 401) {
+        // Token expired or invalid - user needs to login again
+        console.warn('[LikeContext] Session expired. User needs to login again.');
+        if (typeof window !== 'undefined') {
+          alert('Your session has expired. Please login again.');
+          // Clear local storage and redirect to login
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        }
+      } else {
+        console.error('[LikeContext] Like failed:', data.error?.message || 'Unknown error');
+        alert(`Failed to like: ${data.error?.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Toggle like error:', error);
+      console.error('[LikeContext] Toggle like error:', error);
+      alert('Network error. Please try again.');
     }
   };
 
   const toggleLikeStory = async (id: string) => {
+    // Check if user is logged in before making the request
+    if (!user) {
+      if (typeof window !== 'undefined') {
+        const loginPrompt = confirm('Please login to like stories. Go to login page?');
+        if (loginPrompt) {
+          window.location.href = '/login';
+        }
+      }
+      return;
+    }
+
     try {
       const response = await fetch('/api/likes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies in the request
         body: JSON.stringify({ target_type: 'story', target_id: id }),
       });
 
@@ -134,6 +191,18 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
         });
 
         setStoryLikeCounts(prev => ({ ...prev, [id]: count }));
+      } else if (response.status === 401) {
+        // Token expired or invalid - user needs to login again
+        console.warn('Session expired. Please login again.');
+        if (typeof window !== 'undefined') {
+          alert('Your session has expired. Please login again.');
+          // Clear local storage and redirect to login
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        }
+      } else {
+        console.error('Like failed:', data.error?.message || 'Unknown error');
       }
     } catch (error) {
       console.error('Toggle like error:', error);
@@ -172,6 +241,7 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
       isCommentLiked,
       getProjectLikes,
       getStoryLikes,
+      refreshLikeCounts,
     }}>
       {children}
     </LikeContext.Provider>
