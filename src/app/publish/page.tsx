@@ -138,17 +138,17 @@ export default function PublishProjectPage() {
   };
 
   return (
-    <main style={{ padding: 'var(--sp-8) var(--sp-6)', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', marginBottom: 'var(--sp-8)' }}>
-        <h1 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h1)', margin: 0, textTransform: 'uppercase' }}>
+    <main style={{ padding: 'var(--sp-6) var(--sp-4)', maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ textAlign: 'center', marginBottom: 'var(--sp-6)' }}>
+        <h1 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h2)', margin: 0, textTransform: 'uppercase' }}>
           &gt; {t('publish.title')}
         </h1>
-        <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: 'var(--sp-2)' }}>
+        <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: 'var(--sp-2)', fontSize: '13px' }}>
           {t('publish.subtitle')}
         </p>
       </div>
 
-      <div className="divider-dashed" style={{ marginBottom: 'var(--sp-6)' }}></div>
+      <div className="divider-dashed" style={{ marginBottom: 'var(--sp-5)' }}></div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-5)' }}>
         {/* Project Title */}
@@ -350,7 +350,7 @@ export default function PublishProjectPage() {
         </div>
 
         {/* Links */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--sp-4)' }} className="links-grid">
           <div>
             <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)', marginBottom: 'var(--sp-2)' }}>
               {t('publish.demo_url')}
@@ -530,13 +530,13 @@ export default function PublishProjectPage() {
             {message}
           </div>
         )}
-        <div style={{ display: 'flex', gap: 'var(--sp-3)', justifyContent: 'flex-end', marginTop: 'var(--sp-4)' }}>
+        <div style={{ display: 'flex', gap: 'var(--sp-3)', justifyContent: 'flex-end', marginTop: 'var(--sp-4)', flexWrap: 'wrap' }} className="button-group">
           <Button
             type="button"
             variant="ghost"
             onClick={() => router.back()}
             disabled={submitting}
-            style={{ cursor: 'pointer' }}
+            style={{ cursor: 'pointer', flex: 1, minWidth: '120px' }}
           >
             {t('common.cancel')}
           </Button>
@@ -544,12 +544,23 @@ export default function PublishProjectPage() {
             type="submit"
             variant="primary"
             disabled={submitting}
-            style={{ cursor: submitting ? 'not-allowed' : 'pointer' }}
+            style={{ cursor: submitting ? 'not-allowed' : 'pointer', flex: 1, minWidth: '120px' }}
           >
             {submitting ? t('publish.publishing') : t('common.submit')}
           </Button>
         </div>
       </form>
+
+      <style jsx>{`
+        @media (min-width: 769px) {
+          .links-grid {
+            grid-template-columns: 1fr 1fr !important;
+          }
+          .button-group {
+            flex-wrap: nowrap !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }

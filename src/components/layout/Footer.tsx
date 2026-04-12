@@ -10,18 +10,19 @@ export function Footer() {
   return (
     <footer style={{
       borderTop: '1px dashed var(--border-base)',
-      padding: 'var(--sp-6) var(--sp-6)',
+      padding: 'var(--sp-6) var(--sp-4)',
       marginTop: 'auto',
       display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      flexDirection: 'column',
+      gap: 'var(--sp-4)',
       fontFamily: 'var(--font-mono)',
-      fontSize: 'var(--text-caption)'
+      fontSize: 'var(--text-caption)',
+      alignItems: 'center'
     }}>
-      <div style={{ color: 'var(--text-muted)' }}>
+      <div style={{ color: 'var(--text-muted)', textAlign: 'center' }}>
         © 2024-{new Date().getFullYear()} AttraX. {language === 'zh' ? '保留所有权利' : 'All rights reserved.'}
       </div>
-      <div style={{ display: 'flex', gap: 'var(--sp-4)', color: 'var(--text-muted)' }}>
+      <div style={{ display: 'flex', gap: 'var(--sp-4)', color: 'var(--text-muted)', flexWrap: 'wrap', justifyContent: 'center' }}>
         <Link href="https://github.com/attrax-dev" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
           <span style={{ cursor: 'pointer' }}>GITHUB</span>
         </Link>

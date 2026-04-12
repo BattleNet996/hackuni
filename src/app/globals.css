@@ -51,6 +51,7 @@ body {
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 * {
@@ -62,21 +63,79 @@ a {
   text-decoration: none;
 }
 
+/* Mobile-first responsive styles */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+button, a {
+  touch-action: manipulation;
+  min-touch-target: 44px;
+}
+
+/* Scrollbar styling for better mobile UX */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-base);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
 /* ── Responsive Overrides ───────────────────── */
 @media (max-width: 768px) {
   :root {
     /* Scale down spacing */
-    --sp-8: 40px;
-    --sp-6: 32px;
-    --sp-5: 24px;
+    --sp-8: 32px;
+    --sp-6: 24px;
+    --sp-5: 20px;
     --sp-4: 16px;
     --sp-3: 12px;
+    --sp-2: 8px;
 
     /* Scale down typography */
-    --text-display: 48px;
-    --text-h1: 36px;
-    --text-h2: 24px;
-    --text-h3: 20px;
+    --text-display: 36px;
+    --text-h1: 28px;
+    --text-h2: 22px;
+    --text-h3: 18px;
     --text-body: 15px;
+  }
+
+  /* Reduce padding on mobile */
+  body {
+    font-size: 15px;
+  }
+
+  /* Improve touch targets */
+  button, .btn-primary, .btn-ghost, .btn-upvote {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  /* Hide non-critical elements on very small screens */
+  @media (max-width: 480px) {
+    :root {
+      --text-h1: 24px;
+      --text-h2: 20px;
+      --text-h3: 16px;
+    }
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root {
+    --text-h1: 40px;
+    --text-h2: 28px;
   }
 }
