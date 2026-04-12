@@ -37,7 +37,12 @@ export async function GET(request: NextRequest) {
 // POST /api/projects - Create new project
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth_token')?.value;
+    const token = request.cookies.get('auth_token')?.value ||
+                 request.headers.get('authorization')?.replace('Bearer ', '') ||
+                 request.headers.get('x-auth-token');
+
+    console.log('[Projects API] Token from cookie:', !!request.cookies.get('auth_token')?.value);
+    console.log('[Projects API] Token from header:', !!request.headers.get('authorization') || !!request.headers.get('x-auth-token'));
 
     if (!token) {
       return NextResponse.json(

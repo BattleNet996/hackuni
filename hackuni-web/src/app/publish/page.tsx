@@ -5,6 +5,7 @@ import { MOCK_HACKATHONS } from '@/data/mock';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { apiFetch } from '@/lib/api-client';
 
 export default function PublishProjectPage() {
   const { t, language } = useLanguage();
@@ -40,10 +41,8 @@ export default function PublishProjectPage() {
     setMessage('');
 
     try {
-      const response = await fetch('/api/projects', {
+      const response = await apiFetch('/api/projects', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           title: formData.title,
           short_desc: formData.short_desc,
