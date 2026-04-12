@@ -28,7 +28,14 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
           return res.json();
         })
         .then(data => {
-          setProject(data.data);
+          // Ensure tags_json is an array
+          const project = {
+            ...data.data,
+            tags_json: Array.isArray(data.data.tags_json)
+              ? data.data.tags_json
+              : (typeof data.data.tags_json === 'string' ? JSON.parse(data.data.tags_json || '[]') : [])
+          };
+          setProject(project);
         })
         .catch(err => {
           console.error('Failed to fetch project from API:', err);
@@ -37,7 +44,14 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
           const foundProject = MOCK_PROJECTS.find((p: any) => p.id === resolvedParams.id);
 
           if (foundProject) {
-            setProject(foundProject);
+            // Ensure tags_json is an array for mock data too
+            const project = {
+              ...foundProject,
+              tags_json: Array.isArray(foundProject.tags_json)
+                ? foundProject.tags_json
+                : (typeof foundProject.tags_json === 'string' ? JSON.parse(foundProject.tags_json || '[]') : [])
+            };
+            setProject(project);
           } else {
             console.error('Project not found in mock data either');
             setProject(null);

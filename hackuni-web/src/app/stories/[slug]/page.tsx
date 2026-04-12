@@ -6,6 +6,7 @@ import { Tag } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLike } from '@/contexts/LikeContext';
+import { ensureTagsArray } from '@/lib/utils/data';
 
 export default function StoryDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { t, language } = useLanguage();
@@ -78,7 +79,7 @@ export default function StoryDetailPage({ params }: { params: Promise<{ slug: st
       }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-4)', flexWrap: 'wrap' }}>
-            {story.tags_json.map((tag: string) => (
+            {ensureTagsArray(story.tags_json).map((tag: string) => (
               <Tag key={tag} label={tag} />
             ))}
           </div>

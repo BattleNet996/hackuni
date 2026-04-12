@@ -4,6 +4,7 @@ import { HackerCard } from '@/components/ui/HackerCard';
 import { Tag } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { MOCK_HACKATHONS } from '@/data/mock';
+import { ensureTagsArray } from '@/lib/utils/data';
 
 export default function HackathonsPage() {
   return (
@@ -63,7 +64,7 @@ export default function HackathonsPage() {
               </p>
               
               <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-4)' }}>
-                {hack.tags_json.map(t => <Tag key={t} label={t} />)}
+                {ensureTagsArray(hack.tags_json).map(t => <Tag key={t} label={t} />)}
               </div>
               
               <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

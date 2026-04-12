@@ -117,6 +117,16 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
         });
 
         setProjectLikeCounts(prev => ({ ...prev, [id]: count }));
+      } else if (response.status === 401) {
+        // User not logged in - redirect to login or show message
+        console.warn('Please login to like projects');
+        // Optionally trigger a login modal or redirect
+        if (typeof window !== 'undefined') {
+          const loginPrompt = confirm('Please login to like projects. Go to login page?');
+          if (loginPrompt) {
+            window.location.href = '/login';
+          }
+        }
       }
     } catch (error) {
       console.error('Toggle like error:', error);
@@ -147,6 +157,15 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
         });
 
         setStoryLikeCounts(prev => ({ ...prev, [id]: count }));
+      } else if (response.status === 401) {
+        // User not logged in - redirect to login or show message
+        console.warn('Please login to like stories');
+        if (typeof window !== 'undefined') {
+          const loginPrompt = confirm('Please login to like stories. Go to login page?');
+          if (loginPrompt) {
+            window.location.href = '/login';
+          }
+        }
       }
     } catch (error) {
       console.error('Toggle like error:', error);
