@@ -15,11 +15,11 @@ export default function StoriesPage() {
   const [filterTag, setFilterTag] = React.useState<string | null>(null);
 
   // Get all unique tags
-  const allTags = Array.from(new Set(MOCK_STORIES.flatMap(s => s.tags_json)));
+  const allTags = Array.from(new Set(MOCK_STORIES.flatMap(s => ensureTagsArray(s.tags_json))));
 
   // Filter stories by tag
   const filteredStories = filterTag
-    ? MOCK_STORIES.filter(story => story.tags_json.includes(filterTag))
+    ? MOCK_STORIES.filter(story => ensureTagsArray(story.tags_json).includes(filterTag))
     : MOCK_STORIES;
 
   return (

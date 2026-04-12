@@ -214,7 +214,7 @@ export function EditStoryDialog({ isOpen, onClose, story, onSuccess }: EditStory
               </label>
               <select
                 name="hidden"
-                value={formData.hidden || 0}
+                value={formData.hidden ? 1 : 0}
                 onChange={(e) => setFormData(prev => ({ ...prev, hidden: parseInt(e.target.value) }))}
                 style={{ width: '100%', padding: 'var(--sp-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', borderRadius: '4px', color: 'var(--text-main)' }}
               >
