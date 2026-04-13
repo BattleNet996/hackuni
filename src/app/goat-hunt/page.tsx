@@ -131,14 +131,13 @@ export default function GoatHuntPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
               <Button
                 variant="ghost"
-                size="sm"
                 onClick={() => toggleLikeProject(proj.id)}
                 style={{ color: isProjectLiked(proj.id) ? 'var(--brand-coral)' : 'var(--text-muted)' }}
               >
                 {isProjectLiked(proj.id) ? '♥ Liked' : '♡ Like'}
               </Button>
               <Link href={`/goat-hunt/${proj.id}`}>
-                <Button variant="primary" size="sm">
+                <Button variant="primary">
                   View Details →
                 </Button>
               </Link>
