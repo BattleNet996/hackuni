@@ -212,6 +212,15 @@ let cachedDao: ReturnType<typeof getDAO> | null = null;
 
 function getDAOInstance() {
   if (!cachedDao) {
+    // Force check environment variables
+    const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const hasKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    console.log('🔍 getDAOInstance: Environment check');
+    console.log('  - NEXT_PUBLIC_SUPABASE_URL:', hasUrl);
+    console.log('  - SUPABASE_SERVICE_ROLE_KEY:', hasKey);
+    console.log('  - isUsingSupabase():', isUsingSupabase());
+
     cachedDao = getDAO();
     console.log('🔍 Database type:', isUsingSupabase() ? 'Supabase' : 'SQLite');
   }

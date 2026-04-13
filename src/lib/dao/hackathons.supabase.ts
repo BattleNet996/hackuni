@@ -56,12 +56,23 @@ export class HackathonSupabaseDAO extends BaseSupabaseDAO<Hackathon> {
   }> {
     const offset = (page - 1) * limit;
 
+    console.log('🔍 HackathonSupabaseDAO.getPaginated called');
+    console.log('  - page:', page);
+    console.log('  - limit:', limit);
+    console.log('  - offset:', offset);
+
     // Get total count
-    const { count } = await supabase
+    const { count, error: countError } = await supabase
       .from(this.tableName)
       .select('*', { count: 'exact', head: true });
 
+    if (countError) {
+      console.error('❌ Count error:', countError);
+      throw countError;
+    }
+
     const total = count || 0;
+    console.log('  - total count:', total);
 
     // Get paginated data
     const { data, error } = await supabase
@@ -70,7 +81,12 @@ export class HackathonSupabaseDAO extends BaseSupabaseDAO<Hackathon> {
       .order('start_time', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Query error:', error);
+      throw error;
+    }
+
+    console.log('  - data length:', data?.length || 0);
 
     return {
       data: (data || []).map((row: any) => this.mapRow(row)),
