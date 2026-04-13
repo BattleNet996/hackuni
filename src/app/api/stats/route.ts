@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const allHackathons = await hackathonDAO.findAll();
     const uniqueCities = new Set(
       allHackathons
-        .map(h => `${h.city}, ${h.country}`)
+        .map((h: any) => `${h.city}, ${h.country}`)
         .filter(Boolean)
     );
 

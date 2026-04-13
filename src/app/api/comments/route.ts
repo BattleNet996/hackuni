@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get replies for each comment
-    const commentsWithReplies = await Promise.all(comments.map(async comment => ({
+    const commentsWithReplies = await Promise.all(comments.map(async (comment: any) => ({
       ...comment,
       replies: await commentDAO.getReplies(comment.id)
     })));
