@@ -218,33 +218,26 @@ function getDAOInstance() {
   return cachedDao;
 }
 
-// @ts-ignore - Proxy dynamic property access
 export const userDAO = new Proxy({} as any, {
-  get(_, prop) { return getDAOInstance().user[prop]; }
+  get(_target: any, prop: any) { return getDAOInstance().user[prop]; }
 });
-// @ts-ignore - Proxy dynamic property access
 export const hackathonDAO = new Proxy({} as any, {
-  get(_, prop) { return getDAOInstance().hackathon[prop]; }
+  get(_target: any, prop: any) { return getDAOInstance().hackathon[prop]; }
 });
-// @ts-ignore - Proxy dynamic property access
 export const projectDAO = new Proxy({} as any, {
-  get(_, prop) { return getDAOInstance().project[prop]; }
+  get(_target: any, prop: any) { return getDAOInstance().project[prop]; }
 });
-// @ts-ignore - Proxy dynamic property access
 export const storyDAO = new Proxy({} as any, {
-  get(_, prop) { return getDAOInstance().story[prop]; }
+  get(_target: any, prop: any) { return getDAOInstance().story[prop]; }
 });
-// @ts-ignore - Proxy dynamic property access
 export const badgeDAO = new Proxy({} as any, {
-  get(_, prop) { return getDAOInstance().badge[prop]; }
+  get(_target: any, prop: any) { return getDAOInstance().badge[prop]; }
 });
-// @ts-ignore - Proxy dynamic property access
 export const likeDAO = new Proxy({} as any, {
-  get(_, prop) { return getDAOInstance().like[prop]; }
+  get(_target: any, prop: any) { return getDAOInstance().like[prop]; }
 });
-// @ts-ignore - Proxy dynamic property access
 export const commentDAO = new Proxy({} as any, {
-  get(_, prop) { return getDAOInstance().comment[prop]; }
+  get(_target: any, prop: any) { return getDAOInstance().comment[prop]; }
 });
 
 // Re-export types
