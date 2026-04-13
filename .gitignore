@@ -16,6 +16,7 @@
 !PRODUCTION_SETUP.md
 !SUPABASE_SYNC.md
 !QUICK_SETUP.md
+!MIGRATION_GUIDE.md
 
 # claude skills (local only)
 .claude/
