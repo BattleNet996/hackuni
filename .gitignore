@@ -10,9 +10,11 @@
 !.yarn/releases
 !.yarn/versions
 
-# md (ignore all but README.md)
+# md (ignore all but README.md and config guides)
 *.md
 !README.md
+!PRODUCTION_SETUP.md
+!SUPABASE_SYNC.md
 
 # claude skills (local only)
 .claude/
