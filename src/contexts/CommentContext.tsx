@@ -80,7 +80,7 @@ export function CommentProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const response = await fetch(`/api/comments?project_id=${projectId}`);
+      const response = await apiFetch(`/api/comments?project_id=${projectId}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -108,7 +108,7 @@ export function CommentProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const response = await fetch(`/api/comments?story_id=${storyId}`);
+      const response = await apiFetch(`/api/comments?story_id=${storyId}`);
       const data = await response.json();
 
       if (response.ok) {

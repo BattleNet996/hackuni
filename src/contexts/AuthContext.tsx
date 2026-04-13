@@ -41,16 +41,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Check if user is logged in from localStorage
     const savedUser = localStorage.getItem('user');
+    const savedToken = localStorage.getItem('token');
+
     if (savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser);
+
         // Verify the session is still valid by checking with the server
+        // Send token via multiple methods to ensure it arrives
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+        };
+
+        if (savedToken) {
+          (headers as any)['x-auth-token'] = savedToken;
+          (headers as any)['authorization'] = `Bearer ${savedToken}`;
+        }
+
         fetch('/api/auth/verify', {
           credentials: 'include',
+          headers,
         })
           .then(res => res.json())
           .then(data => {
             if (data.data) {
+              console.log('[AuthContext] Session valid, user:', parsedUser.id);
               setUser(parsedUser);
             } else {
               // Session is invalid, clear local storage
