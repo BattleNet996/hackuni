@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 
 let db: Database.Database | null = null;
+let schemaInitialized = false;
 
 /**
  * Get database client singleton
@@ -19,6 +20,12 @@ export function getDb(): Database.Database {
       db.pragma('cache_size = -64000');
       db.pragma('temp_store = MEMORY');
       db.pragma('mmap_size = 30000000000');
+
+      // Initialize schema first before any other operations
+      if (!schemaInitialized) {
+        initializeSchema();
+        schemaInitialized = true;
+      }
 
       try {
         initializeAdminTables(db);
@@ -87,9 +94,12 @@ function initializeAdminTables(database: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_admin_logs_created_at ON admin_logs(created_at);
   `);
 
-  // Add content column to stories table if not exists
+  // Add content column to stories table if not exists (only if table exists)
   try {
-    database.exec(`ALTER TABLE stories ADD COLUMN content TEXT;`);
+    const tableCheck = database.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='stories'").get();
+    if (tableCheck) {
+      database.exec(`ALTER TABLE stories ADD COLUMN content TEXT;`);
+    }
   } catch (error: any) {
     if (!error.message.includes('duplicate column')) {
       console.error('Error adding content column to stories:', error);
@@ -97,7 +107,10 @@ function initializeAdminTables(database: Database.Database): void {
   }
 
   try {
-    database.exec(`ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0;`);
+    const tableCheck = database.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
+    if (tableCheck) {
+      database.exec(`ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0;`);
+    }
   } catch (error: any) {
     if (!error.message.includes('duplicate column')) {
       console.error('Error adding is_banned column:', error);
@@ -144,6 +157,9 @@ export function resetDatabase(): void {
 }
 
 export function initializeSchema(): void {
+  if (schemaInitialized) {
+    return;
+  }
   const database = getDb();
   const fs = require('fs');
   const schemaPath = path.join(__dirname, 'schema.sql');
@@ -151,6 +167,7 @@ export function initializeSchema(): void {
   if (fs.existsSync(schemaPath)) {
     const schema = fs.readFileSync(schemaPath, 'utf-8');
     database.exec(schema);
+    schemaInitialized = true;
     console.log('Database schema initialized');
   }
 }

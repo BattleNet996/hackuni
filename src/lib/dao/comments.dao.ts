@@ -43,7 +43,7 @@ export class CommentDAO extends BaseDAO<Comment> {
    */
   getProjectComments(projectId: string): Comment[] {
     const rows = this.findByProjectStmt.all(projectId);
-    return rows.map(row => this.mapRow(row));
+    return rows.map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -51,7 +51,7 @@ export class CommentDAO extends BaseDAO<Comment> {
    */
   getStoryComments(storyId: string): Comment[] {
     const rows = this.findByStoryStmt.all(storyId);
-    return rows.map(row => this.mapRow(row));
+    return rows.map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -59,7 +59,7 @@ export class CommentDAO extends BaseDAO<Comment> {
    */
   getReplies(parentCommentId: string): Comment[] {
     const rows = this.getRepliesStmt.all(parentCommentId);
-    return rows.map(row => this.mapRow(row));
+    return rows.map((row: any) => this.mapRow(row));
   }
 
   /**

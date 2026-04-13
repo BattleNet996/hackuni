@@ -28,7 +28,7 @@ export class CommentSupabaseDAO extends BaseSupabaseDAO<Comment> {
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -42,7 +42,7 @@ export class CommentSupabaseDAO extends BaseSupabaseDAO<Comment> {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -124,7 +124,7 @@ export class CommentSupabaseDAO extends BaseSupabaseDAO<Comment> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -152,7 +152,7 @@ export class CommentSupabaseDAO extends BaseSupabaseDAO<Comment> {
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**

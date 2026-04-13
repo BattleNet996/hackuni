@@ -173,7 +173,7 @@ export class UserDAO extends BaseDAO<User> {
       'SELECT * FROM users ORDER BY total_hackathon_count DESC LIMIT ?'
     );
     const rows = stmt.all(limit);
-    return rows.map(row => this.mapRow(row));
+    return rows.map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -184,7 +184,7 @@ export class UserDAO extends BaseDAO<User> {
       'SELECT * FROM users ORDER BY total_award_count DESC LIMIT ?'
     );
     const rows = stmt.all(limit);
-    return rows.map(row => this.mapRow(row));
+    return rows.map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -195,6 +195,6 @@ export class UserDAO extends BaseDAO<User> {
       'SELECT * FROM users ORDER BY total_work_count DESC LIMIT ?'
     );
     const rows = stmt.all(limit);
-    return rows.map(row => this.mapRow(row));
+    return rows.map((row: any) => this.mapRow(row));
   }
 }

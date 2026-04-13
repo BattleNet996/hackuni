@@ -28,7 +28,7 @@ export class ProjectSupabaseDAO extends BaseSupabaseDAO<Project> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -42,7 +42,7 @@ export class ProjectSupabaseDAO extends BaseSupabaseDAO<Project> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -155,7 +155,7 @@ export class ProjectSupabaseDAO extends BaseSupabaseDAO<Project> {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -169,7 +169,7 @@ export class ProjectSupabaseDAO extends BaseSupabaseDAO<Project> {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -186,7 +186,7 @@ export class ProjectSupabaseDAO extends BaseSupabaseDAO<Project> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -202,6 +202,6 @@ export class ProjectSupabaseDAO extends BaseSupabaseDAO<Project> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 }

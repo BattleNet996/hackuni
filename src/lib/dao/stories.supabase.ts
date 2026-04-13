@@ -45,7 +45,7 @@ export class StorySupabaseDAO extends BaseSupabaseDAO<Story> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -60,7 +60,7 @@ export class StorySupabaseDAO extends BaseSupabaseDAO<Story> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -75,7 +75,7 @@ export class StorySupabaseDAO extends BaseSupabaseDAO<Story> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -90,7 +90,7 @@ export class StorySupabaseDAO extends BaseSupabaseDAO<Story> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -120,7 +120,7 @@ export class StorySupabaseDAO extends BaseSupabaseDAO<Story> {
     if (error) throw error;
 
     return {
-      data: (data || []).map(row => this.mapRow(row)),
+      data: (data || []).map((row: any) => this.mapRow(row)),
       total,
       page
     };

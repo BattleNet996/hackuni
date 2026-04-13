@@ -41,7 +41,7 @@ export class StoryDAO extends BaseDAO<Story> {
    */
   getLatest(limit: number = 10): Story[] {
     const rows = this.getLatestStmt.all(limit);
-    return rows.map(row => this.mapRow(row));
+    return rows.map((row: any) => this.mapRow(row));
   }
 
   /**

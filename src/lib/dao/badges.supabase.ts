@@ -44,7 +44,7 @@ export class BadgeSupabaseDAO extends BaseSupabaseDAO<Badge> {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -72,7 +72,7 @@ export class BadgeSupabaseDAO extends BaseSupabaseDAO<Badge> {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**

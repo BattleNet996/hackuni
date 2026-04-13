@@ -29,7 +29,7 @@ export class HackathonSupabaseDAO extends BaseSupabaseDAO<Hackathon> {
       .order('start_time', { ascending: true });
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -43,7 +43,7 @@ export class HackathonSupabaseDAO extends BaseSupabaseDAO<Hackathon> {
       .order('start_time', { ascending: true });
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -73,7 +73,7 @@ export class HackathonSupabaseDAO extends BaseSupabaseDAO<Hackathon> {
     if (error) throw error;
 
     return {
-      data: (data || []).map(row => this.mapRow(row)),
+      data: (data || []).map((row: any) => this.mapRow(row)),
       total,
       page
     };
@@ -92,7 +92,7 @@ export class HackathonSupabaseDAO extends BaseSupabaseDAO<Hackathon> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -124,7 +124,7 @@ export class HackathonSupabaseDAO extends BaseSupabaseDAO<Hackathon> {
       .order('start_time', { ascending: true });
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -142,6 +142,6 @@ export class HackathonSupabaseDAO extends BaseSupabaseDAO<Hackathon> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 }

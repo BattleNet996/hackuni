@@ -44,7 +44,7 @@ export class ProjectDAO extends BaseDAO<Project> {
    */
   getTopRanked(limit: number = 20): Project[] {
     const rows = this.getTopRankedStmt.all(limit);
-    return rows.map(row => this.mapRow(row));
+    return rows.map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -52,7 +52,7 @@ export class ProjectDAO extends BaseDAO<Project> {
    */
   getMostLiked(limit: number = 20): Project[] {
     const rows = this.getMostLikedStmt.all(limit);
-    return rows.map(row => this.mapRow(row));
+    return rows.map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -182,6 +182,6 @@ export class ProjectDAO extends BaseDAO<Project> {
   findByAuthorId(authorId: string): Project[] {
     const stmt = this.db.prepare('SELECT * FROM projects WHERE author_id = ? ORDER BY created_at DESC');
     const rows = stmt.all(authorId);
-    return rows.map(row => this.mapRow(row));
+    return rows.map((row: any) => this.mapRow(row));
   }
 }

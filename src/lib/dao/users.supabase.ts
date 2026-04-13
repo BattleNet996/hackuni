@@ -168,7 +168,7 @@ export class UserSupabaseDAO extends BaseSupabaseDAO<User> {
       .in('id', ids);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -182,7 +182,7 @@ export class UserSupabaseDAO extends BaseSupabaseDAO<User> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -196,7 +196,7 @@ export class UserSupabaseDAO extends BaseSupabaseDAO<User> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -210,7 +210,7 @@ export class UserSupabaseDAO extends BaseSupabaseDAO<User> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -224,6 +224,6 @@ export class UserSupabaseDAO extends BaseSupabaseDAO<User> {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapRow(row));
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 }

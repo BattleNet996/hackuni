@@ -35,7 +35,7 @@ export class HackathonDAO extends BaseDAO<Hackathon> {
    */
   findUpcoming(): Hackathon[] {
     const rows = this.findUpcomingStmt.all();
-    return rows.map(row => this.mapRow(row));
+    return rows.map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -43,7 +43,7 @@ export class HackathonDAO extends BaseDAO<Hackathon> {
    */
   findByCity(city: string): Hackathon[] {
     const rows = this.findByCityStmt.all(city);
-    return rows.map(row => this.mapRow(row));
+    return rows.map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -64,7 +64,7 @@ export class HackathonDAO extends BaseDAO<Hackathon> {
     const { count } = countStmt.get() as { count: number };
 
     return {
-      data: rows.map(row => this.mapRow(row)),
+      data: rows.map((row: any) => this.mapRow(row)),
       total: count,
       page
     };

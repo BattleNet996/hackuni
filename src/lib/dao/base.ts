@@ -39,7 +39,7 @@ export abstract class BaseDAO<T> {
 
     const stmt = this.db.prepare(query);
     const rows = stmt.all(...params);
-    return rows.map(row => this.mapRow(row));
+    return rows.map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -117,7 +117,7 @@ export abstract class BaseDAO<T> {
       LIMIT ? OFFSET ?
     `);
     const rows = dataStmt.all(limit, offset);
-    const data = rows.map(row => this.mapRow(row));
+    const data = rows.map((row: any) => this.mapRow(row));
 
     return { data, total: count, page };
   }
