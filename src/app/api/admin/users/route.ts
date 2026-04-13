@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
 
     // Get all users (without password_hash)
     const users = await userDAO.findAll();
-    const sanitizedUsers = users.map(u => {
-      const { password_hash, ...rest } = u as any;
+    const sanitizedUsers = users.map((u: any) => {
+      const { password_hash, ...rest } = u;
       return rest;
     });
 
