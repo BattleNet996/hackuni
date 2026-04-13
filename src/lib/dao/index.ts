@@ -207,15 +207,38 @@ function getDAO() {
   }
 }
 
-const dao = getDAO();
+// Lazy initialization - only create DAOs when first accessed
+let cachedDao: ReturnType<typeof getDAO> | null = null;
 
-export const userDAO = dao.user;
-export const hackathonDAO = dao.hackathon;
-export const projectDAO = dao.project;
-export const storyDAO = dao.story;
-export const badgeDAO = dao.badge;
-export const likeDAO = dao.like;
-export const commentDAO = dao.comment;
+function getDAOInstance() {
+  if (!cachedDao) {
+    cachedDao = getDAO();
+    console.log('🔍 Database type:', isUsingSupabase() ? 'Supabase' : 'SQLite');
+  }
+  return cachedDao;
+}
+
+export const userDAO = new Proxy({} as any, {
+  get(_, prop) { return getDAOInstance().user[prop]; }
+});
+export const hackathonDAO = new Proxy({} as any, {
+  get(_, prop) { return getDAOInstance().hackathon[prop]; }
+});
+export const projectDAO = new Proxy({} as any, {
+  get(_, prop) { return getDAOInstance().project[prop]; }
+});
+export const storyDAO = new Proxy({} as any, {
+  get(_, prop) { return getDAOInstance().story[prop]; }
+});
+export const badgeDAO = new Proxy({} as any, {
+  get(_, prop) { return getDAOInstance().badge[prop]; }
+});
+export const likeDAO = new Proxy({} as any, {
+  get(_, prop) { return getDAOInstance().like[prop]; }
+});
+export const commentDAO = new Proxy({} as any, {
+  get(_, prop) { return getDAOInstance().comment[prop]; }
+});
 
 // Re-export types
 export type { User, UserCreateInput, UserUpdateInput } from '@/lib/models/user';
