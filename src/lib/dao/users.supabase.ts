@@ -212,4 +212,18 @@ export class UserSupabaseDAO extends BaseSupabaseDAO<User> {
     if (error) throw error;
     return (data || []).map(row => this.mapRow(row));
   }
+
+  /**
+   * Get top users by total work count (projects + hackathons)
+   */
+  async getTopByWorkCount(limit: number = 10): Promise<User[]> {
+    const { data, error } = await supabase
+      .from(this.tableName)
+      .select('*')
+      .order('total_work_count', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return (data || []).map(row => this.mapRow(row));
+  }
 }

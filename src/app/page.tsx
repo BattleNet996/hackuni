@@ -67,10 +67,10 @@ export default function Home() {
 
   // State for real data
   const [stats, setStats] = useState<Stats>({
-    buildersConnected: 8500,
-    projectsShipped: 12500,
-    citiesCovered: 127,
-    badgesEarned: 3400
+    buildersConnected: 0,
+    projectsShipped: 0,
+    citiesCovered: 0,
+    badgesEarned: 0
   });
   const [hackathons, setHackathons] = useState<Hackathon[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -83,23 +83,33 @@ export default function Home() {
       try {
         setIsLoading(true);
 
-        // Fetch hackathons
-        const hackRes = await fetch('/api/hackathons?limit=6');
+        // Fetch all data in parallel
+        const [statsRes, hackRes, projRes, buildRes] = await Promise.all([
+          fetch('/api/stats'),
+          fetch('/api/hackathons?limit=6'),
+          fetch('/api/projects?limit=6'),
+          fetch('/api/builders?limit=6&sort=awards')
+        ]);
+
+        const statsData = await statsRes.json();
+        if (statsData.data) {
+          setStats(statsData.data);
+        }
+
         const hackData = await hackRes.json();
         if (hackData.data) {
           setHackathons(hackData.data);
         }
 
-        // Fetch projects
-        const projRes = await fetch('/api/projects?limit=6');
         const projData = await projRes.json();
         if (projData.data) {
           setProjects(projData.data);
         }
 
-        // TODO: Fetch builders when API is available
-        // const buildRes = await fetch('/api/builders?limit=6');
-        // const buildData = await buildRes.json();
+        const buildData = await buildRes.json();
+        if (buildData.data) {
+          setBuilders(buildData.data);
+        }
 
         setIsLoading(false);
       } catch (error) {

@@ -164,4 +164,37 @@ export class UserDAO extends BaseDAO<User> {
       stmt.run(...params);
     }
   }
+
+  /**
+   * Get top users by hackathon count
+   */
+  getTopByHackathons(limit: number = 10): User[] {
+    const stmt = this.db.prepare(
+      'SELECT * FROM users ORDER BY total_hackathon_count DESC LIMIT ?'
+    );
+    const rows = stmt.all(limit);
+    return rows.map(row => this.mapRow(row));
+  }
+
+  /**
+   * Get top users by award count
+   */
+  getTopByAwards(limit: number = 10): User[] {
+    const stmt = this.db.prepare(
+      'SELECT * FROM users ORDER BY total_award_count DESC LIMIT ?'
+    );
+    const rows = stmt.all(limit);
+    return rows.map(row => this.mapRow(row));
+  }
+
+  /**
+   * Get top users by total work count (projects + hackathons)
+   */
+  getTopByWorkCount(limit: number = 10): User[] {
+    const stmt = this.db.prepare(
+      'SELECT * FROM users ORDER BY total_work_count DESC LIMIT ?'
+    );
+    const rows = stmt.all(limit);
+    return rows.map(row => this.mapRow(row));
+  }
 }

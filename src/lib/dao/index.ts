@@ -38,6 +38,7 @@ class UserDAOAdapter {
   search = (this.dao as any).search?.bind(this.dao);
   getTopByHackathons = (this.dao as any).getTopByHackathons?.bind(this.dao);
   getTopByAwards = (this.dao as any).getTopByAwards?.bind(this.dao);
+  getTopByWorkCount = (this.dao as any).getTopByWorkCount?.bind(this.dao);
 
   async create(input: any): Promise<any> {
     return (this.dao as any).createWithPassword(input);
@@ -63,6 +64,7 @@ class UserSupabaseDAOAdapter {
   search = this.dao.search.bind(this.dao);
   getTopByHackathons = this.dao.getTopByHackathons.bind(this.dao);
   getTopByAwards = this.dao.getTopByAwards.bind(this.dao);
+  getTopByWorkCount = this.dao.getTopByWorkCount.bind(this.dao);
 
   async create(input: any): Promise<any> {
     return this.dao.create(input);
