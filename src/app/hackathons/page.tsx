@@ -17,6 +17,7 @@ interface Hackathon {
   level_score: string;
   level_code: string;
   registration_status: string;
+  registration_url: string;
   tags_json: string | string[];
   start_time: string;
 }
