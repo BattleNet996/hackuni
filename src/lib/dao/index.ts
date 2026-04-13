@@ -219,25 +219,25 @@ function getDAOInstance() {
 }
 
 export const userDAO = new Proxy({} as any, {
-  get(_target: any, prop: any) { return getDAOInstance().user[prop]; }
+  get(_target: any, prop: any) { return (getDAOInstance().user as any)[prop]; }
 });
 export const hackathonDAO = new Proxy({} as any, {
-  get(_target: any, prop: any) { return getDAOInstance().hackathon[prop]; }
+  get(_target: any, prop: any) { return (getDAOInstance().hackathon as any)[prop]; }
 });
 export const projectDAO = new Proxy({} as any, {
-  get(_target: any, prop: any) { return getDAOInstance().project[prop]; }
+  get(_target: any, prop: any) { return (getDAOInstance().project as any)[prop]; }
 });
 export const storyDAO = new Proxy({} as any, {
-  get(_target: any, prop: any) { return getDAOInstance().story[prop]; }
+  get(_target: any, prop: any) { return (getDAOInstance().story as any)[prop]; }
 });
 export const badgeDAO = new Proxy({} as any, {
-  get(_target: any, prop: any) { return getDAOInstance().badge[prop]; }
+  get(_target: any, prop: any) { return (getDAOInstance().badge as any)[prop]; }
 });
 export const likeDAO = new Proxy({} as any, {
-  get(_target: any, prop: any) { return getDAOInstance().like[prop]; }
+  get(_target: any, prop: any) { return (getDAOInstance().like as any)[prop]; }
 });
 export const commentDAO = new Proxy({} as any, {
-  get(_target: any, prop: any) { return getDAOInstance().comment[prop]; }
+  get(_target: any, prop: any) { return (getDAOInstance().comment as any)[prop]; }
 });
 
 // Re-export types
