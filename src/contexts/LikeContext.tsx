@@ -1,6 +1,7 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { apiFetch } from '@/lib/api-client';
 
 interface LikeContextType {
   likedProjects: Set<string>;
@@ -111,10 +112,8 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
     console.log('[LikeContext] User logged in:', user.id, user.email);
 
     try {
-      const response = await fetch('/api/likes', {
+      const response = await apiFetch('/api/likes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Include cookies in the request
         body: JSON.stringify({ target_type: 'project', target_id: id }),
       });
 
@@ -168,10 +167,8 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const response = await fetch('/api/likes', {
+      const response = await apiFetch('/api/likes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Include cookies in the request
         body: JSON.stringify({ target_type: 'story', target_id: id }),
       });
 

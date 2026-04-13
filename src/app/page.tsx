@@ -47,11 +47,11 @@ export default function Home() {
 
       {/* Hero Section (100vh) */}
       <div style={{
-        height: 'calc(100vh - 70px)', // Minus navbar
+        minHeight: 'calc(100vh - 60px)', // Minus navbar
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        padding: '0 var(--sp-6)',
+        padding: 'var(--sp-6) var(--sp-4)',
         position: 'relative',
       }}>
         {/* The Earth positioned to the right side */}
@@ -60,19 +60,19 @@ export default function Home() {
         <div style={{ maxWidth: '800px', pointerEvents: 'none', position: 'relative', zIndex: 10, marginRight: 'auto' }}>
           <h1 style={{
             fontFamily: 'var(--font-hero)',
-            fontSize: 'var(--text-display)',
+            fontSize: 'var(--text-h1)',
             margin: 0,
             letterSpacing: '-0.02em',
             lineHeight: 1.05,
             textShadow: '4px 4px 0 rgba(0,0,0,0.5)'
-          }}>
+          }} className="hero-title">
             {t('home.hero.title')}<br/>{t('home.hero.subtitle')}
           </h1>
           <p style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: '16px',
+            fontSize: '14px',
             color: 'var(--text-main)',
-            marginTop: 'var(--sp-4)',
+            marginTop: 'var(--sp-3)',
             background: 'rgba(0,0,0,0.6)',
             display: 'inline-block',
             padding: '4px 8px'
@@ -83,18 +83,19 @@ export default function Home() {
 
         {/* Vibe Metrics Dashboard */}
         <div style={{
-          marginTop: 'var(--sp-8)',
+          marginTop: 'var(--sp-6)',
           background: 'rgba(26, 26, 26, 0.8)',
           backdropFilter: 'blur(10px)',
           border: '1px solid var(--border-base)',
           padding: 'var(--sp-4)',
-          width: 'max-content',
+          width: '100%',
+          maxWidth: 'max-content',
           fontFamily: 'var(--font-mono)',
-          fontSize: '13px',
+          fontSize: '12px',
           pointerEvents: 'auto'
-        }}>
+        }} className="metrics-dashboard">
           <div style={{ marginBottom: 'var(--sp-2)', color: 'var(--text-muted)' }}>{t('home.vibe_metrics')}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 'var(--sp-5)', rowGap: 'var(--sp-2)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 'var(--sp-4)', rowGap: 'var(--sp-2)' }}>
             <div>&gt; {t('home.metrics.builders')} : <span style={{color: 'var(--brand-green)'}}>{MOCK_STATS.buildersConnected.toLocaleString()}</span></div>
             <div>&gt; {t('home.metrics.projects')} : <span style={{color: 'var(--brand-green)'}}>{MOCK_STATS.projectsShipped.toLocaleString()}</span></div>
             <div>&gt; {t('home.metrics.cities')} : <span style={{color: 'var(--brand-coral)'}}>{MOCK_STATS.citiesCovered.toLocaleString()}</span></div>
@@ -106,14 +107,14 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Content Streams: Three-column layout */}
+      {/* Content Streams: Responsive grid layout */}
       <div style={{
-        padding: 'var(--sp-8) var(--sp-6)',
+        padding: 'var(--sp-6) var(--sp-4)',
         position: 'relative',
         zIndex: 10,
         background: 'var(--bg-pure)'
       }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--sp-6)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--sp-6)' }} className="content-grid">
 
           {/* Left Col: Featured Hackathons */}
           <section>
@@ -240,6 +241,21 @@ export default function Home() {
 
         </div>
       </div>
+
+      {/* Responsive styles */}
+      <style jsx>{`
+        @media (min-width: 769px) {
+          .content-grid {
+            grid-template-columns: 2fr 1fr 1fr;
+          }
+          .hero-title {
+            font-size: var(--text-display) !important;
+          }
+          .metrics-dashboard {
+            width: max-content !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }

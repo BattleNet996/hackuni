@@ -72,19 +72,19 @@ export default function LoginPage() {
   };
 
   return (
-    <main style={{ minHeight: 'calc(100vh - 70px - 100px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--sp-8) var(--sp-6)' }}>
-      <HackerCard style={{ maxWidth: '450px', width: '100%', padding: 'var(--sp-8)' }}>
+    <main style={{ minHeight: 'calc(100vh - 60px - 80px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--sp-6) var(--sp-4)' }}>
+      <HackerCard style={{ maxWidth: '450px', width: '100%', padding: 'var(--sp-6)' }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 'var(--sp-6)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 'var(--sp-5)' }}>
           <h1 style={{
             fontFamily: 'var(--font-hero)',
-            fontSize: 'var(--text-h1)',
+            fontSize: 'var(--text-h2)',
             margin: '0 0 var(--sp-2) 0',
             color: 'var(--brand-coral)'
           }}>
             {t('auth.login.title')}
           </h1>
-          <p style={{ margin: 0, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '14px' }}>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
             {t('auth.login.subtitle')}
           </p>
         </div>

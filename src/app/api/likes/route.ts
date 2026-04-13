@@ -5,7 +5,11 @@ import { authService } from '@/lib/services';
 export async function POST(request: NextRequest) {
   try {
     const token = request.cookies.get('auth_token')?.value ||
-                 request.headers.get('authorization')?.replace('Bearer ', '');
+                 request.headers.get('authorization')?.replace('Bearer ', '') ||
+                 request.headers.get('x-auth-token');
+
+    console.log('[Likes API] Token from cookie:', !!request.cookies.get('auth_token')?.value);
+    console.log('[Likes API] Token from header:', !!request.headers.get('authorization') || !!request.headers.get('x-auth-token'));
 
     if (!token) {
       return NextResponse.json(

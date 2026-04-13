@@ -1,6 +1,7 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { apiFetch } from '@/lib/api-client';
 
 export interface Comment {
   id: string;
@@ -42,13 +43,8 @@ export function CommentProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/comments', {
+      const response = await apiFetch('/api/comments', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
         body: JSON.stringify(comment),
       });
 
@@ -170,13 +166,8 @@ export function CommentProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/comments/${commentId}`, {
+      const response = await apiFetch(`/api/comments/${commentId}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
       });
 
       const data = await response.json();
@@ -214,11 +205,8 @@ export function CommentProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const response = await fetch('/api/likes/unlike', {
+      const response = await apiFetch('/api/likes/unlike', {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ target_type: targetType, targetId }),
       });
 
