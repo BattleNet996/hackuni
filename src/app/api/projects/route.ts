@@ -8,12 +8,18 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const sort = searchParams.get('sort') || 'rank_score';
+    const awarded = searchParams.get('awarded') === 'true';
 
     let data;
     if (sort === 'like_count') {
-      data = await projectDAO.getMostLiked(limit);
+      data = await projectDAO.getMostLiked(limit * 2); // Get more for filtering
     } else {
-      data = await projectDAO.getTopRanked(limit);
+      data = await projectDAO.getTopRanked(limit * 2); // Get more for filtering
+    }
+
+    // Filter by awarded status if requested
+    if (awarded) {
+      data = data.filter((p: any) => p.is_awarded === 1 || p.is_awarded === true);
     }
 
     const paginatedData = data.slice((page - 1) * limit, page * limit);
