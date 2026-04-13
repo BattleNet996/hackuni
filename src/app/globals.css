@@ -52,6 +52,9 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  /* Prevent text overflow on mobile */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 * {
@@ -61,6 +64,8 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+  /* Ensure links don't overflow */
+  word-break: break-word;
 }
 
 /* Mobile-first responsive styles */
@@ -72,6 +77,22 @@ img {
 button, a {
   touch-action: manipulation;
   min-touch-target: 44px;
+  /* Prevent text overflow in buttons and links */
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Prevent all text containers from overflowing */
+p, span, div, li, td, th, h1, h2, h3, h4, h5, h6 {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Handle long URLs and unbroken strings */
+* {
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 /* Scrollbar styling for better mobile UX */
@@ -123,12 +144,31 @@ button, a {
     padding: 10px 16px;
   }
 
+  /* Ensure buttons don't overflow */
+  button {
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+  }
+
+  /* Fix card layouts on mobile */
+  .hacker-card, [class*="card"] {
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
+
   /* Hide non-critical elements on very small screens */
   @media (max-width: 480px) {
     :root {
       --text-h1: 24px;
       --text-h2: 20px;
       --text-h3: 16px;
+    }
+
+    /* Even more aggressive text breaking */
+    * {
+      word-break: break-all;
+      overflow-wrap: anywhere;
     }
   }
 }

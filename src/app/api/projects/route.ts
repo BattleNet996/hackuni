@@ -37,12 +37,16 @@ export async function GET(request: NextRequest) {
 // POST /api/projects - Create new project
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth_token')?.value ||
-                 request.headers.get('authorization')?.replace('Bearer ', '') ||
-                 request.headers.get('x-auth-token');
+    // Verify authentication - check multiple token sources
+    const cookieToken = request.cookies.get('auth_token')?.value;
+    const headerToken = request.headers.get('authorization')?.replace('Bearer ', '');
+    const xAuthToken = request.headers.get('x-auth-token');
+    const token = cookieToken || headerToken || xAuthToken;
 
-    console.log('[Projects API] Token from cookie:', !!request.cookies.get('auth_token')?.value);
-    console.log('[Projects API] Token from header:', !!request.headers.get('authorization') || !!request.headers.get('x-auth-token'));
+    console.log('[Projects API] Cookie token:', !!cookieToken);
+    console.log('[Projects API] Authorization header:', !!headerToken);
+    console.log('[Projects API] X-Auth-Token header:', !!xAuthToken);
+    console.log('[Projects API] Using token source:', cookieToken ? 'cookie' : headerToken ? 'authorization' : xAuthToken ? 'x-auth-token' : 'none');
 
     if (!token) {
       return NextResponse.json(

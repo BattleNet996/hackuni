@@ -7,18 +7,21 @@
  * Get the authentication token from localStorage or cookies
  */
 export function getAuthToken(): string | null {
-  // Try localStorage first (fallback)
+  // Try localStorage first (most reliable)
   const localToken = localStorage.getItem('token');
   if (localToken) {
+    console.log('[api-client] Using token from localStorage');
     return localToken;
   }
 
-  // Try to get from cookies
+  // Try to get from cookies (backup)
   const match = document.cookie.match(new RegExp('(^| )auth_token=([^;]+)'));
   if (match) {
+    console.log('[api-client] Using token from cookie');
     return match[2];
   }
 
+  console.log('[api-client] No token found in localStorage or cookies');
   return null;
 }
 
