@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate total badges (sum of all user badge counts)
     const allUsers = await userDAO.findAll();
-    const totalBadges = allUsers.reduce((sum, user) => sum + (user.badge_count || 0), 0);
+    const totalBadges = allUsers.reduce((sum: number, user: any) => sum + (user.badge_count || 0), 0);
 
     return NextResponse.json({
       data: {
