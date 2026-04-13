@@ -7,6 +7,7 @@ import { supabase } from '@/lib/db/supabase-client';
 
 export abstract class BaseSupabaseDAO<T> {
   protected abstract tableName: string;
+  protected abstract mapRow(row: any): T;
 
   /**
    * Find entity by ID
@@ -23,7 +24,7 @@ export abstract class BaseSupabaseDAO<T> {
       throw error;
     }
 
-    return data as T;
+    return this.mapRow(data);
   }
 
   /**
@@ -41,7 +42,7 @@ export abstract class BaseSupabaseDAO<T> {
     const { data, error } = await query;
 
     if (error) throw error;
-    return (data || []) as T[];
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -84,7 +85,7 @@ export abstract class BaseSupabaseDAO<T> {
     if (error) throw error;
 
     return {
-      data: (data || []) as T[],
+      data: (data || []).map((row: any) => this.mapRow(row)),
       total,
       page
     };
@@ -154,7 +155,7 @@ export abstract class BaseSupabaseDAO<T> {
       throw error;
     }
 
-    return updated as T;
+    return this.mapRow(updated);
   }
 
   /**
@@ -218,7 +219,7 @@ export abstract class BaseSupabaseDAO<T> {
       .in('id', ids);
 
     if (error) throw error;
-    return (data || []) as T[];
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 
   /**
@@ -241,6 +242,6 @@ export abstract class BaseSupabaseDAO<T> {
     const { data, error } = await query;
 
     if (error) throw error;
-    return (data || []) as T[];
+    return (data || []).map((row: any) => this.mapRow(row));
   }
 }

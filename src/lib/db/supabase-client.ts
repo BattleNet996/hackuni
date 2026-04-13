@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
+import { isUsingSupabaseRuntime } from './runtime';
 
 // Helper function to check if using Supabase or SQLite
 export function isUsingSupabase(): boolean {
-  return !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+  return isUsingSupabaseRuntime();
 }
 
 // Lazy initialize Supabase client only when needed
@@ -13,8 +14,8 @@ export function getSupabaseClient() {
     return supabaseClient;
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || '';
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
 
   if (!supabaseUrl) {
     throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');

@@ -1,3 +1,5 @@
+import { parseStringArray } from '@/lib/utils/data';
+
 export interface User {
   id: string;
   email: string;
@@ -47,6 +49,6 @@ export interface UserUpdateInput {
 export function mapRowToUser(row: any): User {
   return {
     ...row,
-    looking_for: row.looking_for ? JSON.parse(row.looking_for) : [],
+    looking_for: parseStringArray(row.looking_for, { allowDelimitedString: true }),
   };
 }

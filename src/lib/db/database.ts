@@ -4,6 +4,7 @@
  */
 
 import { supabase } from './supabase-client';
+import { isUsingSupabaseRuntime } from './runtime';
 
 export interface QueryBuilder {
   select(columns?: string): QueryBuilder;
@@ -54,7 +55,7 @@ export function getDatabaseClient(): DatabaseClient {
  * Check if using Supabase
  */
 export function isUsingSupabase(): boolean {
-  return !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+  return isUsingSupabaseRuntime();
 }
 
 /**

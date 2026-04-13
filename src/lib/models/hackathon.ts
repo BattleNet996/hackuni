@@ -1,3 +1,5 @@
+import { ensureTagsArray } from '@/lib/utils/data';
+
 export interface Hackathon {
   id: string;
   title: string;
@@ -29,6 +31,6 @@ export interface Hackathon {
 export function mapRowToHackathon(row: any): Hackathon {
   return {
     ...row,
-    tags_json: row.tags_json ? JSON.parse(row.tags_json) : [],
+    tags_json: ensureTagsArray(row.tags_json),
   };
 }

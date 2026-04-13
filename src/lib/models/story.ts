@@ -1,3 +1,5 @@
+import { ensureTagsArray } from '@/lib/utils/data';
+
 export interface Story {
   id: string;
   slug: string;
@@ -19,7 +21,7 @@ export interface Story {
 export function mapRowToStory(row: any): Story {
   return {
     ...row,
-    tags_json: row.tags_json ? JSON.parse(row.tags_json) : [],
+    tags_json: ensureTagsArray(row.tags_json),
     hidden: row.hidden === 1,
   };
 }

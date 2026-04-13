@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hackathonDAO } from '@/lib/dao';
-import { isUsingSupabase } from '@/lib/db/supabase-client';
+import { getDatabaseRuntimeConfig } from '@/lib/db/runtime';
 
 export async function GET(request: NextRequest) {
   try {
-    // Log database type for debugging
-    console.log('🔍 API: Database type =', isUsingSupabase() ? 'Supabase' : 'SQLite');
-    console.log('🔍 API: NEXT_PUBLIC_SUPABASE_URL =', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log('🔍 API: SUPABASE_SERVICE_ROLE_KEY =', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+    const runtime = getDatabaseRuntimeConfig();
+    console.log('🔍 API: Database type =', runtime.databaseType);
+    console.log('🔍 API: Database reason =', runtime.reason);
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '20', 10);
 
     const result = await hackathonDAO.getPaginated(page, limit);
 

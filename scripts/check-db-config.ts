@@ -5,20 +5,21 @@
  * 检查当前项目使用哪个数据库
  */
 
-import { isUsingSupabase } from '../src/lib/db/database';
+import { getDatabaseRuntimeConfig } from '../src/lib/db/runtime';
 
 console.log('=== 数据库配置检查 ===\n');
 
 // 检查环境变量
-const hasSupabaseUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
-const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+const runtime = getDatabaseRuntimeConfig();
 
 console.log('环境变量状态:');
-console.log(`  NEXT_PUBLIC_SUPABASE_URL: ${hasSupabaseUrl ? '✅ 已配置' : '❌ 未配置'}`);
-console.log(`  SUPABASE_SERVICE_ROLE_KEY: ${hasServiceKey ? '✅ 已配置' : '❌ 未配置'}`);
+console.log(`  NEXT_PUBLIC_SUPABASE_URL: ${runtime.hasSupabaseUrl ? '✅ 已配置' : '❌ 未配置'}`);
+console.log(`  SUPABASE_SERVICE_ROLE_KEY: ${runtime.hasSupabaseServiceRoleKey ? '✅ 已配置' : '❌ 未配置'}`);
+console.log(`  USE_SUPABASE: ${runtime.rawUseSupabase ?? '(未设置)'}`);
+console.log(`  USE_SUPABASE(trim): ${runtime.normalizedUseSupabase ?? '(空)'}`);
 
 // 检查使用的数据库
-const usingSupabase = isUsingSupabase();
+const usingSupabase = runtime.isUsingSupabase;
 
 console.log('\n当前使用的数据库:');
 if (usingSupabase) {
@@ -28,6 +29,7 @@ if (usingSupabase) {
   console.log('  ✅ SQLite (本地数据库)');
   console.log('  位置: database/hackuni.db');
 }
+console.log(`  原因: ${runtime.reason}`);
 
 // 数据统计
 console.log('\n建议:');

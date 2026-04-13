@@ -3,37 +3,58 @@
  */
 
 /**
- * Ensures that tags_json is always an array
- * Handles cases where tags might be:
- * - Already an array
- * - A JSON string that needs parsing
- * - Undefined or null
+ * Normalize mixed string-array fields returned by SQLite / Supabase.
  */
-export function ensureTagsArray(tags: any): string[] {
-  if (Array.isArray(tags)) return tags;
-  if (typeof tags === 'string') {
-    try {
-      const parsed = JSON.parse(tags);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
+export function parseStringArray(
+  value: any,
+  options: { allowDelimitedString?: boolean } = {}
+): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item).trim())
+      .filter(Boolean);
   }
-  return [];
+
+  if (typeof value !== 'string') {
+    return [];
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((item) => String(item).trim())
+        .filter(Boolean);
+    }
+  } catch {
+    // Fall through to non-JSON parsing.
+  }
+
+  if (options.allowDelimitedString) {
+    return trimmed
+      .split(/[,\n]/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [trimmed];
 }
 
 /**
- * Ensures that images_json is always an array
+ * Ensures that tags_json is always an array.
+ */
+export function ensureTagsArray(tags: any): string[] {
+  return parseStringArray(tags, { allowDelimitedString: true });
+}
+
+/**
+ * Ensures that images_json is always an array.
  */
 export function ensureImagesArray(images: any): string[] {
-  if (Array.isArray(images)) return images;
-  if (typeof images === 'string') {
-    try {
-      const parsed = JSON.parse(images);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
+  return parseStringArray(images);
 }

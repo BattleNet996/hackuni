@@ -1,3 +1,5 @@
+import { ensureImagesArray, ensureTagsArray } from '@/lib/utils/data';
+
 export interface Project {
   id: string;
   title: string;
@@ -56,8 +58,8 @@ export interface ProjectUpdateInput {
 export function mapRowToProject(row: any): Project {
   return {
     ...row,
-    tags_json: row.tags_json ? JSON.parse(row.tags_json) : [],
-    images: row.images ? JSON.parse(row.images) : [],
+    tags_json: ensureTagsArray(row.tags_json),
+    images: ensureImagesArray(row.images),
     is_awarded: row.is_awarded === 1,
     hidden: row.hidden === 1,
   };
