@@ -1,5 +1,5 @@
 -- HackUni Web - Complete Data Migration
--- Generated: 2026-04-13T13:37:52.180Z
+-- Generated: 2026-04-13T13:42:04.930Z
 -- Source: SQLite database/hackuni.db
 -- Target: Supabase PostgreSQL
 
@@ -10,9 +10,6 @@ BEGIN;
 -- ========================================
 -- Clear existing data
 DELETE FROM users;
-
--- Reset sequences
-SELECT setval(pg_get_serial_sequence('users', 'id'), coalesce(max(id), 0) + 1, false) FROM users;
 
 -- Insert data
 INSERT INTO users (id, email, password_hash, display_name, avatar, bio, school, major, company, position, phone, twitter_url, github_url, website_url, looking_for, total_hackathon_count, total_work_count, total_award_count, badge_count, certification_count, created_at, updated_at, is_banned) VALUES
@@ -25,9 +22,6 @@ INSERT INTO users (id, email, password_hash, display_name, avatar, bio, school, 
 -- ========================================
 -- Clear existing data
 DELETE FROM hackathons;
-
--- Reset sequences
-SELECT setval(pg_get_serial_sequence('hackathons', 'id'), coalesce(max(id), 0) + 1, false) FROM hackathons;
 
 -- Insert data
 INSERT INTO hackathons (id, title, short_desc, description, start_time, end_time, registration_deadline, city, country, latitude, longitude, location_detail, tags_json, level_score, level_code, registration_status, poster_url, organizer, organizer_url, registration_url, requirements, prizes, fee, hidden, created_at, updated_at) VALUES
@@ -54,9 +48,6 @@ INSERT INTO hackathons (id, title, short_desc, description, start_time, end_time
 -- ========================================
 -- Clear existing data
 DELETE FROM projects;
-
--- Reset sequences
-SELECT setval(pg_get_serial_sequence('projects', 'id'), coalesce(max(id), 0) + 1, false) FROM projects;
 
 -- Insert data
 INSERT INTO projects (id, title, short_desc, long_desc, like_count, rank_score, team_member_text, tags_json, is_awarded, award_text, images, demo_url, github_url, website_url, related_hackathon_id, author_id, status, hidden, created_at, updated_at) VALUES
@@ -92,9 +83,6 @@ INSERT INTO projects (id, title, short_desc, long_desc, like_count, rank_score, 
 -- ========================================
 -- Clear existing data
 DELETE FROM stories;
-
--- Reset sequences
-SELECT setval(pg_get_serial_sequence('stories', 'id'), coalesce(max(id), 0) + 1, false) FROM stories;
 
 -- Insert data
 INSERT INTO stories (id, slug, title, summary, source, source_url, author_name, content, tags_json, published_at, like_count, status, hidden, created_at, updated_at) VALUES
@@ -380,9 +368,6 @@ Zhipu（智谱）和 MiniMax 在 2026 年 1 月相继在香港上市，成为全
 -- Clear existing data
 DELETE FROM likes;
 
--- Reset sequences
-SELECT setval(pg_get_serial_sequence('likes', 'id'), coalesce(max(id), 0) + 1, false) FROM likes;
-
 -- Insert data
 INSERT INTO likes (id, user_id, target_type, target_id, created_at) VALUES
   ('l_1775614768051_1lanbg0mk', 'u1', 'story', 's1', '2026-04-08 02:19:28'),
@@ -413,9 +398,6 @@ INSERT INTO likes (id, user_id, target_type, target_id, created_at) VALUES
 -- Clear existing data
 DELETE FROM badges;
 
--- Reset sequences
-SELECT setval(pg_get_serial_sequence('badges', 'id'), coalesce(max(id), 0) + 1, false) FROM badges;
-
 -- Insert data
 INSERT INTO badges (id, badge_code, badge_name, badge_name_en, badge_type, badge_desc, badge_desc_en, icon_url, rule_desc, rule_desc_en, source_type, created_at) VALUES
   ('badge1', 'GOLD_MEDAL', '金牌', 'Gold Medal', 'award', '在黑客松中获得金牌奖项', 'Awarded gold medal in a hackathon', '', '在黑客松中获得第一名', 'Get 1st place in a hackathon', 'hackathon', '2026-04-07 17:21:58'),
@@ -429,9 +411,6 @@ INSERT INTO badges (id, badge_code, badge_name, badge_name_en, badge_type, badge
 -- Clear existing data
 DELETE FROM user_badges;
 
--- Reset sequences
-SELECT setval(pg_get_serial_sequence('user_badges', 'id'), coalesce(max(id), 0) + 1, false) FROM user_badges;
-
 -- Insert data
 INSERT INTO user_badges (id, user_id, badge_id, status, earned_at, verified_at, created_at) VALUES
   ('ub_1775582518926_islwo908z', 'u1', 'badge1', 'verified', NULL, NULL, '2026-04-07 17:21:58'),
@@ -443,9 +422,6 @@ INSERT INTO user_badges (id, user_id, badge_id, status, earned_at, verified_at, 
 -- Clear existing data
 DELETE FROM sessions;
 
--- Reset sequences
-SELECT setval(pg_get_serial_sequence('sessions', 'id'), coalesce(max(id), 0) + 1, false) FROM sessions;
-
 -- Insert data
 INSERT INTO sessions (id, user_id, token, expires_at, created_at) VALUES
   ('s_1775735969207_onqp2gljf', 'u_1775735969135_rr0t8z5j3', 'd2f7af1f189f1aae4d7ad78e41df7d4808bb20329fd7960b867628e0438529e3', '2026-05-09T11:59:29.207Z', '2026-04-09 11:59:29');
@@ -456,9 +432,6 @@ INSERT INTO sessions (id, user_id, token, expires_at, created_at) VALUES
 -- Clear existing data
 DELETE FROM admin_users;
 
--- Reset sequences
-SELECT setval(pg_get_serial_sequence('admin_users', 'id'), coalesce(max(id), 0) + 1, false) FROM admin_users;
-
 -- Insert data
 INSERT INTO admin_users (id, username, password_hash, email, is_active, last_login_at, created_at, updated_at) VALUES
   ('admin_1775622580077', 'wjj', '4b4950e729ca44a14d0b27eb61de1da8b59d489388aae69435009ce5b759c6ee', 'admin@hackuni.com', TRUE, '2026-04-08T09:37:08.573Z', '2026-04-08 04:29:40', '2026-04-08 04:29:40');
@@ -468,9 +441,6 @@ INSERT INTO admin_users (id, username, password_hash, email, is_active, last_log
 -- ========================================
 -- Clear existing data
 DELETE FROM admin_sessions;
-
--- Reset sequences
-SELECT setval(pg_get_serial_sequence('admin_sessions', 'id'), coalesce(max(id), 0) + 1, false) FROM admin_sessions;
 
 -- Insert data
 INSERT INTO admin_sessions (id, admin_user_id, token, expires_at, created_at) VALUES

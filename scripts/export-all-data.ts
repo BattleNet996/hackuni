@@ -83,11 +83,6 @@ function exportTable(tableName: string, columns: string[]) {
     sqlLines.push(`DELETE FROM ${tableName};`);
     sqlLines.push(``);
 
-    // Reset sequences if there are serial columns
-    sqlLines.push(`-- Reset sequences`);
-    sqlLines.push(`SELECT setval(pg_get_serial_sequence('${tableName}', 'id'), coalesce(max(id), 0) + 1, false) FROM ${tableName};`);
-    sqlLines.push(``);
-
     // Insert data
     sqlLines.push(`-- Insert data`);
     sqlLines.push(`INSERT INTO ${tableName} (${columns.join(', ')}) VALUES`);
