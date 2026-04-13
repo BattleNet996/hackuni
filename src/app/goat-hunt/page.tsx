@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { HackerCard } from '@/components/ui/HackerCard';
-import { Badge } from '@/components/ui/Badge';
+import { Tag, Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLike } from '@/contexts/LikeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -123,7 +123,7 @@ export default function GoatHuntPage() {
 
               <div style={{ marginTop: 'var(--sp-3)', display: 'flex', gap: 'var(--sp-2)' }}>
                 {ensureTagsArray(proj.tags_json).slice(0, 3).map(tag => (
-                  <Badge key={tag} type="tech" label={tag} />
+                  <Tag key={tag} label={tag} />
                 ))}
               </div>
             </div>
