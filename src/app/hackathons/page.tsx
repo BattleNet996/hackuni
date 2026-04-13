@@ -163,7 +163,6 @@ export default function HackathonsPage() {
                   </span>
                   <Button
                     variant="primary"
-                    size="sm"
                     onClick={() => window.open(hack.registration_url || '#', '_blank')}
                   >
                     Register &gt;

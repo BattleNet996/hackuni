@@ -129,7 +129,6 @@ export default function StoriesPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
                 <Button
                   variant="ghost"
-                  size="sm"
                   onClick={() => toggleLikeStory(story.id)}
                   style={{
                     color: isStoryLiked(story.id) ? 'var(--brand-coral)' : 'var(--text-muted)',
