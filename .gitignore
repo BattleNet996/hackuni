@@ -56,3 +56,6 @@ next-env.d.ts
 *.db-wal
 database/*.db-shm
 database/*.db-wal
+
+# Supabase local temp artifacts
+supabase/.temp/
