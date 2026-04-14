@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchJsonWithCache, getCachedJson } from '@/lib/client-cache';
 
 interface BadgeItem {
   id: string;
@@ -24,6 +25,11 @@ interface BadgeStats {
   completionRate: number;
 }
 
+interface BadgeListResponse {
+  data: BadgeItem[];
+  stats: BadgeStats | null;
+}
+
 export default function BadgesPage() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
@@ -37,12 +43,15 @@ export default function BadgesPage() {
     async function fetchBadges() {
       try {
         const userQuery = user?.id ? `?user_id=${user.id}` : '';
-        const response = await fetch(`/api/badges${userQuery}`);
-        const data = await response.json();
+        const cacheKey = `/api/badges${userQuery}`;
+        const cachedResponse = getCachedJson<BadgeListResponse>(cacheKey);
 
-        if (!response.ok) {
-          throw new Error(data.error?.message || 'Failed to fetch badges');
+        if (cachedResponse && isActive) {
+          setBadges(cachedResponse.data || []);
+          setStats(cachedResponse.stats || null);
         }
+
+        const data = await fetchJsonWithCache<BadgeListResponse>(cacheKey);
 
         if (isActive) {
           setBadges(data.data || []);

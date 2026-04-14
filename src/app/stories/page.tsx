@@ -6,6 +6,7 @@ import { Tag } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLike } from '@/contexts/LikeContext';
+import { fetchJsonWithCache, getCachedJson, prefetchJsonWithCache } from '@/lib/client-cache';
 
 interface Story {
   id: string;
@@ -20,30 +21,43 @@ interface Story {
   like_count: number;
 }
 
+interface StoryListResponse {
+  data: Story[];
+}
+
 export default function StoriesPage() {
   const { t } = useLanguage();
   const { isStoryLiked, toggleLikeStory, getStoryLikes } = useLike();
-  const [stories, setStories] = useState<Story[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cacheKey = '/api/stories';
+  const cachedResponse = React.useMemo(() => getCachedJson<StoryListResponse>(cacheKey), [cacheKey]);
+  const [stories, setStories] = useState<Story[]>(cachedResponse?.data || []);
+  const [isLoading, setIsLoading] = useState(!cachedResponse);
   const [filterTag, setFilterTag] = useState<string | null>(null);
 
   useEffect(() => {
+    let isActive = true;
+
     async function fetchStories() {
       try {
-        const res = await fetch('/api/stories');
-        const data = await res.json();
-        if (data.data) {
+        const data = await fetchJsonWithCache<StoryListResponse>(cacheKey);
+        if (isActive && data.data) {
           setStories(data.data);
         }
       } catch (error) {
         console.error('Failed to fetch stories:', error);
       } finally {
-        setIsLoading(false);
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     }
 
-    fetchStories();
-  }, []);
+    void fetchStories();
+
+    return () => {
+      isActive = false;
+    };
+  }, [cacheKey]);
 
   // Helper function to ensure tags_json is always an array
   const ensureTagsArray = (tags: any): string[] => {
@@ -118,7 +132,7 @@ export default function StoriesPage() {
           return (
           <HackerCard key={story.id} style={{ padding: 'var(--sp-5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--sp-3)' }}>
-              <Link href={`/stories/${story.slug}`} style={{ flex: 1 }}>
+              <Link href={`/stories/${story.slug}`} onMouseEnter={() => prefetchJsonWithCache(`/api/stories/${story.slug}`)} style={{ flex: 1 }}>
                 <h2 style={{
                   fontFamily: 'var(--font-hero)',
                   fontSize: 'var(--text-h3)',

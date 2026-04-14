@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Tag } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { fetchJsonWithCache, getCachedJson } from '@/lib/client-cache';
 
 interface HackathonProject {
   id: string;
@@ -44,6 +45,10 @@ interface HackathonDetail {
   participants: HackathonParticipant[];
 }
 
+interface HackathonDetailResponse {
+  data: HackathonDetail;
+}
+
 export default function HackathonDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { t, language } = useLanguage();
   const [hackathon, setHackathon] = React.useState<HackathonDetail | null>(null);
@@ -53,13 +58,16 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
     let isActive = true;
 
     void params.then(async ({ id }) => {
-      try {
-        const response = await fetch(`/api/hackathons/${id}`);
-        const data = await response.json();
+      const cacheKey = `/api/hackathons/${id}`;
+      const cachedResponse = getCachedJson<HackathonDetailResponse>(cacheKey);
 
-        if (!response.ok) {
-          throw new Error(data.error?.message || 'Failed to fetch hackathon');
-        }
+      if (cachedResponse?.data && isActive) {
+        setHackathon(cachedResponse.data);
+        setLoading(false);
+      }
+
+      try {
+        const data = await fetchJsonWithCache<HackathonDetailResponse>(cacheKey);
 
         if (isActive) {
           setHackathon(data.data);
@@ -122,10 +130,14 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
             </p>
           </div>
 
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '48px', color: 'var(--brand-coral)', lineHeight: 1 }}>{hackathon.level_score}</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '16px', color: 'var(--text-muted)', marginTop: 'var(--sp-2)' }}>{hackathon.level_code} TIER</div>
-          </div>
+          {hackathon.level_score && (
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '48px', color: 'var(--brand-coral)', lineHeight: 1 }}>{hackathon.level_score}</div>
+              {hackathon.level_code && (
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '16px', color: 'var(--text-muted)', marginTop: 'var(--sp-2)' }}>{hackathon.level_code} TIER</div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

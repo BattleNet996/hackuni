@@ -28,9 +28,31 @@ export interface Hackathon {
   updated_at: string;
 }
 
+function sanitizeLevel(levelScore: unknown, levelCode: unknown) {
+  const scoreText = typeof levelScore === 'string' ? levelScore.trim() : String(levelScore || '').trim();
+  const codeText = typeof levelCode === 'string' ? levelCode.trim() : String(levelCode || '').trim();
+  const numericScore = Number(scoreText);
+  const isLegacyMockScore = Number.isFinite(numericScore) && numericScore > 10;
+
+  if (isLegacyMockScore) {
+    return {
+      level_score: '',
+      level_code: '',
+    };
+  }
+
+  return {
+    level_score: scoreText,
+    level_code: codeText,
+  };
+}
+
 export function mapRowToHackathon(row: any): Hackathon {
+  const normalizedLevel = sanitizeLevel(row.level_score, row.level_code);
+
   return {
     ...row,
     tags_json: ensureTagsArray(row.tags_json),
+    ...normalizedLevel,
   };
 }

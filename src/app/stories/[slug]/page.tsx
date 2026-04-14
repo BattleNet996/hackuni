@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useLike } from '@/contexts/LikeContext';
 import { useComment } from '@/contexts/CommentContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchJsonWithCache, getCachedJson } from '@/lib/client-cache';
 
 interface StoryDetail {
   id: string;
@@ -30,6 +31,10 @@ interface StoryComment {
   created_at: string;
 }
 
+interface StoryDetailResponse {
+  data: StoryDetail;
+}
+
 export default function StoryDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { t, language } = useLanguage();
   const { user } = useAuth();
@@ -45,13 +50,16 @@ export default function StoryDetailPage({ params }: { params: Promise<{ slug: st
     let isActive = true;
 
     void params.then(async ({ slug }) => {
-      try {
-        const response = await fetch(`/api/stories/${slug}`);
-        const data = await response.json();
+      const cacheKey = `/api/stories/${slug}`;
+      const cachedResponse = getCachedJson<StoryDetailResponse>(cacheKey);
 
-        if (!response.ok) {
-          throw new Error(data.error?.message || 'Failed to fetch story');
-        }
+      if (cachedResponse?.data && isActive) {
+        setStory(cachedResponse.data);
+        setLoading(false);
+      }
+
+      try {
+        const data = await fetchJsonWithCache<StoryDetailResponse>(cacheKey);
 
         if (!isActive) return;
 

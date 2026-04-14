@@ -5,6 +5,7 @@ import { HackerCard } from '@/components/ui/HackerCard';
 import { Tag } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { fetchJsonWithCache, getCachedJson, prefetchJsonWithCache } from '@/lib/client-cache';
 
 interface Hackathon {
   id: string;
@@ -22,29 +23,42 @@ interface Hackathon {
   start_time: string;
 }
 
+interface HackathonListResponse {
+  data: Hackathon[];
+}
+
 export default function HackathonsPage() {
   const { t } = useLanguage();
-  const [hackathons, setHackathons] = useState<Hackathon[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cacheKey = '/api/hackathons';
+  const cachedResponse = React.useMemo(() => getCachedJson<HackathonListResponse>(cacheKey), [cacheKey]);
+  const [hackathons, setHackathons] = useState<Hackathon[]>(cachedResponse?.data || []);
+  const [isLoading, setIsLoading] = useState(!cachedResponse);
   const [filterTag, setFilterTag] = useState<string | null>(null);
 
   useEffect(() => {
+    let isActive = true;
+
     async function fetchHackathons() {
       try {
-        const res = await fetch('/api/hackathons');
-        const data = await res.json();
-        if (data.data) {
+        const data = await fetchJsonWithCache<HackathonListResponse>(cacheKey);
+        if (isActive && data.data) {
           setHackathons(data.data);
         }
       } catch (error) {
         console.error('Failed to fetch hackathons:', error);
       } finally {
-        setIsLoading(false);
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     }
 
-    fetchHackathons();
-  }, []);
+    void fetchHackathons();
+
+    return () => {
+      isActive = false;
+    };
+  }, [cacheKey]);
 
   // Helper function to ensure tags_json is always an array
   const ensureTagsArray = (tags: any): string[] => {
@@ -129,15 +143,19 @@ export default function HackathonsPage() {
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Link href={`/hackathons/${hack.id}`}>
+                <Link href={`/hackathons/${hack.id}`} onMouseEnter={() => prefetchJsonWithCache(`/api/hackathons/${hack.id}`)}>
                   <h2 style={{ margin: '0 0 var(--sp-2) 0', fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h2)', cursor: 'pointer' }}>
                     {hack.title}
                   </h2>
                 </Link>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '24px', color: 'var(--brand-coral)' }}>{hack.level_score}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>Class: {hack.level_code}</div>
-                </div>
+                {hack.level_score && (
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '24px', color: 'var(--brand-coral)' }}>{hack.level_score}</div>
+                    {hack.level_code && (
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>Class: {hack.level_code}</div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <p style={{ color: 'var(--text-main)', fontSize: 'var(--text-body)', margin: '0 0 var(--sp-4) 0', maxWidth: '80%' }}>

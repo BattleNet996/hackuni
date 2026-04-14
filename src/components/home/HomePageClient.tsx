@@ -7,6 +7,7 @@ import { HackerCard } from '@/components/ui/HackerCard';
 import { Tag, Badge } from '@/components/ui/Badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLike } from '@/contexts/LikeContext';
+import { prefetchJsonWithCache } from '@/lib/client-cache';
 
 export interface Hackathon {
   id: string;
@@ -178,7 +179,7 @@ export function HomePageClient({
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }} className="content-column-list">
               {initialHackathons.map((hackathon) => (
-                <Link key={hackathon.id} href={`/hackathons/${hackathon.id}`} style={{ textDecoration: 'none' }}>
+                <Link key={hackathon.id} href={`/hackathons/${hackathon.id}`} onMouseEnter={() => prefetchJsonWithCache(`/api/hackathons/${hackathon.id}`)} style={{ textDecoration: 'none' }}>
                   <HackerCard className="responsive-flex-col desktop-row stream-card stream-hackathon" style={{ gap: 'var(--sp-3)', cursor: 'pointer' }}>
                     <div
                       style={{
@@ -195,7 +196,9 @@ export function HomePageClient({
                         <h3 style={{ margin: '0 0 var(--sp-1) 0', fontFamily: 'var(--font-hero)', fontSize: '22px', color: 'var(--text-main)', lineHeight: 1.1 }}>
                           {hackathon.title}
                         </h3>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', color: 'var(--brand-coral)' }}>{hackathon.level_score}</div>
+                        {hackathon.level_score && (
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', color: 'var(--brand-coral)' }}>{hackathon.level_score}</div>
+                        )}
                       </div>
                       <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: '0 0 var(--sp-2) 0', lineHeight: 1.5 }}>{hackathon.short_desc}</p>
 
@@ -230,7 +233,7 @@ export function HomePageClient({
                 const displayLikes = getProjectLikes(project.id) ?? project.like_count ?? 0;
 
                 return (
-                  <Link key={project.id} href={`/goat-hunt/${project.id}`} style={{ textDecoration: 'none' }}>
+                  <Link key={project.id} href={`/goat-hunt/${project.id}`} onMouseEnter={() => prefetchJsonWithCache(`/api/projects/${project.id}`)} style={{ textDecoration: 'none' }}>
                     <HackerCard className="responsive-flex-col desktop-row stream-card" style={{ alignItems: 'center', gap: 'var(--sp-3)', padding: 'var(--sp-3)', cursor: 'pointer' }}>
                       <div style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--text-muted)', width: '40px', textAlign: 'center' }}>
                         {project.rank_score ?? '-'}

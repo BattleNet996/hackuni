@@ -1,15 +1,61 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/Button';
+import { prefetchJsonWithCache } from '@/lib/client-cache';
 
 export function Navbar() {
   const { t } = useLanguage();
   const { user, logout } = useAuth();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const prefetchRouteData = useCallback((href: string) => {
+    router.prefetch(href);
+
+    if (href === '/hackathons') {
+      prefetchJsonWithCache('/api/hackathons');
+    } else if (href === '/stories') {
+      prefetchJsonWithCache('/api/stories');
+    } else if (href === '/goat-hunt') {
+      prefetchJsonWithCache('/api/projects?awarded=true');
+    } else if (href === '/badges') {
+      const badgeUrl = user?.id ? `/api/badges?user_id=${user.id}` : '/api/badges';
+      prefetchJsonWithCache(badgeUrl);
+    } else if (href === '/profile' && user?.id) {
+      prefetchJsonWithCache(`/api/builders/${user.id}`);
+    }
+  }, [router, user?.id]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const browserWindow = window as Window & {
+      requestIdleCallback?: (callback: IdleRequestCallback) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+
+    const warmCriticalRoutes = () => {
+      prefetchRouteData('/hackathons');
+      prefetchRouteData('/stories');
+      prefetchRouteData('/goat-hunt');
+      prefetchRouteData('/badges');
+      if (user?.id) {
+        prefetchRouteData('/profile');
+      }
+    };
+
+    if (browserWindow.requestIdleCallback) {
+      const idleId = browserWindow.requestIdleCallback(warmCriticalRoutes);
+      return () => browserWindow.cancelIdleCallback?.(idleId);
+    }
+
+    const timer = window.setTimeout(warmCriticalRoutes, 600);
+    return () => window.clearTimeout(timer);
+  }, [prefetchRouteData, user?.id]);
 
   return (
     <nav style={{
@@ -75,10 +121,10 @@ export function Navbar() {
 
       {/* Desktop nav links */}
       <div className="desktop-nav" style={{ display: 'flex', gap: 'var(--sp-4)', fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
-        <Link href="/hackathons" style={{ color: 'var(--text-muted)' }} className="hover-color">&gt; {t('nav.hackathons')}</Link>
-        <Link href="/stories" style={{ color: 'var(--text-muted)' }} className="hover-color">&gt; {t('nav.stories')}</Link>
-        <Link href="/goat-hunt" style={{ color: 'var(--text-muted)' }} className="hover-color">&gt; {t('nav.goat_hunt')}</Link>
-        <Link href="/badges" style={{ color: 'var(--text-muted)' }} className="hover-color">&gt; {t('nav.badges')}</Link>
+        <Link href="/hackathons" onMouseEnter={() => prefetchRouteData('/hackathons')} style={{ color: 'var(--text-muted)' }} className="hover-color">&gt; {t('nav.hackathons')}</Link>
+        <Link href="/stories" onMouseEnter={() => prefetchRouteData('/stories')} style={{ color: 'var(--text-muted)' }} className="hover-color">&gt; {t('nav.stories')}</Link>
+        <Link href="/goat-hunt" onMouseEnter={() => prefetchRouteData('/goat-hunt')} style={{ color: 'var(--text-muted)' }} className="hover-color">&gt; {t('nav.goat_hunt')}</Link>
+        <Link href="/badges" onMouseEnter={() => prefetchRouteData('/badges')} style={{ color: 'var(--text-muted)' }} className="hover-color">&gt; {t('nav.badges')}</Link>
       </div>
 
       <div style={{ display: 'flex', gap: 'var(--sp-3)', alignItems: 'center' }}>
@@ -88,7 +134,7 @@ export function Navbar() {
           {user ? (
             <>
               {/* Logged in */}
-              <Link href="/profile">
+              <Link href="/profile" onMouseEnter={() => prefetchRouteData('/profile')}>
                 <Button variant="ghost" style={{ padding: '8px 16px', fontSize: '13px' }}>
                   {t('nav.profile')}
                 </Button>
@@ -136,6 +182,7 @@ export function Navbar() {
         }} className="mobile-menu">
           <Link
             href="/hackathons"
+            onMouseEnter={() => prefetchRouteData('/hackathons')}
             onClick={() => setMobileMenuOpen(false)}
             style={{
               color: 'var(--text-main)',
@@ -149,6 +196,7 @@ export function Navbar() {
           </Link>
           <Link
             href="/stories"
+            onMouseEnter={() => prefetchRouteData('/stories')}
             onClick={() => setMobileMenuOpen(false)}
             style={{
               color: 'var(--text-main)',
@@ -162,6 +210,7 @@ export function Navbar() {
           </Link>
           <Link
             href="/goat-hunt"
+            onMouseEnter={() => prefetchRouteData('/goat-hunt')}
             onClick={() => setMobileMenuOpen(false)}
             style={{
               color: 'var(--text-main)',
@@ -175,6 +224,7 @@ export function Navbar() {
           </Link>
           <Link
             href="/badges"
+            onMouseEnter={() => prefetchRouteData('/badges')}
             onClick={() => setMobileMenuOpen(false)}
             style={{
               color: 'var(--text-main)',
@@ -191,6 +241,7 @@ export function Navbar() {
               <>
                 <Link
                   href="/profile"
+                  onMouseEnter={() => prefetchRouteData('/profile')}
                   onClick={() => setMobileMenuOpen(false)}
                   style={{
                     display: 'block',

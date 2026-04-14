@@ -8,6 +8,7 @@ import { FootprintMap } from '@/components/FootprintMap';
 import { Heatmap } from '@/components/Heatmap';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchJsonWithCache, getCachedJson } from '@/lib/client-cache';
 
 interface BuilderUser {
   id: string;
@@ -57,6 +58,10 @@ interface BuilderProfileResponse {
   heatmapActivities: Array<{ date: string; type: string }>;
 }
 
+interface BuilderProfileApiResponse {
+  data: BuilderProfileResponse;
+}
+
 export default function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { t, language } = useLanguage();
   const { user } = useAuth();
@@ -69,13 +74,16 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     let isActive = true;
 
     void params.then(async ({ id }) => {
-      try {
-        const response = await fetch(`/api/builders/${id}`);
-        const data = await response.json();
+      const cacheKey = `/api/builders/${id}`;
+      const cachedResponse = getCachedJson<BuilderProfileApiResponse>(cacheKey);
 
-        if (!response.ok) {
-          throw new Error(data.error?.message || 'Failed to fetch builder profile');
-        }
+      if (cachedResponse?.data && isActive) {
+        setProfileData(cachedResponse.data);
+        setLoading(false);
+      }
+
+      try {
+        const data = await fetchJsonWithCache<BuilderProfileApiResponse>(cacheKey);
 
         if (isActive) {
           setProfileData(data.data);

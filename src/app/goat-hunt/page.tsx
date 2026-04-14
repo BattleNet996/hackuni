@@ -6,6 +6,7 @@ import { Tag, Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLike } from '@/contexts/LikeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { fetchJsonWithCache, getCachedJson, prefetchJsonWithCache } from '@/lib/client-cache';
 
 interface Project {
   id: string;
@@ -19,30 +20,42 @@ interface Project {
   tags_json: string | string[];
 }
 
+interface ProjectListResponse {
+  data: Project[];
+}
+
 export default function GoatHuntPage() {
   const { t } = useLanguage();
   const { isProjectLiked, toggleLikeProject, getProjectLikes } = useLike();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cacheKey = '/api/projects?awarded=true';
+  const cachedResponse = React.useMemo(() => getCachedJson<ProjectListResponse>(cacheKey), [cacheKey]);
+  const [projects, setProjects] = useState<Project[]>(cachedResponse?.data || []);
+  const [isLoading, setIsLoading] = useState(!cachedResponse);
 
   useEffect(() => {
+    let isActive = true;
+
     async function fetchProjects() {
       try {
-        // Fetch awarded projects only
-        const res = await fetch('/api/projects?awarded=true');
-        const data = await res.json();
-        if (data.data) {
+        const data = await fetchJsonWithCache<ProjectListResponse>(cacheKey);
+        if (isActive && data.data) {
           setProjects(data.data);
         }
       } catch (error) {
         console.error('Failed to fetch projects:', error);
       } finally {
-        setIsLoading(false);
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     }
 
-    fetchProjects();
-  }, []);
+    void fetchProjects();
+
+    return () => {
+      isActive = false;
+    };
+  }, [cacheKey]);
 
   // Helper function to ensure tags_json is always an array
   const ensureTagsArray = (tags: any): string[] => {
@@ -107,7 +120,7 @@ export default function GoatHuntPage() {
             </div>
 
             <div style={{ flex: 1 }}>
-              <Link href={`/goat-hunt/${proj.id}`}>
+              <Link href={`/goat-hunt/${proj.id}`} onMouseEnter={() => prefetchJsonWithCache(`/api/projects/${proj.id}`)}>
                 <h3 style={{ margin: '0 0 4px 0', fontFamily: 'var(--font-hero)', fontSize: '24px', display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
                   {proj.title}
                   {proj.is_awarded && <Badge type="award" label={proj.award_text || 'Awarded'} />}
@@ -139,7 +152,7 @@ export default function GoatHuntPage() {
               >
                 {isProjectLiked(proj.id) ? '♥ Liked' : '♡ Like'}
               </Button>
-              <Link href={`/goat-hunt/${proj.id}`}>
+              <Link href={`/goat-hunt/${proj.id}`} onMouseEnter={() => prefetchJsonWithCache(`/api/projects/${proj.id}`)}>
                 <Button variant="primary">
                   View Details →
                 </Button>

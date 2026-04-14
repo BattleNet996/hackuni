@@ -9,6 +9,7 @@ import { useLike } from '@/contexts/LikeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useComment } from '@/contexts/CommentContext';
 import { ensureTagsArray } from '@/lib/utils/data';
+import { fetchJsonWithCache, getCachedJson } from '@/lib/client-cache';
 
 interface ProjectDetail {
   id: string;
@@ -43,6 +44,14 @@ interface ProjectComment {
   created_at: string;
 }
 
+interface ProjectDetailResponse {
+  data: ProjectDetail;
+}
+
+interface HackathonMiniResponse {
+  data: HackathonMini;
+}
+
 function parseTeamMembers(teamMemberText: string | undefined): string[] {
   if (!teamMemberText) return [];
 
@@ -67,12 +76,7 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = React.useState(true);
 
   const refreshProject = React.useCallback(async (projectId: string) => {
-    const projectResponse = await fetch(`/api/projects/${projectId}`);
-    const projectData = await projectResponse.json();
-
-    if (!projectResponse.ok) {
-      throw new Error(projectData.error?.message || 'Failed to fetch project');
-    }
+    const projectData = await fetchJsonWithCache<ProjectDetailResponse>(`/api/projects/${projectId}`);
 
     const nextProject = {
       ...projectData.data,
@@ -84,19 +88,13 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
 
     if (nextProject.related_hackathon_id) {
       try {
-        const hackathonResponse = await fetch(`/api/hackathons/${nextProject.related_hackathon_id}`);
-        const hackathonData = await hackathonResponse.json();
-
-        if (hackathonResponse.ok) {
-          setRelatedHackathon({
-            id: hackathonData.data.id,
-            title: hackathonData.data.title,
-            city: hackathonData.data.city,
-            country: hackathonData.data.country,
-          });
-        } else {
-          setRelatedHackathon(null);
-        }
+        const hackathonData = await fetchJsonWithCache<HackathonMiniResponse>(`/api/hackathons/${nextProject.related_hackathon_id}`);
+        setRelatedHackathon({
+          id: hackathonData.data.id,
+          title: hackathonData.data.title,
+          city: hackathonData.data.city,
+          country: hackathonData.data.country,
+        });
       } catch (error) {
         console.error('Failed to fetch related hackathon:', error);
         setRelatedHackathon(null);
@@ -113,6 +111,16 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
     let isActive = true;
 
     void params.then(async ({ id }) => {
+      const cachedProject = getCachedJson<ProjectDetailResponse>(`/api/projects/${id}`);
+      if (cachedProject?.data && isActive) {
+        setProject({
+          ...cachedProject.data,
+          tags_json: ensureTagsArray(cachedProject.data.tags_json),
+          images: Array.isArray(cachedProject.data.images) ? cachedProject.data.images : [],
+        });
+        setLoading(false);
+      }
+
       try {
         await refreshProject(id);
       } catch (error) {

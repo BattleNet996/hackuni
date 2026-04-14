@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { apiFetch } from '@/lib/api-client';
+import { fetchJsonWithCache } from '@/lib/client-cache';
 
 interface LikeRecord {
   target_type: 'project' | 'story' | 'comment';
@@ -54,28 +55,22 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
   const refreshLikeCounts = useCallback(async () => {
     try {
       // Fetch projects and stories to get their like counts
-      const [projectsRes, storiesRes] = await Promise.all([
-        fetch('/api/projects?limit=1000'),
-        fetch('/api/stories?limit=1000')
+      const [projectsData, storiesData] = await Promise.all([
+        fetchJsonWithCache<{ data?: CountableProject[] }>('/api/projects?limit=1000'),
+        fetchJsonWithCache<{ data?: CountableStory[] }>('/api/stories?limit=1000')
       ]);
 
-      if (projectsRes.ok) {
-        const projectsData = await projectsRes.json();
-        const counts = projectsData.data?.reduce((acc: Record<string, number>, proj: CountableProject) => {
-          acc[proj.id] = proj.like_count || 0;
-          return acc;
-        }, {}) || {};
-        setProjectLikeCounts(counts);
-      }
+      const projectCounts = projectsData.data?.reduce((acc: Record<string, number>, proj: CountableProject) => {
+        acc[proj.id] = proj.like_count || 0;
+        return acc;
+      }, {}) || {};
+      setProjectLikeCounts(projectCounts);
 
-      if (storiesRes.ok) {
-        const storiesData = await storiesRes.json();
-        const counts = storiesData.data?.reduce((acc: Record<string, number>, story: CountableStory) => {
-          acc[story.id] = story.like_count || 0;
-          return acc;
-        }, {}) || {};
-        setStoryLikeCounts(counts);
-      }
+      const storyCounts = storiesData.data?.reduce((acc: Record<string, number>, story: CountableStory) => {
+        acc[story.id] = story.like_count || 0;
+        return acc;
+      }, {}) || {};
+      setStoryLikeCounts(storyCounts);
     } catch (error) {
       console.error('Failed to fetch like counts:', error);
     }
@@ -180,6 +175,41 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
 
+    const prevLiked =
+      targetType === 'project'
+        ? likedProjects.has(targetId)
+        : targetType === 'story'
+          ? likedStories.has(targetId)
+          : likedComments.has(targetId);
+
+    const applyOptimisticState = (liked: boolean) => {
+      if (targetType === 'project') {
+        updateLikedSet(setLikedProjects, targetId, liked);
+        setProjectLikeCounts((prev) => {
+          const currentCount = prev[targetId];
+          if (typeof currentCount === 'undefined') return prev;
+          return {
+            ...prev,
+            [targetId]: Math.max(0, currentCount + (liked ? 1 : -1)),
+          };
+        });
+      } else if (targetType === 'story') {
+        updateLikedSet(setLikedStories, targetId, liked);
+        setStoryLikeCounts((prev) => {
+          const currentCount = prev[targetId];
+          if (typeof currentCount === 'undefined') return prev;
+          return {
+            ...prev,
+            [targetId]: Math.max(0, currentCount + (liked ? 1 : -1)),
+          };
+        });
+      } else {
+        updateLikedSet(setLikedComments, targetId, liked);
+      }
+    };
+
+    applyOptimisticState(!prevLiked);
+
     try {
       const response = await apiFetch('/api/likes', {
         method: 'POST',
@@ -204,6 +234,8 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
         return { liked, count };
       }
 
+      applyOptimisticState(prevLiked);
+
       if (response.status === 401) {
         handleExpiredSession(true);
         return null;
@@ -215,6 +247,7 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
       }
       return null;
     } catch (error) {
+      applyOptimisticState(prevLiked);
       console.error('[LikeContext] Toggle like error:', error);
       if (typeof window !== 'undefined') {
         alert('Network error. Please try again.');
