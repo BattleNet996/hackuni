@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuthService } from '@/lib/services';
-import { getDb } from '@/lib/db/client';
+import { supabase } from '@/lib/db/supabase-client';
 import { createHash } from 'crypto';
 
 // PATCH /api/admin/admins/[id] - Update admin user
@@ -30,61 +30,56 @@ export async function PATCH(
 
     const updateData = await request.json();
 
-    const db = getDb();
-    // Check if admin exists
-    const existingStmt = db.prepare('SELECT id FROM admin_users WHERE id = ?');
-    const existing = existingStmt.get(adminId);
+    const { data: existingAdmins, error: existingError } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('id', adminId)
+      .limit(1);
 
-    if (!existing) {
+    if (existingError) {
+      throw existingError;
+    }
+
+    if ((existingAdmins || []).length === 0) {
       return NextResponse.json(
         { error: { code: 'NOT_FOUND', message: 'Admin user not found' } },
         { status: 404 }
       );
     }
 
-    // Build update query dynamically
-    const updates: string[] = [];
-    const values: any[] = [];
+    const updatePayload: Record<string, any> = {};
 
     if (updateData.email !== undefined) {
-      updates.push('email = ?');
-      values.push(updateData.email);
+      updatePayload.email = updateData.email;
     }
 
     if (updateData.is_active !== undefined) {
-      updates.push('is_active = ?');
-      values.push(updateData.is_active ? 1 : 0);
+      updatePayload.is_active = updateData.is_active ? 1 : 0;
     }
 
     if (updateData.password) {
-      const passwordHash = createHash('sha256').update(updateData.password).digest('hex');
-      updates.push('password_hash = ?');
-      values.push(passwordHash);
+      updatePayload.password_hash = createHash('sha256').update(updateData.password).digest('hex');
     }
 
-    if (updates.length === 0) {
+    if (Object.keys(updatePayload).length === 0) {
       return NextResponse.json(
         { error: { code: 'VALIDATION_ERROR', message: 'No fields to update' } },
         { status: 400 }
       );
     }
 
-    updates.push('updated_at = datetime(\'now\')');
-    values.push(adminId);
+    updatePayload.updated_at = new Date().toISOString();
 
-    const stmt = db.prepare(`
-      UPDATE admin_users
-      SET ${updates.join(', ')}
-      WHERE id = ?
-    `);
+    const { data: updatedAdmin, error: updateError } = await supabase
+      .from('admin_users')
+      .update(updatePayload)
+      .eq('id', adminId)
+      .select('id, username, email, is_active, last_login_at, created_at, updated_at')
+      .single();
 
-    stmt.run(...values);
-
-    const updatedAdmin = db.prepare(`
-      SELECT id, username, email, is_active, last_login_at, created_at, updated_at
-      FROM admin_users
-      WHERE id = ?
-    `).get(adminId);
+    if (updateError) {
+      throw updateError;
+    }
 
     return NextResponse.json({
       data: updatedAdmin,
@@ -132,12 +127,17 @@ export async function DELETE(
       );
     }
 
-    const db = getDb();
-    // Check if admin exists
-    const existingStmt = db.prepare('SELECT id FROM admin_users WHERE id = ?');
-    const existing = existingStmt.get(adminId);
+    const { data: existingAdmins, error: existingError } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('id', adminId)
+      .limit(1);
 
-    if (!existing) {
+    if (existingError) {
+      throw existingError;
+    }
+
+    if ((existingAdmins || []).length === 0) {
       return NextResponse.json(
         { error: { code: 'NOT_FOUND', message: 'Admin user not found' } },
         { status: 404 }
@@ -145,8 +145,14 @@ export async function DELETE(
     }
 
     // Delete admin user (cascades to sessions)
-    const stmt = db.prepare('DELETE FROM admin_users WHERE id = ?');
-    stmt.run(adminId);
+    const { error: deleteError } = await supabase
+      .from('admin_users')
+      .delete()
+      .eq('id', adminId);
+
+    if (deleteError) {
+      throw deleteError;
+    }
 
     return NextResponse.json({
       data: { success: true },

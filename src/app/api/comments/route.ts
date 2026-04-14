@@ -77,12 +77,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert to target_id/target_type format
-    const target_id = project_id || story_id;
-    const target_type = project_id ? 'project' : 'hackathon';
-
     const comment = await commentDAO.create(
-      { target_id, target_type, content, parent_comment_id } as any,
+      { project_id, story_id, content, parent_comment_id } as any,
       user.id,
       user.display_name || user.email
     );

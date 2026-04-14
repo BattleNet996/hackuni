@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuthService } from '@/lib/services';
 import { AdminLogsService } from '@/lib/services/admin-logs.service';
-import { getDb } from '@/lib/db/client';
+import { supabase } from '@/lib/db/supabase-client';
+
+function getRequestMetadata(request: NextRequest) {
+  return {
+    ip_address:
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      undefined,
+    user_agent: request.headers.get('user-agent') || undefined,
+  };
+}
 
 // PATCH /api/admin/reviews/[id] - Approve or reject a submission
 export async function PATCH(
@@ -37,84 +47,132 @@ export async function PATCH(
       );
     }
 
-    const db = getDb();
-    const logsService = new AdminLogsService(db);
+    const logsService = new AdminLogsService();
     const newStatus = action === 'approve' ? 'approved' : 'rejected';
+    const requestMetadata = getRequestMetadata(request);
 
     if (type === 'project') {
-      // Update project status
-      const stmt = db.prepare('UPDATE projects SET status = ? WHERE id = ?');
-      const result = stmt.run(newStatus, itemId);
+      const { data: projects, error: projectError } = await supabase
+        .from('projects')
+        .select('id, title, author_id')
+        .eq('id', itemId)
+        .limit(1);
 
-      if (result.changes === 0) {
+      if (projectError) {
+        throw projectError;
+      }
+
+      const project = projects?.[0];
+
+      if (!project) {
         return NextResponse.json(
           { error: { code: 'NOT_FOUND', message: 'Project not found' } },
           { status: 404 }
         );
       }
 
-      // Get project details for logging
-      const project = db.prepare('SELECT title, author_id FROM projects WHERE id = ?').get(itemId) as { title: string; author_id: string } | undefined;
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', itemId);
 
-      logsService.log(adminUser, action, {
+      if (updateError) {
+        throw updateError;
+      }
+
+      await logsService.log(adminUser, action, {
         entity_type: 'project',
         entity_id: itemId,
-        entity_name: project?.title,
-        details: { status: newStatus }
+        entity_name: project.title,
+        details: { status: newStatus },
+        ...requestMetadata,
       });
 
     } else if (type === 'story') {
-      // Update story status
-      const stmt = db.prepare('UPDATE stories SET status = ? WHERE id = ?');
-      const result = stmt.run(newStatus, itemId);
+      const { data: stories, error: storyError } = await supabase
+        .from('stories')
+        .select('id, title')
+        .eq('id', itemId)
+        .limit(1);
 
-      if (result.changes === 0) {
+      if (storyError) {
+        throw storyError;
+      }
+
+      const story = stories?.[0];
+
+      if (!story) {
         return NextResponse.json(
           { error: { code: 'NOT_FOUND', message: 'Story not found' } },
           { status: 404 }
         );
       }
 
-      // Get story details for logging
-      const story = db.prepare('SELECT title FROM stories WHERE id = ?').get(itemId) as { title: string } | undefined;
+      const { error: updateError } = await supabase
+        .from('stories')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', itemId);
 
-      logsService.log(adminUser, action, {
+      if (updateError) {
+        throw updateError;
+      }
+
+      await logsService.log(adminUser, action, {
         entity_type: 'story',
         entity_id: itemId,
-        entity_name: story?.title,
-        details: { status: newStatus }
+        entity_name: story.title,
+        details: { status: newStatus },
+        ...requestMetadata,
       });
 
     } else if (type === 'badge') {
-      // Update user_badge status
-      const stmt = db.prepare(`
-        UPDATE user_badges
-        SET status = ?, verified_at = datetime('now')
-        WHERE id = ?
-      `);
-      const result = stmt.run(newStatus, itemId);
+      const { data: badgeRows, error: badgeInfoError } = await supabase
+        .from('user_badges')
+        .select(`
+          id,
+          user:users(display_name),
+          badge:badges(badge_name)
+        `)
+        .eq('id', itemId)
+        .limit(1);
 
-      if (result.changes === 0) {
+      if (badgeInfoError) {
+        throw badgeInfoError;
+      }
+
+      const badgeInfo = badgeRows?.[0];
+
+      if (!badgeInfo) {
         return NextResponse.json(
           { error: { code: 'NOT_FOUND', message: 'Badge request not found' } },
           { status: 404 }
         );
       }
 
-      // Get badge details for logging
-      const badgeInfo = db.prepare(`
-        SELECT u.display_name, b.badge_name
-        FROM user_badges ub
-        JOIN users u ON ub.user_id = u.id
-        JOIN badges b ON ub.badge_id = b.id
-        WHERE ub.id = ?
-      `).get(itemId) as { display_name: string; badge_name: string } | undefined;
+      const { error: updateError } = await supabase
+        .from('user_badges')
+        .update({
+          status: newStatus,
+          verified_at: new Date().toISOString(),
+        })
+        .eq('id', itemId);
 
-      logsService.log(adminUser, action, {
+      if (updateError) {
+        throw updateError;
+      }
+
+      await logsService.log(adminUser, action, {
         entity_type: 'badge',
         entity_id: itemId,
-        entity_name: `${badgeInfo?.display_name} - ${badgeInfo?.badge_name}`,
-        details: { status: newStatus }
+        entity_name: `${badgeInfo.user?.display_name || 'Unknown'} - ${badgeInfo.badge?.badge_name || 'Unknown'}`,
+        details: { status: newStatus },
+        ...requestMetadata,
       });
     } else {
       return NextResponse.json(

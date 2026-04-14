@@ -1,4 +1,5 @@
 import { randomBytes } from 'crypto';
+import { supabase } from '../db/supabase-client';
 
 interface AdminUser {
   id: string;
@@ -15,53 +16,88 @@ interface LogOptions {
 }
 
 export class AdminLogsService {
-  private db: any;
+  constructor(_db?: any) {}
 
-  constructor(db: any) {
-    this.db = db;
+  private parseDetails(details: any) {
+    if (!details) return null;
+    if (typeof details !== 'string') return details;
+
+    try {
+      return JSON.parse(details);
+    } catch {
+      return details;
+    }
+  }
+
+  private applyFilters(query: any, filters: {
+    action?: string;
+    entity_type?: string;
+    admin_user_id?: string;
+    start_date?: string;
+    end_date?: string;
+  } = {}) {
+    let nextQuery = query;
+
+    if (filters.action) {
+      nextQuery = nextQuery.eq('action', filters.action);
+    }
+
+    if (filters.entity_type) {
+      nextQuery = nextQuery.eq('entity_type', filters.entity_type);
+    }
+
+    if (filters.admin_user_id) {
+      nextQuery = nextQuery.eq('admin_user_id', filters.admin_user_id);
+    }
+
+    if (filters.start_date) {
+      nextQuery = nextQuery.gte('created_at', filters.start_date);
+    }
+
+    if (filters.end_date) {
+      nextQuery = nextQuery.lte('created_at', filters.end_date);
+    }
+
+    return nextQuery;
   }
 
   /**
    * Log an admin action
    */
-  log(
+  async log(
     admin: AdminUser,
     action: string,
     options: LogOptions = {}
-  ): void {
+  ): Promise<void> {
     try {
       const id = `log_${Date.now()}_${randomBytes(8).toString('hex')}`;
+      const { error } = await supabase
+        .from('admin_logs')
+        .insert({
+          id,
+          admin_user_id: admin.id,
+          admin_username: admin.username,
+          action,
+          entity_type: options.entity_type || null,
+          entity_id: options.entity_id || null,
+          entity_name: options.entity_name || null,
+          details: options.details ? JSON.stringify(options.details) : null,
+          ip_address: options.ip_address || null,
+          user_agent: options.user_agent || null,
+        });
 
-      const stmt = this.db.prepare(`
-        INSERT INTO admin_logs (
-          id, admin_user_id, admin_username, action,
-          entity_type, entity_id, entity_name, details,
-          ip_address, user_agent
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      stmt.run(
-        id,
-        admin.id,
-        admin.username,
-        action,
-        options.entity_type || null,
-        options.entity_id || null,
-        options.entity_name || null,
-        options.details ? JSON.stringify(options.details) : null,
-        options.ip_address || null,
-        options.user_agent || null
-      );
+      if (error) {
+        throw error;
+      }
     } catch (error) {
       console.error('Failed to log admin action:', error);
-      // Don't throw - logging failures shouldn't break the main operation
     }
   }
 
   /**
    * Get logs with pagination and filtering
    */
-  getLogs(page: number = 1, limit: number = 50, filters: {
+  async getLogs(page: number = 1, limit: number = 50, filters: {
     action?: string;
     entity_type?: string;
     admin_user_id?: string;
@@ -70,66 +106,47 @@ export class AdminLogsService {
   } = {}) {
     try {
       const offset = (page - 1) * limit;
+      const countQuery = this.applyFilters(
+        supabase.from('admin_logs').select('*', { count: 'exact', head: true }),
+        filters
+      );
+      const { count, error: countError } = await countQuery;
 
-      let whereClause = '1=1';
-      const params: any[] = [];
-
-      if (filters.action) {
-        whereClause += ' AND action = ?';
-        params.push(filters.action);
+      if (countError) {
+        throw countError;
       }
 
-      if (filters.entity_type) {
-        whereClause += ' AND entity_type = ?';
-        params.push(filters.entity_type);
+      const logsQuery = this.applyFilters(
+        supabase
+          .from('admin_logs')
+          .select(`
+            id,
+            admin_user_id,
+            admin_username,
+            action,
+            entity_type,
+            entity_id,
+            entity_name,
+            details,
+            ip_address,
+            created_at
+          `)
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1),
+        filters
+      );
+      const { data: logs, error } = await logsQuery;
+
+      if (error) {
+        throw error;
       }
 
-      if (filters.admin_user_id) {
-        whereClause += ' AND admin_user_id = ?';
-        params.push(filters.admin_user_id);
-      }
-
-      if (filters.start_date) {
-        whereClause += ' AND created_at >= ?';
-        params.push(filters.start_date);
-      }
-
-      if (filters.end_date) {
-        whereClause += ' AND created_at <= ?';
-        params.push(filters.end_date);
-      }
-
-      const countStmt = this.db.prepare(`
-        SELECT COUNT(*) as total
-        FROM admin_logs
-        WHERE ${whereClause}
-      `);
-      const { total } = countStmt.get(...params);
-
-      const logsStmt = this.db.prepare(`
-        SELECT
-          id,
-          admin_user_id,
-          admin_username,
-          action,
-          entity_type,
-          entity_id,
-          entity_name,
-          details,
-          ip_address,
-          created_at
-        FROM admin_logs
-        WHERE ${whereClause}
-        ORDER BY created_at DESC
-        LIMIT ? OFFSET ?
-      `);
-
-      const logs = logsStmt.all(...params, limit, offset);
+      const total = count || 0;
 
       return {
-        data: logs.map((log: any) => ({
+        data: (logs || []).map((log: any) => ({
           ...log,
-          details: log.details ? JSON.parse(log.details) : null
+          details: this.parseDetails(log.details)
         })),
         total,
         page,
@@ -145,24 +162,26 @@ export class AdminLogsService {
   /**
    * Get recent logs for dashboard
    */
-  getRecentLogs(limit: number = 10) {
+  async getRecentLogs(limit: number = 10) {
     try {
-      const stmt = this.db.prepare(`
-        SELECT
+      const { data, error } = await supabase
+        .from('admin_logs')
+        .select(`
           id,
           admin_username,
           action,
           entity_type,
           entity_name,
           created_at
-        FROM admin_logs
-        ORDER BY created_at DESC
-        LIMIT ?
-      `);
+        `)
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-      const logs = stmt.all(limit);
+      if (error) {
+        throw error;
+      }
 
-      return logs;
+      return data || [];
     } catch (error) {
       console.error('Failed to get recent logs:', error);
       return [];
@@ -172,16 +191,20 @@ export class AdminLogsService {
   /**
    * Delete old logs (for cleanup)
    */
-  deleteOldLogs(daysToKeep: number = 90): number {
+  async deleteOldLogs(daysToKeep: number = 90): Promise<number> {
     try {
-      const stmt = this.db.prepare(`
-        DELETE FROM admin_logs
-        WHERE created_at < datetime('now', '-' || ? || ' days')
-      `);
+      const cutoff = new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from('admin_logs')
+        .delete()
+        .lt('created_at', cutoff)
+        .select('id');
 
-      const result = stmt.run(daysToKeep);
+      if (error) {
+        throw error;
+      }
 
-      return result.changes;
+      return data?.length || 0;
     } catch (error) {
       console.error('Failed to delete old logs:', error);
       return 0;
@@ -191,19 +214,27 @@ export class AdminLogsService {
   /**
    * Get statistics by action type
    */
-  getStatsByAction(days: number = 30) {
+  async getStatsByAction(days: number = 30) {
     try {
-      const stmt = this.db.prepare(`
-        SELECT
-          action,
-          COUNT(*) as count
-        FROM admin_logs
-        WHERE created_at >= datetime('now', '-' || ? || ' days')
-        GROUP BY action
-        ORDER BY count DESC
-      `);
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from('admin_logs')
+        .select('action')
+        .gte('created_at', cutoff);
 
-      return stmt.all(days);
+      if (error) {
+        throw error;
+      }
+
+      const counts = (data || []).reduce((acc: Record<string, number>, row: any) => {
+        const action = row.action || 'unknown';
+        acc[action] = (acc[action] || 0) + 1;
+        return acc;
+      }, {});
+
+      return Object.entries(counts)
+        .map(([action, count]) => ({ action, count: Number(count) }))
+        .sort((a, b) => b.count - a.count);
     } catch (error) {
       console.error('Failed to get stats:', error);
       return [];
@@ -213,20 +244,32 @@ export class AdminLogsService {
   /**
    * Get most active admins
    */
-  getMostActiveAdmins(days: number = 30, limit: number = 5) {
+  async getMostActiveAdmins(days: number = 30, limit: number = 5) {
     try {
-      const stmt = this.db.prepare(`
-        SELECT
-          admin_username,
-          COUNT(*) as action_count
-        FROM admin_logs
-        WHERE created_at >= datetime('now', '-' || ? || ' days')
-        GROUP BY admin_user_id, admin_username
-        ORDER BY action_count DESC
-        LIMIT ?
-      `);
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from('admin_logs')
+        .select('admin_user_id, admin_username')
+        .gte('created_at', cutoff);
 
-      return stmt.all(days, limit);
+      if (error) {
+        throw error;
+      }
+
+      const counts = (data || []).reduce((acc: Record<string, { admin_username: string; action_count: number }>, row: any) => {
+        const key = row.admin_user_id || row.admin_username || 'unknown';
+        const current = acc[key] || {
+          admin_username: row.admin_username || 'unknown',
+          action_count: 0,
+        };
+        current.action_count += 1;
+        acc[key] = current;
+        return acc;
+      }, {});
+
+      return (Object.values(counts) as Array<{ admin_username: string; action_count: number }>)
+        .sort((a, b) => b.action_count - a.action_count)
+        .slice(0, limit);
     } catch (error) {
       console.error('Failed to get active admins:', error);
       return [];

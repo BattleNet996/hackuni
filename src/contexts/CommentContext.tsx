@@ -55,12 +55,12 @@ export function CommentProvider({ children }: { children: React.ReactNode }) {
       }
 
       const newComment: Comment = data.data;
-      const key = comment.story_id || comment.project_id;
+      const key = comment.story_id ? `story_${comment.story_id}` : comment.project_id ? `project_${comment.project_id}` : null;
 
       if (key) {
         setComments(prev => ({
           ...prev,
-          [key]: [...(prev[key] || []), newComment],
+          [key]: [newComment, ...(prev[key] || [])],
         }));
       }
     } catch (error) {
@@ -207,7 +207,7 @@ export function CommentProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await apiFetch('/api/likes/unlike', {
         method: 'DELETE',
-        body: JSON.stringify({ target_type: targetType, targetId }),
+        body: JSON.stringify({ target_type: targetType, target_id: targetId }),
       });
 
       const data = await response.json();

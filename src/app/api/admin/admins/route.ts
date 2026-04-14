@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuthService } from '@/lib/services';
-import { getDb } from '@/lib/db/client';
+import { supabase } from '@/lib/db/supabase-client';
 import { createHash, randomBytes } from 'crypto';
 
 // GET /api/admin/admins - Get all admin users
@@ -24,16 +24,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const stmt = db.prepare(`
-      SELECT id, username, email, is_active, last_login_at, created_at, updated_at
-      FROM admin_users
-      ORDER BY created_at DESC
-    `);
+    const { data: admins, error } = await supabase
+      .from('admin_users')
+      .select('id, username, email, is_active, last_login_at, created_at, updated_at')
+      .order('created_at', { ascending: false });
 
-    const admins = stmt.all();
+    if (error) {
+      throw error;
+    }
 
-    return NextResponse.json({ data: admins });
+    return NextResponse.json({ data: admins || [] });
   } catch (error: any) {
     console.error('Get admins error:', error);
     return NextResponse.json(
@@ -74,12 +74,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    // Check if username already exists
-    const existingStmt = db.prepare('SELECT id FROM admin_users WHERE username = ?');
-    const existing = existingStmt.get(data.username);
+    const { data: existingAdmins, error: existingError } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('username', data.username)
+      .limit(1);
 
-    if (existing) {
+    if (existingError) {
+      throw existingError;
+    }
+
+    if ((existingAdmins || []).length > 0) {
       return NextResponse.json(
         { error: { code: 'DUPLICATE_USERNAME', message: 'Username already exists' } },
         { status: 409 }
@@ -92,14 +97,23 @@ export async function POST(request: NextRequest) {
     // Create admin user
     const id = `admin_${Date.now()}_${randomBytes(8).toString('hex')}`;
     const now = new Date().toISOString();
-    const stmt = db.prepare(`
-      INSERT INTO admin_users (id, username, password_hash, email, is_active, created_at, updated_at)
-      VALUES (?, ?, ?, ?, 1, ?, ?)
-    `);
+    const { data: newAdmin, error: insertError } = await supabase
+      .from('admin_users')
+      .insert({
+        id,
+        username: data.username,
+        password_hash: passwordHash,
+        email: data.email || null,
+        is_active: 1,
+        created_at: now,
+        updated_at: now,
+      })
+      .select('id, username, email, is_active, created_at')
+      .single();
 
-    stmt.run(id, data.username, passwordHash, data.email || null, now, now);
-
-    const newAdmin = db.prepare('SELECT id, username, email, is_active, created_at FROM admin_users WHERE id = ?').get(id);
+    if (insertError) {
+      throw insertError;
+    }
 
     return NextResponse.json({
       data: newAdmin,

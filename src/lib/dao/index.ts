@@ -110,7 +110,7 @@ class CommentSupabaseDAOAdapter {
 
   findByCode = (this.dao as any).findByCode?.bind(this.dao);
   getUserBadges = (this.dao as any).getUserBadges?.bind(this.dao);
-  getByTarget = this.dao.getByTarget.bind(this.dao);
+  getByTarget = (this.dao as any).getByTarget?.bind(this.dao);
   getByUserId = this.dao.getByUserId.bind(this.dao);
   countByTarget = this.dao.countByTarget.bind(this.dao);
   deleteByTarget = this.dao.deleteByTarget.bind(this.dao);

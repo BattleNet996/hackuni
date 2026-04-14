@@ -1,38 +1,101 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { MOCK_HACKATHONS, MOCK_PROJECTS, MOCK_BADGES, MOCK_BUILDERS } from '@/data/mock';
-import { Badge } from '@/components/ui/Badge';
+import { Badge as BadgePill } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { ProfileEditDialog } from '@/components/ui/ProfileEditDialog';
 import { FootprintMap } from '@/components/FootprintMap';
 import { Heatmap } from '@/components/Heatmap';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface BuilderUser {
+  id: string;
+  email?: string;
+  display_name?: string;
+  avatar?: string;
+  bio?: string;
+  school?: string;
+  major?: string;
+  company?: string;
+  position?: string;
+  twitter_url?: string;
+  github_url?: string;
+  website_url?: string;
+  looking_for?: string[];
+  total_hackathon_count?: number;
+  total_work_count?: number;
+  total_award_count?: number;
+  badge_count?: number;
+  certification_count?: number;
+}
+
+interface BuilderProject {
+  id: string;
+  title: string;
+  short_desc: string;
+  like_count: number;
+  is_awarded: boolean;
+  award_text?: string | null;
+}
+
+interface BuilderBadge {
+  id: string;
+  badge_code: string;
+  badge_name: string;
+  badge_name_en: string;
+  is_earned: boolean;
+  user_badge_status: string | null;
+}
+
+interface BuilderProfileResponse {
+  user: BuilderUser;
+  projects: BuilderProject[];
+  hackathons: Array<{ id: string; title: string }>;
+  badges: BuilderBadge[];
+  footprintCities: Array<{ city: string; country: string; date: string }>;
+  heatmapActivities: Array<{ date: string; type: string }>;
+}
+
 export default function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('RECORDS');
-  const [profileUser, setProfileUser] = React.useState<any>(null);
+  const [profileData, setProfileData] = React.useState<BuilderProfileResponse | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
-    params.then(resolvedParams => {
-      // In a real app, fetch from API
-      // For now, find user from mock data
-      const foundUser = MOCK_BUILDERS.find(b => b.id === resolvedParams.id);
+    let isActive = true;
 
-      if (foundUser) {
-        setProfileUser(foundUser);
-      } else {
-        // If not found in builders, try to create from mock user
-        if (resolvedParams.id === user?.id) {
-          setProfileUser(user);
+    void params.then(async ({ id }) => {
+      try {
+        const response = await fetch(`/api/builders/${id}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error?.message || 'Failed to fetch builder profile');
+        }
+
+        if (isActive) {
+          setProfileData(data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch builder profile:', error);
+        if (isActive) {
+          setProfileData(null);
+        }
+      } finally {
+        if (isActive) {
+          setLoading(false);
         }
       }
-      setLoading(false);
     });
-  }, [params, user]);
+
+    return () => {
+      isActive = false;
+    };
+  }, [params]);
 
   if (loading) {
     return (
@@ -42,7 +105,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  if (!profileUser) {
+  if (!profileData?.user) {
     return (
       <main style={{ padding: 'var(--sp-8)', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
         &gt; ERROR_404_USER_NOT_FOUND_
@@ -55,87 +118,66 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  const isOwnProfile = user && user.id === profileUser.id;
-
-  // Mock data for visualization components
-  const footprintCities = MOCK_HACKATHONS.map(h => ({
-    city: h.city,
-    country: h.country,
-    date: h.start_time,
-  }));
-
-  const heatmapActivities = [
-    ...MOCK_HACKATHONS.map(h => ({ date: h.start_time, type: 'hackathon' })),
-    ...MOCK_PROJECTS.map(() => ({ date: new Date().toISOString(), type: 'project' })),
-    ...Array.from({ length: 20 }, (_, i) => ({
-      date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
-      type: 'activity'
-    })),
-  ];
+  const isOwnProfile = user?.id === profileData.user.id;
+  const displayUser = isOwnProfile && user ? { ...profileData.user, ...user } : profileData.user;
+  const footprintCities = profileData.footprintCities || [];
+  const heatmapActivities = profileData.heatmapActivities || [];
+  const projects = profileData.projects || [];
+  const badges = profileData.badges || [];
 
   return (
     <main style={{ padding: 'var(--sp-8) var(--sp-6)', maxWidth: '1200px', margin: '0 auto' }}>
-
-      {/* Profile Header */}
       <div className="responsive-flex-col desktop-row" style={{ gap: 'var(--sp-6)', alignItems: 'center', marginBottom: 'var(--sp-8)' }}>
         <div style={{
           width: '180px',
           height: '180px',
-          backgroundImage: (profileUser as any).avatar || `url('https://picsum.photos/seed/${profileUser.id}/360/360')`,
+          backgroundImage: displayUser.avatar || `url('https://picsum.photos/seed/${displayUser.id}/360/360')`,
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundSize: 'cover',
           clipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           border: '2px solid var(--brand-coral)'
-        }}>
-        </div>
+        }} />
 
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--sp-2)' }}>
             <h1 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h1)', margin: 0 }}>
-              {profileUser.display_name || 'Anonymous'}
+              {displayUser.display_name || 'Anonymous'}
             </h1>
             {isOwnProfile && (
-              <Link href="/profile">
-                <Button
-                  variant="ghost"
-                  style={{ fontSize: '12px', padding: '4px 12px' }}
-                >
-                  ✏️ {t('common.edit')}
-                </Button>
-              </Link>
+              <Button
+                variant="ghost"
+                onClick={() => setEditDialogOpen(true)}
+                style={{ fontSize: '12px', padding: '4px 12px' }}
+              >
+                ✏️ {t('common.edit')}
+              </Button>
             )}
           </div>
 
-          {/* Academic & Work Info */}
-          {((profileUser as any).school || (profileUser as any).company) && (
-            <div style={{ display: 'flex', gap: 'var(--sp-3)', marginBottom: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)' }}>
-              {(profileUser as any).school && <span>🎓 {(profileUser as any).school}</span>}
-              {(profileUser as any).major && <span> | {(profileUser as any).major}</span>}
-              {(profileUser as any).company && <span>🏢 {(profileUser as any).company}</span>}
-              {(profileUser as any).position && <span> | {(profileUser as any).position}</span>}
+          {(displayUser.school || displayUser.company) && (
+            <div style={{ display: 'flex', gap: 'var(--sp-3)', marginBottom: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+              {displayUser.school && <span>🎓 {displayUser.school}</span>}
+              {displayUser.major && <span>{displayUser.major}</span>}
+              {displayUser.company && <span>🏢 {displayUser.company}</span>}
+              {displayUser.position && <span>{displayUser.position}</span>}
             </div>
           )}
 
           <p style={{ color: 'var(--text-muted)', fontSize: '16px', maxWidth: '600px', margin: '0 0 var(--sp-3) 0' }}>
-            {profileUser.bio || (language === 'zh' ? '还没有个人简介' : 'No bio yet')}
+            {displayUser.bio || (language === 'zh' ? '还没有个人简介' : 'No bio yet')}
           </p>
 
-          {/* Contact Info */}
-          {(profileUser as any).email && (
+          {isOwnProfile && displayUser.email && (
             <div style={{ display: 'flex', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
-              <span>📧 {(profileUser as any).email}</span>
+              <span>📧 {displayUser.email}</span>
             </div>
           )}
 
-          {/* Looking For */}
           <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
-            {(profileUser.looking_for || []).length > 0 ? (
-              (profileUser.looking_for || []).map((lf: any, index: number) => (
-                <span key={index} style={{
+            {(displayUser.looking_for || []).length > 0 ? (
+              (displayUser.looking_for || []).map((value) => (
+                <span key={value} style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: '11px',
                   color: 'var(--brand-coral)',
@@ -143,7 +185,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                   padding: '4px 8px',
                   borderRadius: 'var(--radius-sm)'
                 }}>
-                  {lf}
+                  {value}
                 </span>
               ))
             ) : (
@@ -154,163 +196,150 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
-        {/* Core Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)', background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-4)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--brand-green)' }}>{profileUser.total_hackathon_count || 0}</span>
+            <span style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--brand-green)' }}>{displayUser.total_hackathon_count || 0}</span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{t('profile.hackathons')}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--brand-green)' }}>{profileUser.total_work_count || 0}</span>
+            <span style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--brand-green)' }}>{displayUser.total_work_count || 0}</span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{t('profile.projects')}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--brand-coral)' }}>{profileUser.total_award_count || 0}</span>
+            <span style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--brand-coral)' }}>{displayUser.total_award_count || 0}</span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{t('profile.awards')}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--brand-coral)' }}>{profileUser.certification_count || 0}</span>
+            <span style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--brand-coral)' }}>{displayUser.certification_count || 0}</span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{t('profile.certifications')}</span>
           </div>
         </div>
       </div>
 
-      <div className="divider-dashed" style={{ margin: 'var(--sp-8) 0' }}></div>
+      <div className="divider-dashed" style={{ margin: 'var(--sp-8) 0' }} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--sp-6)' }}>
-
-        {/* Main Content Area */}
         <section>
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: 'var(--sp-4)', marginBottom: 'var(--sp-5)', fontFamily: 'var(--font-mono)' }}>
-            {['FOOTPRINTS', 'HEATMAP', 'RECORDS', 'PORTFOLIO'].map(tab => (
+          <div style={{ display: 'flex', gap: 'var(--sp-4)', marginBottom: 'var(--sp-5)', fontFamily: 'var(--font-mono)', flexWrap: 'wrap' }}>
+            {[
+              { key: 'FOOTPRINTS', label: t('profile.footprints') },
+              { key: 'HEATMAP', label: t('profile.heatmap') },
+              { key: 'RECORDS', label: t('profile.records') },
+              { key: 'PORTFOLIO', label: t('profile.portfolio') }
+            ].map((tab) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: activeTab === tab ? 'var(--brand-coral)' : 'var(--text-muted)',
-                  borderBottom: activeTab === tab ? '2px solid var(--brand-coral)' : '2px solid transparent',
+                  color: activeTab === tab.key ? 'var(--brand-coral)' : 'var(--text-muted)',
+                  borderBottom: activeTab === tab.key ? '2px solid var(--brand-coral)' : '2px solid transparent',
                   padding: 'var(--sp-2) 0',
                   cursor: 'pointer',
-                  fontWeight: activeTab === tab ? 'bold' : 'normal'
-                }}>
-                {tab}
+                  fontWeight: activeTab === tab.key ? 'bold' : 'normal'
+                }}
+              >
+                {tab.label}
               </button>
             ))}
           </div>
 
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', minHeight: '400px', padding: 'var(--sp-5)' }}>
             {activeTab === 'FOOTPRINTS' && (
-              <div>
-                <div style={{ marginBottom: 'var(--sp-4)', fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)' }}>
-                  // HACKATHON_JOURNEY_AROUND_THE_WORLD
-                </div>
+              footprintCities.length > 0 ? (
                 <FootprintMap cities={footprintCities} />
-              </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: 'var(--sp-8)', color: 'var(--text-muted)' }}>
+                  {t('profile.no_footprints')}
+                </div>
+              )
             )}
 
             {activeTab === 'HEATMAP' && (
-              <Heatmap activities={heatmapActivities} />
+              heatmapActivities.length > 0 ? (
+                <Heatmap activities={heatmapActivities} />
+              ) : (
+                <div style={{ textAlign: 'center', padding: 'var(--sp-8)', color: 'var(--text-muted)' }}>
+                  {t('profile.no_heatmap')}
+                </div>
+              )
             )}
 
             {activeTab === 'RECORDS' && (
               <div>
                 <h3 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)', marginTop: 0, marginBottom: 'var(--sp-4)' }}>
-                  HACKATHON_RECORDS
+                  {t('profile.hackathon_records')}
                 </h3>
-                <table style={{ width: '100%', textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: '13px', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ color: 'var(--text-muted)', borderBottom: '1px dashed var(--border-base)' }}>
-                      <th style={{ padding: 'var(--sp-2) 0' }}>{t('profile.event')}</th>
-                      <th style={{ padding: 'var(--sp-2) 0' }}>{t('profile.role')}</th>
-                      <th style={{ padding: 'var(--sp-2) 0' }}>{t('profile.status')}</th>
-                      <th style={{ padding: 'var(--sp-2) 0' }}>AWARD</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MOCK_HACKATHONS.slice(0, 3).map((h, i) => (
-                      <tr key={h.id} style={{ borderBottom: '1px solid var(--bg-elevated)' }}>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <Link href={`/hackathons/${h.id}`} style={{ textDecoration: 'none', color: 'var(--text-main)' }}>
-                            {h.title}
-                          </Link>
-                        </td>
-                        <td style={{ padding: 'var(--sp-3) 0', color: 'var(--text-muted)' }}>{i === 0 ? 'DEVELOPER' : 'PARTICIPANT'}</td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <span className={i === 0 ? "status-verified" : "status-pending"}>
-                            {i === 0 ? t('status.verified') : t('status.pending')}
-                          </span>
-                        </td>
-                        <td style={{ padding: 'var(--sp-3) 0', color: i === 0 ? 'var(--brand-coral)' : 'var(--text-muted)' }}>
-                          {i === 0 ? '🏆 GOLD' : '-'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div style={{ textAlign: 'center', padding: 'var(--sp-8)', color: 'var(--text-muted)' }}>
+                  {language === 'zh' ? '当前还没有可公开展示的参赛记录。' : 'No public hackathon records are available yet.'}
+                </div>
               </div>
             )}
 
             {activeTab === 'PORTFOLIO' && (
               <div>
                 <h3 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)', marginTop: 0, marginBottom: 'var(--sp-4)' }}>
-                  PROJECT_PORTFOLIO
+                  {t('profile.project_portfolio')}
                 </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
-                  {MOCK_PROJECTS.slice(0, 6).map(proj => (
-                    <Link key={proj.id} href={`/goat-hunt/${proj.id}`} style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        background: 'var(--bg-elevated)',
-                        border: '1px solid var(--border-base)',
-                        padding: 'var(--sp-3)',
-                        cursor: 'pointer'
-                      }} className="hover-color">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <h4 style={{ margin: '0 0 4px 0', color: 'var(--text-main)' }}>{proj.title}</h4>
-                            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>{proj.short_desc}</p>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--brand-green)' }}>
-                              ▲ {proj.like_count}
+                {projects.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+                    {projects.map((project) => (
+                      <Link key={project.id} href={`/goat-hunt/${project.id}`} style={{ textDecoration: 'none' }}>
+                        <div style={{
+                          background: 'var(--bg-elevated)',
+                          border: '1px solid var(--border-base)',
+                          padding: 'var(--sp-3)',
+                          cursor: 'pointer'
+                        }} className="hover-color">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--sp-3)' }}>
+                            <div>
+                              <h4 style={{ margin: '0 0 4px 0', color: 'var(--text-main)' }}>{project.title}</h4>
+                              <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>{project.short_desc}</p>
                             </div>
-                            {proj.is_awarded && (
-                              <div style={{ fontSize: '11px', color: 'var(--brand-coral)', marginTop: '2px' }}>
-                                {proj.award_text}
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--brand-green)' }}>
+                                ▲ {project.like_count}
                               </div>
-                            )}
+                              {project.is_awarded && project.award_text && (
+                                <div style={{ fontSize: '11px', color: 'var(--brand-coral)', marginTop: '2px' }}>
+                                  {project.award_text}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: 'var(--sp-8)', color: 'var(--text-muted)' }}>
+                    {t('profile.no_portfolio')}
+                  </div>
+                )}
               </div>
             )}
           </div>
         </section>
 
-        {/* Sidebar */}
         <aside>
-          {/* Badge Wall */}
           <div style={{ marginBottom: 'var(--sp-6)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-4)' }}>
               <h3 style={{ fontFamily: 'var(--font-hero)', margin: 0, fontSize: '18px' }}>{t('profile.badge_wall')}</h3>
               <Link href="/badges" style={{ fontSize: '12px', color: 'var(--brand-coral)', textDecoration: 'none' }}>
-                View All →
+                {t('profile.view_all')} →
               </Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--sp-3)' }}>
-              {(MOCK_BADGES.slice(0, 6)).map((b: any) => {
-                return (
-                  <Link key={b.id} href={`/badges/${b.id}`} style={{ textDecoration: 'none' }}>
+            {badges.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--sp-3)' }}>
+                {badges.slice(0, 6).map((badge) => (
+                  <Link key={badge.id} href={`/badges/${badge.id}`} style={{ textDecoration: 'none' }}>
                     <div style={{
                       width: '100%',
                       aspectRatio: '1',
-                      background: 'rgba(0, 255, 65, 0.1)',
-                      border: '1px solid var(--brand-green)',
+                      background: badge.is_earned ? 'rgba(0, 255, 65, 0.1)' : 'var(--bg-secondary)',
+                      border: badge.is_earned ? '1px solid var(--brand-green)' : '1px solid var(--border-base)',
+                      opacity: badge.is_earned ? 1 : 0.55,
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'center',
@@ -322,19 +351,29 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                       <div style={{
                         width: '30px',
                         height: '30px',
-                        background: 'var(--brand-green)',
+                        background: badge.is_earned ? 'var(--brand-green)' : '#333',
                         clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
                         marginBottom: '4px'
-                      }}></div>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--text-main)' }}>{b.badge_code}</span>
+                      }} />
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--text-main)' }}>{badge.badge_code}</span>
                     </div>
                   </Link>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                {language === 'zh' ? '暂无徽章' : 'No badges yet'}
+              </div>
+            )}
+            {isOwnProfile && (
+              <div style={{ marginTop: 'var(--sp-4)' }}>
+                <Link href="/badges">
+                  <Button variant="ghost" style={{ width: '100%', fontSize: '12px' }}>{t('profile.claim_badge')}</Button>
+                </Link>
+              </div>
+            )}
           </div>
 
-          {/* Social Links */}
           <div style={{
             background: 'var(--bg-card)',
             border: '1px solid var(--border-base)',
@@ -344,31 +383,31 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
               // CONNECT
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
-              {(profileUser as any).twitter_url && (
-                <a href={(profileUser as any).twitter_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'var(--text-main)' }}>
+              {displayUser.twitter_url && (
+                <a href={displayUser.twitter_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'var(--text-main)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', padding: 'var(--sp-2)' }} className="hover-color">
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: '14px' }}>𝕏</span>
                     <span style={{ fontSize: '13px' }}>Twitter/X</span>
                   </div>
                 </a>
               )}
-              {(profileUser as any).github_url && (
-                <a href={(profileUser as any).github_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'var(--text-main)' }}>
+              {displayUser.github_url && (
+                <a href={displayUser.github_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'var(--text-main)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', padding: 'var(--sp-2)' }} className="hover-color">
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: '14px' }}>⌥</span>
                     <span style={{ fontSize: '13px' }}>GitHub</span>
                   </div>
                 </a>
               )}
-              {(profileUser as any).website_url && (
-                <a href={(profileUser as any).website_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'var(--text-main)' }}>
+              {displayUser.website_url && (
+                <a href={displayUser.website_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'var(--text-main)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', padding: 'var(--sp-2)' }} className="hover-color">
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: '14px' }}>🌐</span>
                     <span style={{ fontSize: '13px' }}>Website</span>
                   </div>
                 </a>
               )}
-              {!(profileUser as any).twitter_url && !(profileUser as any).github_url && !(profileUser as any).website_url && (
+              {!displayUser.twitter_url && !displayUser.github_url && !displayUser.website_url && (
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                   {language === 'zh' ? '暂无外部链接' : 'No external links'}
                 </div>
@@ -376,8 +415,14 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
         </aside>
-
       </div>
+
+      {isOwnProfile && (
+        <ProfileEditDialog
+          isOpen={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+        />
+      )}
     </main>
   );
 }

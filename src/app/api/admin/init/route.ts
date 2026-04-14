@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db/client';
 import { adminAuthService } from '@/lib/services';
+import { supabase } from '@/lib/db/supabase-client';
 
 /**
  * Initialize admin system
@@ -10,44 +10,6 @@ import { adminAuthService } from '@/lib/services';
  */
 export async function POST(request: NextRequest) {
   try {
-    const db = getDb();
-
-    // Create admin tables
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS admin_users (
-        id TEXT PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        email TEXT,
-        is_active INTEGER DEFAULT 1,
-        last_login_at TEXT,
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-      );
-
-      CREATE TABLE IF NOT EXISTS admin_sessions (
-        id TEXT PRIMARY KEY,
-        admin_user_id TEXT NOT NULL,
-        token TEXT UNIQUE NOT NULL,
-        expires_at TEXT NOT NULL,
-        created_at TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (admin_user_id) REFERENCES admin_users(id) ON DELETE CASCADE
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_admin_users_username ON admin_users(username);
-      CREATE INDEX IF NOT EXISTS idx_admin_sessions_token ON admin_sessions(token);
-    `);
-
-    // Add is_banned column to users table if not exists
-    try {
-      db.exec(`ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0;`);
-    } catch (error: any) {
-      if (!error.message.includes('duplicate column')) {
-        throw error;
-      }
-    }
-
-    // Create initial admin user
     await adminAuthService.createInitialAdminUser();
 
     return NextResponse.json({
@@ -75,15 +37,18 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb();
+    const { count, error } = await supabase
+      .from('admin_users')
+      .select('*', { count: 'exact', head: true });
 
-    const stmt = db.prepare('SELECT COUNT(*) as count FROM admin_users');
-    const result = stmt.get() as { count: number };
+    if (error) {
+      throw error;
+    }
 
     return NextResponse.json({
       data: {
-        initialized: result.count > 0,
-        adminCount: result.count
+        initialized: (count || 0) > 0,
+        adminCount: count || 0
       }
     });
   } catch (error: any) {

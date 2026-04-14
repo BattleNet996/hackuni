@@ -17,15 +17,15 @@ export class CommentSupabaseDAO extends BaseSupabaseDAO<Comment> {
   }
 
   /**
-   * Get comments for a target (project or hackathon)
+   * Get comments for a target (project or story)
    */
-  async getByTarget(targetId: string, targetType: 'project' | 'hackathon'): Promise<Comment[]> {
+  private async getByColumn(column: 'project_id' | 'story_id', targetId: string): Promise<Comment[]> {
     const { data, error } = await supabase
       .from(this.tableName)
       .select('*')
-      .eq('target_id', targetId)
-      .eq('target_type', targetType)
-      .order('created_at', { ascending: true });
+      .eq(column, targetId)
+      .is('parent_comment_id', null)
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
     return (data || []).map((row: any) => this.mapRow(row));
@@ -38,7 +38,7 @@ export class CommentSupabaseDAO extends BaseSupabaseDAO<Comment> {
     const { data, error } = await supabase
       .from(this.tableName)
       .select('*')
-      .eq('user_id', userId)
+      .eq('author_id', userId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -57,21 +57,27 @@ export class CommentSupabaseDAO extends BaseSupabaseDAO<Comment> {
     const id = `c_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // Support both old and new input formats
-    const target_id = input.target_id || input.project_id || input.story_id;
-    const target_type = input.target_type || (input.project_id ? 'project' : 'hackathon');
-    const user_id = input.user_id || authorId;
     const content = input.content;
     const parent_comment_id = input.parent_comment_id || null;
+    const project_id =
+      input.project_id ||
+      (input.target_type === 'project' ? input.target_id : null) ||
+      null;
+    const story_id =
+      input.story_id ||
+      (input.target_type === 'story' ? input.target_id : null) ||
+      null;
 
     const now = new Date().toISOString();
     const commentData = {
       id,
-      target_id,
-      target_type,
-      user_id,
+      project_id,
+      story_id,
+      author_id: authorId,
       author_name: authorName || '',
       content,
       parent_comment_id,
+      likes: 0,
       created_at: now,
       updated_at: now
     };
@@ -89,12 +95,12 @@ export class CommentSupabaseDAO extends BaseSupabaseDAO<Comment> {
   /**
    * Get comment count for a target
    */
-  async countByTarget(targetId: string, targetType: 'project' | 'hackathon'): Promise<number> {
+  async countByTarget(targetId: string, targetType: 'project' | 'story'): Promise<number> {
+    const column = targetType === 'project' ? 'project_id' : 'story_id';
     const { count, error } = await supabase
       .from(this.tableName)
       .select('*', { count: 'exact', head: true })
-      .eq('target_id', targetId)
-      .eq('target_type', targetType);
+      .eq(column, targetId);
 
     if (error) throw error;
     return count || 0;
@@ -103,12 +109,12 @@ export class CommentSupabaseDAO extends BaseSupabaseDAO<Comment> {
   /**
    * Delete all comments for a target
    */
-  async deleteByTarget(targetId: string, targetType: 'project' | 'hackathon'): Promise<void> {
+  async deleteByTarget(targetId: string, targetType: 'project' | 'story'): Promise<void> {
+    const column = targetType === 'project' ? 'project_id' : 'story_id';
     const { error } = await supabase
       .from(this.tableName)
       .delete()
-      .eq('target_id', targetId)
-      .eq('target_type', targetType);
+      .eq(column, targetId);
 
     if (error) throw error;
   }
@@ -128,17 +134,17 @@ export class CommentSupabaseDAO extends BaseSupabaseDAO<Comment> {
   }
 
   /**
-   * Get comments for a project (alias for getByTarget)
+   * Get comments for a project
    */
   async getProjectComments(projectId: string): Promise<Comment[]> {
-    return this.getByTarget(projectId, 'project');
+    return this.getByColumn('project_id', projectId);
   }
 
   /**
-   * Get comments for a story (alias for getByTarget)
+   * Get comments for a story
    */
   async getStoryComments(storyId: string): Promise<Comment[]> {
-    return this.getByTarget(storyId, 'hackathon');
+    return this.getByColumn('story_id', storyId);
   }
 
   /**

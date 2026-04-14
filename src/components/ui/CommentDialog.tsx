@@ -46,7 +46,7 @@ export function CommentDialog({ isOpen, onClose, projectId, storyId }: CommentDi
       return;
     }
 
-    addComment({
+    void addComment({
       project_id: projectId || '',
       story_id: storyId || undefined,
       content: newComment,
@@ -146,14 +146,14 @@ export function CommentDialog({ isOpen, onClose, projectId, storyId }: CommentDi
                     fontWeight: 'bold',
                     color: 'var(--brand-coral)',
                   }}>
-                    {comment.authorName}
+                    {comment.author_name}
                   </span>
                   <span style={{
                     fontFamily: 'var(--font-mono)',
                     fontSize: '11px',
                     color: 'var(--text-muted)',
                   }}>
-                    {new Date(comment.createdAt).toLocaleDateString()}
+                    {new Date(comment.created_at).toLocaleDateString()}
                   </span>
                 </div>
                 <p style={{ margin: '0 0 var(--sp-2) 0', fontSize: '14px' }}>

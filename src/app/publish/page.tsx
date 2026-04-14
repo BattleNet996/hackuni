@@ -1,11 +1,16 @@
 'use client';
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { MOCK_HACKATHONS } from '@/data/mock';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api-client';
+
+interface HackathonOption {
+  id: string;
+  title: string;
+  city: string;
+}
 
 export default function PublishProjectPage() {
   const { t, language } = useLanguage();
@@ -27,6 +32,7 @@ export default function PublishProjectPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [uploadedImages, setUploadedImages] = React.useState<string[]>([]);
   const [message, setMessage] = React.useState('');
+  const [hackathons, setHackathons] = React.useState<HackathonOption[]>([]);
 
   // Redirect if not logged in
   React.useEffect(() => {
@@ -34,6 +40,36 @@ export default function PublishProjectPage() {
       router.push('/login');
     }
   }, [user, router]);
+
+  React.useEffect(() => {
+    let isActive = true;
+
+    async function fetchHackathons() {
+      try {
+        const response = await fetch('/api/hackathons?limit=100');
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error?.message || 'Failed to fetch hackathons');
+        }
+
+        if (isActive) {
+          setHackathons(data.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch hackathons:', error);
+        if (isActive) {
+          setHackathons([]);
+        }
+      }
+    }
+
+    void fetchHackathons();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -467,7 +503,7 @@ export default function PublishProjectPage() {
             }}
           >
             <option value="">{language === 'zh' ? '选择黑客松（可选）' : 'Select a hackathon (optional)'}</option>
-            {MOCK_HACKATHONS.map(hack => (
+            {hackathons.map((hack) => (
               <option key={hack.id} value={hack.id}>
                 {hack.title} - {hack.city}
               </option>

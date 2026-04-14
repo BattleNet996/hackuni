@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuthService } from '@/lib/services';
-import { AdminLogsService } from '@/lib/services/admin-logs.service';
-import { getDb } from '@/lib/db/client';
+import { supabase } from '@/lib/db/supabase-client';
 
 // GET /api/admin/reviews - Get pending items for review
 export async function GET(request: NextRequest) {
@@ -24,45 +23,61 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    // Get pending projects (status = 'pending')
-    const pendingProjectsStmt = db.prepare(`
-      SELECT
-        id, title, short_desc, author_id,
-        like_count, created_at, 'project' as type
-      FROM projects
-      WHERE status = 'pending'
-      ORDER BY created_at DESC
-      LIMIT 20
-    `);
-    const pendingProjects = pendingProjectsStmt.all();
+    const [
+      { data: projectRows, error: projectError },
+      { data: storyRows, error: storyError },
+      { data: badgeRows, error: badgeError },
+    ] = await Promise.all([
+      supabase
+        .from('projects')
+        .select('id, title, short_desc, author_id, like_count, created_at')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(20),
+      supabase
+        .from('stories')
+        .select('id, title, summary, author_name, like_count, created_at')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(20),
+      supabase
+        .from('user_badges')
+        .select(`
+          id,
+          status,
+          earned_at,
+          created_at,
+          user:users(display_name),
+          badge:badges(badge_name)
+        `)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(20),
+    ]);
 
-    // Get pending stories (status = 'pending')
-    const pendingStoriesStmt = db.prepare(`
-      SELECT
-        id, title, summary, author_name,
-        like_count, created_at, 'story' as type
-      FROM stories
-      WHERE status = 'pending'
-      ORDER BY created_at DESC
-      LIMIT 20
-    `);
-    const pendingStories = pendingStoriesStmt.all();
+    if (projectError) throw projectError;
+    if (storyError) throw storyError;
+    if (badgeError) throw badgeError;
 
-    // Get pending badge requests (user_badges with status = 'pending')
-    const pendingBadgesStmt = db.prepare(`
-      SELECT
-        ub.id, u.display_name as user_name, b.badge_name,
-        ub.status, ub.earned_at, ub.created_at,
-        'badge' as type
-      FROM user_badges ub
-      JOIN users u ON ub.user_id = u.id
-      JOIN badges b ON ub.badge_id = b.id
-      WHERE ub.status = 'pending'
-      ORDER BY ub.created_at DESC
-      LIMIT 20
-    `);
-    const pendingBadges = pendingBadgesStmt.all();
+    const pendingProjects = (projectRows || []).map((project: any) => ({
+      ...project,
+      type: 'project',
+    }));
+
+    const pendingStories = (storyRows || []).map((story: any) => ({
+      ...story,
+      type: 'story',
+    }));
+
+    const pendingBadges = (badgeRows || []).map((badge: any) => ({
+      id: badge.id,
+      user_name: badge.user?.display_name || '',
+      badge_name: badge.badge?.badge_name || '',
+      status: badge.status,
+      earned_at: badge.earned_at,
+      created_at: badge.created_at,
+      type: 'badge',
+    }));
 
     return NextResponse.json({
       data: {

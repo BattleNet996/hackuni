@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { likeDAO } from '@/lib/dao';
+import { likeDAO, projectDAO, storyDAO } from '@/lib/dao';
 import { authService } from '@/lib/services';
 
 export async function DELETE(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth_token')?.value ||
-                 request.headers.get('authorization')?.replace('Bearer ', '');
+    const token =
+      request.cookies.get('auth_token')?.value ||
+      request.headers.get('authorization')?.replace('Bearer ', '') ||
+      request.headers.get('x-auth-token');
 
     if (!token) {
       return NextResponse.json(
@@ -47,8 +49,9 @@ export async function DELETE(request: NextRequest) {
 
     // Update like count on target
     if (target_type === 'project') {
-      const { projectDAO } = require('@/lib/dao');
       await projectDAO.updateLikeCount(target_id, -1);
+    } else if (target_type === 'story') {
+      await storyDAO.updateLikeCount(target_id, -1);
     }
 
     const count = await likeDAO.countLikes(target_type, target_id);

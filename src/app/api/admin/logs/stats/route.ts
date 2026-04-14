@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuthService } from '@/lib/services';
 import { AdminLogsService } from '@/lib/services/admin-logs.service';
-import { getDb } from '@/lib/db/client';
 
 // GET /api/admin/logs/stats - Get log statistics
 export async function GET(request: NextRequest) {
@@ -27,11 +26,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '30');
 
-    const db = getDb();
-    const logsService = new AdminLogsService(db);
+    const logsService = new AdminLogsService();
 
-    const statsByAction = logsService.getStatsByAction(days);
-    const activeAdmins = logsService.getMostActiveAdmins(days);
+    const [statsByAction, activeAdmins] = await Promise.all([
+      logsService.getStatsByAction(days),
+      logsService.getMostActiveAdmins(days),
+    ]);
 
     return NextResponse.json({
       data: {

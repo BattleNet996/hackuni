@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     if (target_type === 'project') {
       await projectDAO.updateLikeCount(target_id, delta);
     } else if (target_type === 'story') {
-      // Add storyDAO.updateLikeCount if needed
+      await storyDAO.updateLikeCount(target_id, delta);
     }
 
     const count = await likeDAO.countLikes(target_type, target_id);

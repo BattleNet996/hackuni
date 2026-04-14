@@ -127,6 +127,26 @@ export class StorySupabaseDAO extends BaseSupabaseDAO<Story> {
   }
 
   /**
+   * Update story like count
+   */
+  async updateLikeCount(storyId: string, delta: number): Promise<void> {
+    const { data: story, error: fetchError } = await supabase
+      .from(this.tableName)
+      .select('like_count')
+      .eq('id', storyId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const { error } = await supabase
+      .from(this.tableName)
+      .update({ like_count: Math.max(0, (story?.like_count || 0) + delta) })
+      .eq('id', storyId);
+
+    if (error) throw error;
+  }
+
+  /**
    * Create new story
    */
   async create(data: any): Promise<Story> {
