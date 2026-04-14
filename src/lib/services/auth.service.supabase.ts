@@ -80,20 +80,28 @@ export class AuthServiceSupabase {
    * Verify token and get user
    */
   async verifyToken(token: string): Promise<Omit<User, 'password_hash'> | null> {
-    const now = new Date().toISOString();
-
-    const { data, error } = await supabase
+    const { data: session, error } = await supabase
       .from('sessions')
-      .select('user_id, expires_at, users(*)')
+      .select('user_id, expires_at')
       .eq('token', token)
-      .gt('expires_at', now)
       .single();
 
-    if (error || !data || !data.users || !Array.isArray(data.users) || data.users.length === 0) {
+    if (error || !session) {
       return null;
     }
 
-    return this.sanitizeUser(data.users[0]);
+    if (new Date(session.expires_at) <= new Date()) {
+      await this.logout(token);
+      return null;
+    }
+
+    const user = await userDAO.findById(session.user_id);
+
+    if (!user) {
+      return null;
+    }
+
+    return this.sanitizeUser(user);
   }
 
   /**

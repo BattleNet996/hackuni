@@ -17,6 +17,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const emailInputId = 'login-email';
+  const passwordInputId = 'login-password';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +95,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
           {/* Email Field */}
           <div>
-            <label style={{
+            <label htmlFor={emailInputId} style={{
               display: 'block',
               fontFamily: 'var(--font-mono)',
               fontSize: '13px',
@@ -103,6 +105,7 @@ export default function LoginPage() {
               {t('auth.email')}
             </label>
             <input
+              id={emailInputId}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -126,7 +129,7 @@ export default function LoginPage() {
 
           {/* Password Field */}
           <div>
-            <label style={{
+            <label htmlFor={passwordInputId} style={{
               display: 'block',
               fontFamily: 'var(--font-mono)',
               fontSize: '13px',
@@ -137,6 +140,7 @@ export default function LoginPage() {
             </label>
             <div style={{ position: 'relative' }}>
               <input
+                id={passwordInputId}
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

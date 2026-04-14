@@ -43,6 +43,7 @@ export async function apiFetch(
   if (token) {
     // Try multiple methods to ensure the token is received
     (headers as any)['x-auth-token'] = token;
+    (headers as any)['authorization'] = `Bearer ${token}`;
   }
 
   const response = await fetch(url, {

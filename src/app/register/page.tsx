@@ -20,6 +20,10 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const emailInputId = 'register-email';
+  const displayNameInputId = 'register-display-name';
+  const passwordInputId = 'register-password';
+  const confirmPasswordInputId = 'register-confirm-password';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,7 +115,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
           {/* Email Field */}
           <div>
-            <label style={{
+            <label htmlFor={emailInputId} style={{
               display: 'block',
               fontFamily: 'var(--font-mono)',
               fontSize: '13px',
@@ -121,6 +125,7 @@ export default function RegisterPage() {
               {t('auth.email')} <span style={{ color: 'var(--brand-coral)' }}>*</span>
             </label>
             <input
+              id={emailInputId}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -145,7 +150,7 @@ export default function RegisterPage() {
 
           {/* Display Name Field (Optional) */}
           <div>
-            <label style={{
+            <label htmlFor={displayNameInputId} style={{
               display: 'block',
               fontFamily: 'var(--font-mono)',
               fontSize: '13px',
@@ -155,6 +160,7 @@ export default function RegisterPage() {
               {t('auth.display_name')} ({t('common.optional')})
             </label>
             <input
+              id={displayNameInputId}
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
@@ -178,7 +184,7 @@ export default function RegisterPage() {
 
           {/* Password Field */}
           <div>
-            <label style={{
+            <label htmlFor={passwordInputId} style={{
               display: 'block',
               fontFamily: 'var(--font-mono)',
               fontSize: '13px',
@@ -189,6 +195,7 @@ export default function RegisterPage() {
             </label>
             <div style={{ position: 'relative' }}>
               <input
+                id={passwordInputId}
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -236,7 +243,7 @@ export default function RegisterPage() {
 
           {/* Confirm Password Field */}
           <div>
-            <label style={{
+            <label htmlFor={confirmPasswordInputId} style={{
               display: 'block',
               fontFamily: 'var(--font-mono)',
               fontSize: '13px',
@@ -247,6 +254,7 @@ export default function RegisterPage() {
             </label>
             <div style={{ position: 'relative' }}>
               <input
+                id={confirmPasswordInputId}
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

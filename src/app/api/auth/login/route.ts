@@ -18,15 +18,12 @@ export async function POST(request: NextRequest) {
       data: { user, token }
     });
 
-    // Set HTTP-only cookie with consistent name
-    // In production, ensure cookies work across Vercel's deployment
     response.cookies.set('auth_token', token, {
-      httpOnly: false, // Changed to false to allow JavaScript access as fallback
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 30 * 24 * 60 * 60, // 30 days
       path: '/',
-      // Don't set domain explicitly - let browser use the current domain
     });
 
     return response;
