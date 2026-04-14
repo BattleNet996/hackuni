@@ -19,6 +19,7 @@ interface StoryDetail {
   author_name: string;
   tags_json: string[];
   published_at: string;
+  like_count?: number;
 }
 
 interface StoryComment {
@@ -116,6 +117,8 @@ export default function StoryDetailPage({ params }: { params: Promise<{ slug: st
     return <main style={{ padding: 'var(--sp-8)', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>&gt; ERROR_404_NOT_FOUND_</main>;
   }
 
+  const storyLikes = getStoryLikes(story.id) ?? story.like_count ?? 0;
+
   return (
     <main>
       <div style={{
@@ -195,7 +198,7 @@ export default function StoryDetailPage({ params }: { params: Promise<{ slug: st
             onClick={() => toggleLikeStory(story.id)}
             style={{ cursor: 'pointer' }}
           >
-            ▲ {getStoryLikes(story.id)} {t('stories.opinions')}
+            ▲ {storyLikes} {t('stories.opinions')}
           </Button>
           <Button
             variant="ghost"

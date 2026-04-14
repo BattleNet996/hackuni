@@ -1,8 +1,18 @@
 'use client';
 import React, { useState } from 'react';
 import { useComment } from '@/contexts/CommentContext';
+import { useLike } from '@/contexts/LikeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+
+interface CommentItem {
+  id: string;
+  author_name: string;
+  content: string;
+  created_at: string;
+  likes: number;
+  replies?: CommentItem[];
+}
 
 interface CommentDialogProps {
   isOpen: boolean;
@@ -14,9 +24,10 @@ interface CommentDialogProps {
 export function CommentDialog({ isOpen, onClose, projectId, storyId }: CommentDialogProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { addComment, getProjectComments, getStoryComments, likeComment } = useComment();
+  const { addComment, getProjectComments, getStoryComments } = useComment();
+  const { isCommentLiked, toggleLikeComment } = useLike();
   const [newComment, setNewComment] = useState('');
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<CommentItem[]>([]);
 
   // Fetch comments when dialog opens or project/story changes
   React.useEffect(() => {
@@ -53,6 +64,28 @@ export function CommentDialog({ isOpen, onClose, projectId, storyId }: CommentDi
     });
 
     setNewComment('');
+  };
+
+  const handleToggleCommentLike = async (commentId: string) => {
+    const result = await toggleLikeComment(commentId);
+    if (!result) return;
+
+    setComments((prev) => prev.map((comment) => {
+      if (comment.id === commentId) {
+        return { ...comment, likes: result.count };
+      }
+
+      if (Array.isArray(comment.replies)) {
+        return {
+          ...comment,
+          replies: comment.replies.map((reply) => (
+            reply.id === commentId ? { ...reply, likes: result.count } : reply
+          )),
+        };
+      }
+
+      return comment;
+    }));
   };
 
   if (!isOpen) return null;
@@ -160,18 +193,18 @@ export function CommentDialog({ isOpen, onClose, projectId, storyId }: CommentDi
                   {comment.content}
                 </p>
                 <button
-                  onClick={() => likeComment(comment.id)}
+                  onClick={() => void handleToggleCommentLike(comment.id)}
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: 'var(--text-muted)',
+                    color: isCommentLiked(comment.id) ? 'var(--brand-coral)' : 'var(--text-muted)',
                     fontSize: '12px',
                     cursor: 'pointer',
                     padding: '0',
                     fontFamily: 'var(--font-mono)',
                   }}
                 >
-                  ♥ {comment.likes}
+                  {isCommentLiked(comment.id) ? '♥' : '♡'} {comment.likes}
                 </button>
               </div>
             ))

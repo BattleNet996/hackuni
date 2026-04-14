@@ -20,7 +20,7 @@ interface Project {
 }
 
 export default function GoatHuntPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { isProjectLiked, toggleLikeProject, getProjectLikes } = useLike();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,7 +89,10 @@ export default function GoatHuntPage() {
       <div className="divider-dashed" style={{ marginBottom: 'var(--sp-6)' }}></div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
-        {projects.map((proj, index) => (
+        {projects.map((proj, index) => {
+          const projectLikes = getProjectLikes(proj.id) ?? proj.like_count ?? 0;
+
+          return (
           <HackerCard key={proj.id} className="responsive-flex-col desktop-row" style={{ alignItems: 'center', gap: 'var(--sp-5)' }}>
             <div style={{ fontFamily: 'var(--font-hero)', fontSize: '48px', color: 'var(--text-disabled)', width: '60px', textAlign: 'center' }}>
               #{index + 1}
@@ -114,7 +117,7 @@ export default function GoatHuntPage() {
 
               <div style={{ display: 'flex', gap: 'var(--sp-3)', fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
                 <span style={{ color: 'var(--brand-coral)' }}>
-                  ♥ {getProjectLikes(proj.id)} likes
+                  ♥ {projectLikes} likes
                 </span>
                 <span style={{ color: 'var(--text-muted)' }}>
                   Team: {proj.team_member_text || 'N/A'}
@@ -143,7 +146,7 @@ export default function GoatHuntPage() {
               </Link>
             </div>
           </HackerCard>
-        ))}
+        )})}
       </div>
 
       {projects.length === 0 && !isLoading && (

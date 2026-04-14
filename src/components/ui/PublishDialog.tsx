@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { Button } from '@/components/ui/Button';
 
 interface PublishDialogProps {
   isOpen: boolean;
@@ -158,6 +157,38 @@ export function PublishDialog({ isOpen, onClose, type, onSuccess }: PublishDialo
                 name="end_time"
                 value={formData.end_time || ''}
                 onChange={handleChange}
+                style={{ width: '100%', padding: 'var(--sp-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', borderRadius: '4px', color: 'var(--text-main)' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
+                {language === 'zh' ? '评级分数' : 'Level Score'} *
+              </label>
+              <input
+                type="text"
+                name="level_score"
+                value={formData.level_score || ''}
+                onChange={handleChange}
+                required
+                placeholder={language === 'zh' ? '例如 4.5' : 'e.g. 4.5'}
+                style={{ width: '100%', padding: 'var(--sp-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', borderRadius: '4px', color: 'var(--text-main)' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
+                {language === 'zh' ? '评级等级' : 'Level Code'} *
+              </label>
+              <input
+                type="text"
+                name="level_code"
+                value={formData.level_code || ''}
+                onChange={handleChange}
+                required
+                placeholder={language === 'zh' ? '例如 S / A / B' : 'e.g. S / A / B'}
                 style={{ width: '100%', padding: 'var(--sp-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', borderRadius: '4px', color: 'var(--text-main)' }}
               />
             </div>

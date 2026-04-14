@@ -21,7 +21,7 @@ interface Story {
 }
 
 export default function StoriesPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { isStoryLiked, toggleLikeStory, getStoryLikes } = useLike();
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -112,7 +112,10 @@ export default function StoriesPage() {
 
       {/* Stories List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-5)' }}>
-        {filteredStories.map(story => (
+        {filteredStories.map(story => {
+          const storyLikes = getStoryLikes(story.id) ?? story.like_count ?? 0;
+
+          return (
           <HackerCard key={story.id} style={{ padding: 'var(--sp-5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--sp-3)' }}>
               <Link href={`/stories/${story.slug}`} style={{ flex: 1 }}>
@@ -135,7 +138,7 @@ export default function StoriesPage() {
                     padding: 'var(--sp-1) var(--sp-2)'
                   }}
                 >
-                  {isStoryLiked(story.id) ? '♥' : '♡'} {getStoryLikes(story.id)}
+                  {isStoryLiked(story.id) ? '♥' : '♡'} {storyLikes}
                 </Button>
               </div>
             </div>
@@ -169,7 +172,7 @@ export default function StoriesPage() {
               <span>{new Date(story.published_at).toLocaleDateString()}</span>
             </div>
           </HackerCard>
-        ))}
+        )})}
       </div>
 
       {filteredStories.length === 0 && !isLoading && (

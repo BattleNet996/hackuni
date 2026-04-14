@@ -227,7 +227,7 @@ export function HomePageClient({
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }} className="content-column-list">
               {initialProjects.map((project) => {
-                const displayLikes = getProjectLikes(project.id) || project.like_count || 0;
+                const displayLikes = getProjectLikes(project.id) ?? project.like_count ?? 0;
 
                 return (
                   <Link key={project.id} href={`/goat-hunt/${project.id}`} style={{ textDecoration: 'none' }}>

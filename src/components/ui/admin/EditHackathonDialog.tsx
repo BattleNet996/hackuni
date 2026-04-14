@@ -1,7 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Button } from '@/components/ui/Button';
 
 interface Hackathon {
   id: string;
@@ -205,6 +204,36 @@ export function EditHackathonDialog({ isOpen, onClose, hackathon, onSuccess }: E
                 name="country"
                 value={formData.country || ''}
                 onChange={handleChange}
+                style={{ width: '100%', padding: 'var(--sp-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', borderRadius: '4px', color: 'var(--text-main)' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
+                {language === 'zh' ? '评级分数' : 'Level Score'}
+              </label>
+              <input
+                type="text"
+                name="level_score"
+                value={formData.level_score || ''}
+                onChange={handleChange}
+                required
+                style={{ width: '100%', padding: 'var(--sp-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', borderRadius: '4px', color: 'var(--text-main)' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
+                {language === 'zh' ? '评级等级' : 'Level Code'}
+              </label>
+              <input
+                type="text"
+                name="level_code"
+                value={formData.level_code || ''}
+                onChange={handleChange}
+                required
                 style={{ width: '100%', padding: 'var(--sp-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', borderRadius: '4px', color: 'var(--text-main)' }}
               />
             </div>

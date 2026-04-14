@@ -68,4 +68,17 @@ export class LikeDAO extends BaseDAO<Like> {
     const result = this.countLikesStmt.get(targetType, targetId) as { count: number };
     return result.count;
   }
+
+  /**
+   * Get all likes by user
+   */
+  getByUser(userId: string): Like[] {
+    const stmt = this.db.prepare(`
+      SELECT * FROM likes
+      WHERE user_id = ?
+      ORDER BY created_at DESC
+    `);
+    const rows = stmt.all(userId);
+    return rows.map((row: any) => this.mapRow(row));
+  }
 }

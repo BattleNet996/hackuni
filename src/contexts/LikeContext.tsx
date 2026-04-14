@@ -1,20 +1,40 @@
 'use client';
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { apiFetch } from '@/lib/api-client';
+
+interface LikeRecord {
+  target_type: 'project' | 'story' | 'comment';
+  target_id: string;
+}
+
+interface ToggleLikeResult {
+  liked: boolean;
+  count: number;
+}
+
+interface CountableProject {
+  id: string;
+  like_count?: number;
+}
+
+interface CountableStory {
+  id: string;
+  like_count?: number;
+}
 
 interface LikeContextType {
   likedProjects: Set<string>;
   likedStories: Set<string>;
   likedComments: Set<string>;
-  toggleLikeProject: (id: string) => void;
-  toggleLikeStory: (id: string) => void;
-  toggleLikeComment: (id: string) => void;
+  toggleLikeProject: (id: string) => Promise<ToggleLikeResult | null>;
+  toggleLikeStory: (id: string) => Promise<ToggleLikeResult | null>;
+  toggleLikeComment: (id: string) => Promise<ToggleLikeResult | null>;
   isProjectLiked: (id: string) => boolean;
   isStoryLiked: (id: string) => boolean;
   isCommentLiked: (id: string) => boolean;
-  getProjectLikes: (id: string) => number;
-  getStoryLikes: (id: string) => number;
+  getProjectLikes: (id: string) => number | undefined;
+  getStoryLikes: (id: string) => number | undefined;
   refreshLikeCounts: () => Promise<void>;
 }
 
@@ -25,24 +45,23 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
   const [likedProjects, setLikedProjects] = useState<Set<string>>(new Set());
   const [likedStories, setLikedStories] = useState<Set<string>>(new Set());
   const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
-  const [mounted, setMounted] = useState(false);
 
   // Initialize like counts from backend API
   const [projectLikeCounts, setProjectLikeCounts] = useState<Record<string, number>>({});
   const [storyLikeCounts, setStoryLikeCounts] = useState<Record<string, number>>({});
 
   // Fetch like counts from backend
-  const refreshLikeCounts = async () => {
+  const refreshLikeCounts = useCallback(async () => {
     try {
       // Fetch projects and stories to get their like counts
       const [projectsRes, storiesRes] = await Promise.all([
-        fetch('/api/projects?limit=100'),
-        fetch('/api/stories?limit=100')
+        fetch('/api/projects?limit=1000'),
+        fetch('/api/stories?limit=1000')
       ]);
 
       if (projectsRes.ok) {
         const projectsData = await projectsRes.json();
-        const counts = projectsData.data?.reduce((acc: Record<string, number>, proj: any) => {
+        const counts = projectsData.data?.reduce((acc: Record<string, number>, proj: CountableProject) => {
           acc[proj.id] = proj.like_count || 0;
           return acc;
         }, {}) || {};
@@ -51,7 +70,7 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
 
       if (storiesRes.ok) {
         const storiesData = await storiesRes.json();
-        const counts = storiesData.data?.reduce((acc: Record<string, number>, story: any) => {
+        const counts = storiesData.data?.reduce((acc: Record<string, number>, story: CountableStory) => {
           acc[story.id] = story.like_count || 0;
           return acc;
         }, {}) || {};
@@ -60,170 +79,168 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Failed to fetch like counts:', error);
     }
-  };
-
-  useEffect(() => {
-    setMounted(true);
-
-    // Load liked items from localStorage
-    const savedLikedProjects = localStorage.getItem('likedProjects');
-    const savedLikedStories = localStorage.getItem('likedStories');
-    const savedLikedComments = localStorage.getItem('likedComments');
-
-    if (savedLikedProjects) setLikedProjects(new Set(JSON.parse(savedLikedProjects)));
-    if (savedLikedStories) setLikedStories(new Set(JSON.parse(savedLikedStories)));
-    if (savedLikedComments) setLikedComments(new Set(JSON.parse(savedLikedComments)));
-
-    // Fetch like counts from backend
-    refreshLikeCounts();
   }, []);
 
-  useEffect(() => {
-    // Persist to localStorage only on client and after mounted
-    if (!mounted) return;
-    localStorage.setItem('likedProjects', JSON.stringify(Array.from(likedProjects)));
-  }, [likedProjects, mounted]);
+  const clearLikedState = useCallback(() => {
+    setLikedProjects(new Set());
+    setLikedStories(new Set());
+    setLikedComments(new Set());
+  }, []);
 
-  useEffect(() => {
-    // Persist to localStorage only on client and after mounted
-    if (!mounted) return;
-    localStorage.setItem('likedStories', JSON.stringify(Array.from(likedStories)));
-  }, [likedStories, mounted]);
+  const handleExpiredSession = useCallback((shouldRedirect: boolean = false) => {
+    clearLikedState();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
 
-  useEffect(() => {
-    // Persist to localStorage only on client and after mounted
-    if (!mounted) return;
-    localStorage.setItem('likedComments', JSON.stringify(Array.from(likedComments)));
-  }, [likedComments, mounted]);
-
-  const toggleLikeProject = async (id: string) => {
-    // Check if user is logged in before making the request
-    if (!user) {
-      console.log('[LikeContext] No user found in auth context');
-      if (typeof window !== 'undefined') {
-        const loginPrompt = confirm('Please login to like projects. Go to login page?');
-        if (loginPrompt) {
-          window.location.href = '/login';
-        }
+      if (shouldRedirect) {
+        alert('Your session has expired. Please login again.');
+        window.location.href = '/login';
       }
-      return;
     }
+  }, [clearLikedState]);
 
-    console.log('[LikeContext] User logged in:', user.id, user.email);
-
-    try {
-      const response = await apiFetch('/api/likes', {
-        method: 'POST',
-        body: JSON.stringify({ target_type: 'project', target_id: id }),
-      });
-
-      const data = await response.json();
-      console.log('[LikeContext] Response status:', response.status, data);
-
-      if (response.ok && data.data) {
-        const { liked, count } = data.data;
-
-        setLikedProjects(prev => {
-          const newSet = new Set(prev);
-          if (liked) {
-            newSet.add(id);
-          } else {
-            newSet.delete(id);
-          }
-          return newSet;
-        });
-
-        setProjectLikeCounts(prev => ({ ...prev, [id]: count }));
-      } else if (response.status === 401) {
-        // Token expired or invalid - user needs to login again
-        console.warn('[LikeContext] Session expired. User needs to login again.');
-        if (typeof window !== 'undefined') {
-          alert('Your session has expired. Please login again.');
-          // Clear local storage and redirect to login
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-        }
-      } else {
-        console.error('[LikeContext] Like failed:', data.error?.message || 'Unknown error');
-        alert(`Failed to like: ${data.error?.message || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error('[LikeContext] Toggle like error:', error);
-      alert('Network error. Please try again.');
-    }
-  };
-
-  const toggleLikeStory = async (id: string) => {
-    // Check if user is logged in before making the request
-    if (!user) {
-      if (typeof window !== 'undefined') {
-        const loginPrompt = confirm('Please login to like stories. Go to login page?');
-        if (loginPrompt) {
-          window.location.href = '/login';
-        }
-      }
+  const refreshUserLikes = useCallback(async () => {
+    if (!user?.id) {
+      clearLikedState();
       return;
     }
 
     try {
-      const response = await apiFetch('/api/likes', {
-        method: 'POST',
-        body: JSON.stringify({ target_type: 'story', target_id: id }),
-      });
-
+      const response = await apiFetch('/api/likes');
       const data = await response.json();
 
-      if (response.ok && data.data) {
-        const { liked, count } = data.data;
-
-        setLikedStories(prev => {
-          const newSet = new Set(prev);
-          if (liked) {
-            newSet.add(id);
-          } else {
-            newSet.delete(id);
-          }
-          return newSet;
-        });
-
-        setStoryLikeCounts(prev => ({ ...prev, [id]: count }));
-      } else if (response.status === 401) {
-        // Token expired or invalid - user needs to login again
-        console.warn('Session expired. Please login again.');
-        if (typeof window !== 'undefined') {
-          alert('Your session has expired. Please login again.');
-          // Clear local storage and redirect to login
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
-          window.location.href = '/login';
+      if (!response.ok) {
+        if (response.status === 401) {
+          handleExpiredSession();
         }
-      } else {
-        console.error('Like failed:', data.error?.message || 'Unknown error');
+        return;
       }
+
+      const nextProjects = new Set<string>();
+      const nextStories = new Set<string>();
+      const nextComments = new Set<string>();
+
+      (data.data || []).forEach((like: LikeRecord) => {
+        if (like.target_type === 'project') {
+          nextProjects.add(like.target_id);
+        } else if (like.target_type === 'story') {
+          nextStories.add(like.target_id);
+        } else if (like.target_type === 'comment') {
+          nextComments.add(like.target_id);
+        }
+      });
+
+      setLikedProjects(nextProjects);
+      setLikedStories(nextStories);
+      setLikedComments(nextComments);
     } catch (error) {
-      console.error('Toggle like error:', error);
+      console.error('Failed to fetch user likes:', error);
     }
+  }, [clearLikedState, handleExpiredSession, user?.id]);
+
+  const requireLogin = (message: string) => {
+    if (typeof window === 'undefined') return false;
+
+    const loginPrompt = confirm(message);
+    if (loginPrompt) {
+      window.location.href = '/login';
+    }
+    return true;
   };
 
-  const toggleLikeComment = (id: string) => {
-    setLikedComments(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
+  const updateLikedSet = (
+    setter: React.Dispatch<React.SetStateAction<Set<string>>>,
+    id: string,
+    liked: boolean
+  ) => {
+    setter((prev) => {
+      const next = new Set(prev);
+      if (liked) {
+        next.add(id);
       } else {
-        newSet.add(id);
+        next.delete(id);
       }
-      return newSet;
+      return next;
     });
   };
+
+  const toggleTargetLike = async (
+    targetType: 'project' | 'story' | 'comment',
+    targetId: string
+  ): Promise<ToggleLikeResult | null> => {
+    if (!user) {
+      const prompts = {
+        project: 'Please login to like projects. Go to login page?',
+        story: 'Please login to like stories. Go to login page?',
+        comment: 'Please login to like comments. Go to login page?',
+      };
+
+      requireLogin(prompts[targetType]);
+      return null;
+    }
+
+    try {
+      const response = await apiFetch('/api/likes', {
+        method: 'POST',
+        body: JSON.stringify({ target_type: targetType, target_id: targetId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.data) {
+        const { liked, count } = data.data as ToggleLikeResult;
+
+        if (targetType === 'project') {
+          updateLikedSet(setLikedProjects, targetId, liked);
+          setProjectLikeCounts((prev) => ({ ...prev, [targetId]: count }));
+        } else if (targetType === 'story') {
+          updateLikedSet(setLikedStories, targetId, liked);
+          setStoryLikeCounts((prev) => ({ ...prev, [targetId]: count }));
+        } else {
+          updateLikedSet(setLikedComments, targetId, liked);
+        }
+
+        return { liked, count };
+      }
+
+      if (response.status === 401) {
+        handleExpiredSession(true);
+        return null;
+      }
+
+      console.error('[LikeContext] Like failed:', data.error?.message || 'Unknown error');
+      if (typeof window !== 'undefined') {
+        alert(`Failed to like: ${data.error?.message || 'Unknown error'}`);
+      }
+      return null;
+    } catch (error) {
+      console.error('[LikeContext] Toggle like error:', error);
+      if (typeof window !== 'undefined') {
+        alert('Network error. Please try again.');
+      }
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    void refreshLikeCounts();
+  }, [refreshLikeCounts]);
+
+  useEffect(() => {
+    void refreshUserLikes();
+  }, [refreshUserLikes]);
+
+  const toggleLikeProject = async (id: string) => toggleTargetLike('project', id);
+  const toggleLikeStory = async (id: string) => toggleTargetLike('story', id);
+  const toggleLikeComment = async (id: string) => toggleTargetLike('comment', id);
 
   const isProjectLiked = (id: string) => likedProjects.has(id);
   const isStoryLiked = (id: string) => likedStories.has(id);
   const isCommentLiked = (id: string) => likedComments.has(id);
 
-  const getProjectLikes = (id: string) => projectLikeCounts[id] || 0;
-  const getStoryLikes = (id: string) => storyLikeCounts[id] || 0;
+  const getProjectLikes = (id: string) => projectLikeCounts[id];
+  const getStoryLikes = (id: string) => storyLikeCounts[id];
 
   return (
     <LikeContext.Provider value={{

@@ -25,6 +25,7 @@ interface ProjectDetail {
   images: string[];
   related_hackathon_id: string | null;
   author_id: string | null;
+  like_count?: number;
 }
 
 interface HackathonMini {
@@ -172,6 +173,7 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
   const isOwner = user && user.id === project.author_id;
   const teamMembers = parseTeamMembers(project.team_member_text);
   const heroImage = project.images?.[0] || `https://picsum.photos/seed/${project.id}_demo/1280/720`;
+  const projectLikes = getProjectLikes(project.id) ?? project.like_count ?? 0;
 
   return (
     <main>
@@ -208,7 +210,7 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
                 onClick={() => toggleLikeProject(project.id)}
                 style={{ padding: '16px 32px', fontSize: '24px', cursor: 'pointer' }}
               >
-                ▲ {getProjectLikes(project.id)}
+                ▲ {projectLikes}
               </Button>
               <Button variant="primary" onClick={() => project.demo_url && window.open(project.demo_url, '_blank')} disabled={!project.demo_url}>
                 {t('goat_hunt.visit_demo')}

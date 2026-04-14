@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { apiFetch } from '@/lib/api-client';
 
@@ -23,7 +23,6 @@ interface CommentContextType {
   getProjectComments: (projectId: string) => Promise<Comment[]>;
   getStoryComments: (storyId: string) => Promise<Comment[]>;
   getCommentCount: (projectId: string, storyId?: string) => number;
-  likeComment: (commentId: string) => void;
   deleteComment: (commentId: string) => Promise<void>;
   unlike: (targetType: string, targetId: string) => Promise<void>;
   isLoading: boolean;
@@ -132,33 +131,6 @@ export function CommentProvider({ children }: { children: React.ReactNode }) {
     return (comments[key] || []).length;
   };
 
-  const likeComment = (commentId: string) => {
-    // For now, keep local state management for comment likes
-    // Could be enhanced with API call in the future
-    setComments(prev => {
-      const newComments = { ...prev };
-
-      for (const key in newComments) {
-        const comment = newComments[key].find(c => c.id === commentId);
-        if (comment) {
-          comment.likes += 1;
-          break;
-        }
-        // Check replies
-        if (newComments[key].some(c => c.replies?.some(r => r.id === commentId))) {
-          const parentComment = newComments[key].find(c => c.replies?.some(r => r.id === commentId));
-          if (parentComment?.replies) {
-            const reply = parentComment.replies.find(r => r.id === commentId);
-            if (reply) reply.likes += 1;
-          }
-          break;
-        }
-      }
-
-      return newComments;
-    });
-  };
-
   const deleteComment = async (commentId: string) => {
     if (!user) {
       throw new Error('You must be logged in to delete comments');
@@ -230,7 +202,6 @@ export function CommentProvider({ children }: { children: React.ReactNode }) {
       getProjectComments,
       getStoryComments,
       getCommentCount,
-      likeComment,
       deleteComment,
       unlike,
       isLoading,

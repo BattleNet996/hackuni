@@ -2,6 +2,43 @@ import { NextRequest, NextResponse } from 'next/server';
 import { hackathonDAO } from '@/lib/dao';
 import { adminAuthService } from '@/lib/services';
 
+function parseDate(dateValue: unknown): string | null {
+  if (!dateValue) return null;
+  if (typeof dateValue === 'string') {
+    const date = new Date(dateValue);
+    return isNaN(date.getTime()) ? null : date.toISOString();
+  }
+  if (dateValue instanceof Date) {
+    return isNaN(dateValue.getTime()) ? null : dateValue.toISOString();
+  }
+  return null;
+}
+
+function normalizeOptionalString(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function normalizeRequiredString(value: unknown): string | null {
+  return normalizeOptionalString(value);
+}
+
+function normalizeTags(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((tag) => String(tag).trim()).filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
 // GET /api/admin/hackathons - Get all hackathons
 export async function GET(request: NextRequest) {
   try {
@@ -57,22 +94,18 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json();
 
+    const levelScore = normalizeRequiredString(data.level_score);
+    const levelCode = normalizeRequiredString(data.level_code);
+
+    if (!levelScore || !levelCode) {
+      return NextResponse.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'level_score and level_code are required' } },
+        { status: 400 }
+      );
+    }
+
     // Create hackathon
     const id = `h_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Helper function to convert date to ISO string
-    const parseDate = (dateValue: any): string | null => {
-      if (!dateValue) return null;
-      if (typeof dateValue === 'string') {
-        // Already a string, ensure it's valid ISO format
-        const date = new Date(dateValue);
-        return isNaN(date.getTime()) ? null : date.toISOString();
-      }
-      if (dateValue instanceof Date) {
-        return isNaN(dateValue.getTime()) ? null : dateValue.toISOString();
-      }
-      return null;
-    };
 
     const hackathon = await hackathonDAO.create({
       id,
@@ -87,17 +120,17 @@ export async function POST(request: NextRequest) {
       latitude: data.latitude ? parseFloat(data.latitude) : null,
       longitude: data.longitude ? parseFloat(data.longitude) : null,
       location_detail: data.location_detail || '',
-      tags_json: Array.isArray(data.tags_json) ? data.tags_json : [],
-      level_score: String(data.level_score || '0'),
-      level_code: String(data.level_code || 'B'),
+      tags_json: normalizeTags(data.tags_json),
+      level_score: levelScore,
+      level_code: levelCode,
       registration_status: data.registration_status || 'upcoming',
       poster_url: data.poster_url || '',
       organizer: data.organizer || '',
-      organizer_url: data.organizer_url || null,
-      registration_url: data.registration_url || null,
-      requirements: data.requirements || null,
-      prizes: data.prizes || null,
-      fee: data.fee || null,
+      organizer_url: normalizeOptionalString(data.organizer_url),
+      registration_url: normalizeOptionalString(data.registration_url),
+      requirements: normalizeOptionalString(data.requirements),
+      prizes: normalizeOptionalString(data.prizes),
+      fee: normalizeOptionalString(data.fee),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     });
