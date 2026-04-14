@@ -12,7 +12,7 @@ interface Project {
   id: string;
   title: string;
   short_desc: string;
-  rank_score: number;
+  rank_score: number | null;
   is_awarded: boolean;
   award_text?: string;
   team_member_text: string;
@@ -27,7 +27,7 @@ interface ProjectListResponse {
 export default function GoatHuntPage() {
   const { t } = useLanguage();
   const { isProjectLiked, toggleLikeProject, getProjectLikes } = useLike();
-  const cacheKey = '/api/projects?awarded=true';
+  const cacheKey = '/api/projects?sort=created_at';
   const cachedResponse = React.useMemo(() => getCachedJson<ProjectListResponse>(cacheKey), [cacheKey]);
   const [projects, setProjects] = useState<Project[]>(cachedResponse?.data || []);
   const [isLoading, setIsLoading] = useState(!cachedResponse);
@@ -75,7 +75,7 @@ export default function GoatHuntPage() {
     return (
       <main style={{ padding: 'var(--sp-8) var(--sp-6)', maxWidth: '1000px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', padding: 'var(--sp-10)' }}>
-          <p style={{ fontFamily: 'var(--font-mono)' }}>Loading awarded projects...</p>
+          <p style={{ fontFamily: 'var(--font-mono)' }}>Loading projects...</p>
         </div>
       </main>
     );
@@ -164,9 +164,9 @@ export default function GoatHuntPage() {
 
       {projects.length === 0 && !isLoading && (
         <div style={{ textAlign: 'center', padding: 'var(--sp-10)' }}>
-          <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>No awarded projects yet.</p>
+          <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>No projects yet.</p>
           <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: 'var(--sp-2)' }}>
-            Be the first to publish an award-winning project!
+            Publish something weird and ship it here.
           </p>
         </div>
       )}

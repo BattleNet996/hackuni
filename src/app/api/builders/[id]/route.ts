@@ -40,16 +40,23 @@ export async function GET(
         user_badge_status: item.status,
         earned_at: item.earned_at,
         verified_at: item.verified_at,
+        created_at: item.created_at,
         is_earned: earnedStatuses.has(item.status),
       }));
 
     const footprintCities: Array<{ city: string; country: string; date: string }> = [];
     const heatmapActivities = [
+      ...(user.created_at ? [{
+        date: user.created_at,
+        type: 'joined',
+      }] : []),
       ...projects.map((project: any) => ({
         date: project.created_at,
         type: 'project',
       })),
-      ...badges.map((badge: any) => ({
+      ...badges
+        .filter((badge: any) => badge.is_earned)
+        .map((badge: any) => ({
         date: badge.verified_at || badge.earned_at || badge.created_at,
         type: 'badge',
       })),

@@ -3,6 +3,28 @@ import { HomePageClient, type Builder, type Hackathon, type HomeStats, type Proj
 
 export const dynamic = 'force-dynamic';
 
+function toTimestamp(value: string | undefined | null): number {
+  if (!value) return 0;
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function buildTrendingProjects(projects: any[], limit: number): Project[] {
+  return projects
+    .filter((project) => project.status === 'published' && !project.hidden)
+    .sort((left, right) => {
+      const likeDelta = (right.like_count || 0) - (left.like_count || 0);
+      if (likeDelta !== 0) return likeDelta;
+
+      const leftRank = typeof left.rank_score === 'number' ? left.rank_score : Number.POSITIVE_INFINITY;
+      const rightRank = typeof right.rank_score === 'number' ? right.rank_score : Number.POSITIVE_INFINITY;
+      if (leftRank !== rightRank) return leftRank - rightRank;
+
+      return toTimestamp(right.created_at) - toTimestamp(left.created_at);
+    })
+    .slice(0, limit) as Project[];
+}
+
 async function getHomeData(): Promise<{
   stats: HomeStats;
   hackathons: Hackathon[];
@@ -16,7 +38,7 @@ async function getHomeData(): Promise<{
     allHackathons,
     allUsers,
     hackathonPage,
-    topProjects,
+    allProjects,
     topBuilders,
   ] = await Promise.all([
     userDAO.count(),
@@ -25,7 +47,7 @@ async function getHomeData(): Promise<{
     hackathonDAO.findAll(),
     userDAO.findAll(),
     hackathonDAO.getPaginated(1, 6),
-    projectDAO.getTopRanked(6),
+    projectDAO.findAll({ status: 'published', hidden: 0 }),
     userDAO.getTopByAwards(6),
   ]);
 
@@ -47,7 +69,7 @@ async function getHomeData(): Promise<{
       badgesEarned,
     },
     hackathons: (hackathonPage.data || []) as Hackathon[],
-    projects: (topProjects || []) as Project[],
+    projects: buildTrendingProjects(allProjects || [], 6),
     builders: (topBuilders || []) as Builder[],
   };
 }

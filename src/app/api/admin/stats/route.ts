@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { userDAO, hackathonDAO, projectDAO, storyDAO, badgeDAO } from '@/lib/dao';
 import { adminAuthService } from '@/lib/services';
+import { supabase } from '@/lib/db/supabase-client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,6 +29,30 @@ export async function GET(request: NextRequest) {
     const totalProjects = await projectDAO.count();
     const totalStories = await storyDAO.count();
     const totalBadges = await badgeDAO.count();
+    const [
+      { count: pendingProjectsCount, error: pendingProjectsError },
+      { count: pendingStoriesCount, error: pendingStoriesError },
+      { count: pendingBadgesCount, error: pendingBadgesError },
+    ] = await Promise.all([
+      supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending'),
+      supabase
+        .from('stories')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending'),
+      supabase
+        .from('user_badges')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending'),
+    ]);
+
+    if (pendingProjectsError) throw pendingProjectsError;
+    if (pendingStoriesError) throw pendingStoriesError;
+    if (pendingBadgesError) throw pendingBadgesError;
+
+    const pendingReviews = (pendingProjectsCount || 0) + (pendingStoriesCount || 0) + (pendingBadgesCount || 0);
 
     return NextResponse.json({
       data: {
@@ -36,8 +61,8 @@ export async function GET(request: NextRequest) {
         totalProjects,
         totalStories,
         totalBadges,
-        pendingReviews: 0, // Can be calculated from projects/stories with status
-        pendingBadges: 0, // Can be calculated from user_badges with status 'pending',
+        pendingReviews,
+        pendingBadges: pendingBadgesCount || 0,
       }
     });
   } catch (error: any) {

@@ -1,357 +1,276 @@
 'use client';
 
 import React from 'react';
-import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
+import { useLanguage } from '@/contexts/LanguageContext';
 
-const container = {
+const containerStyle: React.CSSProperties = {
   minHeight: '100vh',
-  padding: '2rem',
-  maxWidth: '900px',
+  padding: 'var(--sp-8) var(--sp-4)',
+  maxWidth: '1040px',
   margin: '0 auto',
 };
 
-const titleStyle = {
-  fontSize: 'clamp(2.5rem, 6vw, 4rem)',
-  fontWeight: 'bold',
-  marginBottom: '1rem',
+const heroTitleStyle: React.CSSProperties = {
+  fontSize: 'clamp(2.75rem, 7vw, 5rem)',
   fontFamily: 'var(--font-hero)',
   textTransform: 'uppercase',
-  letterSpacing: '-0.02em',
+  letterSpacing: '-0.03em',
+  lineHeight: 0.95,
+  margin: '0 0 var(--sp-3) 0',
 };
 
-const subtitleStyle = {
-  fontSize: 'clamp(1rem, 2vw, 1.2rem)',
-  color: 'var(--brand-coral)',
-  marginBottom: '3rem',
-  fontFamily: 'var(--font-mono)',
-};
-
-const sectionTitle = {
-  fontSize: '1.8rem',
-  fontWeight: 'bold',
-  marginBottom: '1.5rem',
+const sectionTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 'clamp(1.6rem, 3vw, 2.3rem)',
   fontFamily: 'var(--font-hero)',
-  color: 'var(--text-main)',
+  lineHeight: 1.05,
+};
+
+const proseStyle: React.CSSProperties = {
+  color: 'var(--text-muted)',
+  lineHeight: 1.9,
+  fontSize: '16px',
+  margin: 0,
+};
+
+const zhContent = {
+  eyebrow: '🌍 我们是谁',
+  title: 'AttraX｜全球 Outlier 社区',
+  lead: 'AttraX 是由清华和北大学生发起的交叉学科组织。集结跨学科领域中不愿被主流归类的创新者：Outlier，以“快乐、叛逆、自由”为精神底色，探索边界之外的可能。',
+  intro: [
+    'AttraX 是由清华和北大学生发起的交叉学科组织，一群拒绝被数据点定义的人。艺术家和工程师、诗人和黑客、哲学家和游戏设计师，在世界的各个角落，用不同的语言，做着同一件事：把那些「没用但很酷」的念头，变成可以触摸的作品。',
+    '我们分散在清华的实验室、柏林的地下室、东京的共享厨房、旧金山的车库里。我们通过一个又一个「意外」彼此识别。',
+  ],
+  storyTitle: '一个典型的 Outlier 故事',
+  story: [
+    'OpenClaw 的创造者叫彼得·斯坦伯格（Peter Steinberger），一位来自奥地利的资深工程师。在此之前，他花了 13 年创办 PDF 处理公司 PSPDFKit，做到全球领先，并在 2021 年成功退出。',
+    '之后他经历了严重的职业倦怠。旅行、治疗、寻找自我，直到 2024 年 AI 浪潮重新点燃了他的热情。他开始疯狂地 tinkering，一年做了 43 个项目。',
+    '2025 年 11 月的一个周末，他用大约一小时，把 WhatsApp、Claude Code 和一些工具“粘”在一起，做出了一个能真正帮你处理事情的 AI 个人助手原型。这就是后来的 OpenClaw。',
+    '当 Meta 和 OpenAI 的 CEO 亲自下场争夺他时，他选择加入 OpenAI。不是因为钱，而是因为“我想改变世界，而不是建立一家大公司”。他说，他的下一个目标，是做一个连他妈妈都能用的智能体。',
+    '这是一个典型的 Outlier 故事：不循规蹈矩，不被定义，在追求效率的系统中，坚持做自己认为重要的事。',
+  ],
+  principlesTitle: '⚔️ 我们的核心理念',
+  principles: [
+    '我们不相信被定义的价值，是唯一标准。',
+    '我们在乎的，是你带来了什么。',
+    '在追求效率的系统里，那些非必需的、情绪化的、艺术的、不完美的东西，常常被视为 System Noise。可正是这些噪音，定义了人的不可替代。',
+    '我们是那群不被规则定义的 Outlier。',
+  ],
+  missionTitle: '团队介绍',
+  missionCards: [
+    {
+      title: '🎯 我们在做的事',
+      body: 'AttraX 希望打造一个全球性的 Outlier 社区，通过黑客松和数字基建，让每一个「不被规则定义」的年轻人，都能在这里被看见、被连接、被背书。',
+    },
+    {
+      title: '🛠 我们怎么实现',
+      body: '让黑客松成为 Outlier 的勋章系统。用线下黑客松聚集 Outlier，用数字基建记录每一个人的创造轨迹，让“你做出来了什么”比“你来自哪里”更有说服力。',
+    },
+  ],
+  ctaTitle: '加入 Outlier 社区',
+  ctaBody: '如果你也在做那些暂时无法被主流定义、但你知道值得被做出来的东西，这里就是你的地方。',
+  ctaPrimary: '浏览黑客松',
+  ctaSecondary: '发布项目',
+};
+
+const enContent = {
+  eyebrow: '🌍 WHO WE ARE',
+  title: 'AttraX | A Global Outlier Community',
+  lead: 'AttraX is an interdisciplinary community started by students from Tsinghua and Peking University. We gather people who refuse mainstream labels and build from a spirit of joy, rebellion, and freedom.',
+  intro: [
+    'AttraX is for people who refuse to be reduced to data points. Artists and engineers, poets and hackers, philosophers and game designers, working in different places but pursuing the same instinct: turning weird, unnecessary, compelling ideas into tangible work.',
+    'We are scattered across labs in Beijing, basements in Berlin, shared kitchens in Tokyo, and garages in San Francisco. We recognize one another through accidents, experiments, and side projects.',
+  ],
+  storyTitle: 'A Typical Outlier Story',
+  story: [
+    'Peter Steinberger, creator of OpenClaw, spent 13 years building PSPDFKit into a global leader before exiting in 2021. After burnout, travel, therapy, and a long search for meaning, the 2024 AI wave pulled him back into building.',
+    'He went into full tinkering mode and built 43 projects in a year. In a weekend around November 2025, he stitched together WhatsApp, Claude Code, and a few tools to prototype an AI personal assistant that could actually get things done. That became OpenClaw.',
+    'When major AI leaders tried to recruit him, he chose OpenAI not because of money, but because he wanted to change the world rather than build another large company. His goal was simple: make an agent his mother could use.',
+    'That is an Outlier story. Refusing neat categories, resisting default incentives, and choosing to build what feels important.',
+  ],
+  principlesTitle: '⚔️ Core Beliefs',
+  principles: [
+    'We do not believe standardized definitions are the only measure of value.',
+    'What matters is what you bring into the world.',
+    'In systems obsessed with efficiency, emotional, artistic, imperfect, and non-essential things are treated as noise. But that noise is what makes people irreplaceable.',
+    'We stand with the Outliers who refuse to be fully defined by rules.',
+  ],
+  missionTitle: 'What We Are Building',
+  missionCards: [
+    {
+      title: '🎯 What We Do',
+      body: 'AttraX is building a global Outlier community through hackathons and digital infrastructure so young people who do not fit neat templates can be seen, connected, and backed.',
+    },
+    {
+      title: '🛠 How We Do It',
+      body: 'We want hackathons to function as an Outlier badge system. Offline events gather the people; digital infrastructure records the work, so what you build matters more than where you come from.',
+    },
+  ],
+  ctaTitle: 'Join The Outlier Community',
+  ctaBody: 'If you are making things that do not yet fit the mainstream template, but still need to exist, this is for you.',
+  ctaPrimary: 'Browse Hackathons',
+  ctaSecondary: 'Publish Project',
 };
 
 export default function AboutPage() {
-  const { language, t } = useLanguage();
-
+  const { language } = useLanguage();
   const isZh = language === 'zh';
+  const content = isZh ? zhContent : enContent;
 
   return (
-    <div style={container}>
-      {/* Hero Section */}
-      <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-        <h1 style={titleStyle}>
-          {isZh ? '> AttraX' : '> AttraX'}
-        </h1>
-        <p style={subtitleStyle}>
-          {isZh
-            ? 'We Engineer the UNNECESSARY'
-            : 'We Engineer the UNNECESSARY'}
-        </p>
-        <p style={{ fontSize: '1.1rem', color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto' }}>
-          {isZh
-            ? '一个为「离群值」打造的档案库。记录那些不被主流归类的创新者、黑客松项目、和「不必要但令人惊叹」的工程作品。'
-            : 'An archive for outliers. Documenting hackers, hackathon projects, and "unnecessary yet amazing" engineering works that refuse to be categorized.'}
-        </p>
-      </div>
-
-      {/* What is AttraX */}
-      <section style={{ marginBottom: '4rem' }}>
-        <h2 style={sectionTitle}>
-          {isZh ? '什么是 AttraX？' : 'What is AttraX?'}
-        </h2>
-        <div style={{ lineHeight: '1.8', fontSize: '1.05rem', color: 'var(--text-muted)' }}>
-          <p style={{ marginBottom: '1rem' }}>
-            {isZh
-              ? 'AttraX 是一个「猎奇档案库」+「人才索引」平台，专为那些在黑客松中创造「不必要但令人惊叹」工程作品的 Outlier（离群值）打造。'
-              : 'AttraX is a "Curiosity Archive" + "Talent Index" platform built for Outliers who create "unnecessary yet amazing" engineering works at hackathons.'}
-          </p>
-          <p>
-            {isZh
-              ? '我们记录黑客松项目、开源作品、创新成就，并通过徽章系统和社区网络连接那些不愿意被主流归类的创新者。'
-              : 'We document hackathon projects, open source works, and innovation achievements, connecting outliers who refuse to be categorized through our badge system and community network.'}
-          </p>
-        </div>
-      </section>
-
-      {/* Core Features */}
-      <section style={{ marginBottom: '4rem' }}>
-        <h2 style={sectionTitle}>
-          {isZh ? '核心功能' : 'Core Features'}
-        </h2>
-        <div style={{ display: 'grid', gap: '1.5rem' }}>
-          {/* Feature 1 */}
-          <div style={{
-            padding: '1.5rem',
-            background: 'rgba(245, 107, 82, 0.05)',
-            borderLeft: '3px solid var(--brand-coral)',
-            borderRadius: '4px'
-          }}>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--brand-coral)' }}>
-              {isZh ? '📦 猎奇档案（Curiosity Archive）' : '📦 Curiosity Archive'}
-            </h3>
-            <p style={{ fontSize: '1rem', opacity: 0.9, marginBottom: '0.5rem' }}>
-              {isZh
-                ? '记录和展示黑客松项目、开源作品、创新实验'
-                : 'Document and showcase hackathon projects, open source works, and innovation experiments'}
-            </p>
-            <ul style={{ fontSize: '0.95rem', opacity: 0.8, paddingLeft: '1.5rem' }}>
-              <li>{isZh ? '项目作品集展示' : 'Project portfolio showcase'}</li>
-              <li>{isZh ? '技术栈记录' : 'Tech stack documentation'}</li>
-              <li>{isZh ? '源码链接管理' : 'Source code links'}</li>
-              <li>{isZh ? '演示视频/截图' : 'Demo videos & screenshots'}</li>
-            </ul>
-          </div>
-
-          {/* Feature 2 */}
-          <div style={{
-            padding: '1.5rem',
-            background: 'rgba(0, 255, 101, 0.05)',
-            borderLeft: '3px solid var(--brand-green)',
-            borderRadius: '4px'
-          }}>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--brand-green)' }}>
-              {isZh ? '🎯 人才索引（Talent Index）' : '🎯 Talent Index'}
-            </h3>
-            <p style={{ fontSize: '1rem', opacity: 0.9, marginBottom: '0.5rem' }}>
-              {isZh
-                ? '发现和连接那些「不务正业」但才华横溢的创新者'
-                : 'Discover and connect with talented outliers who think outside the box'}
-            </p>
-            <ul style={{ fontSize: '0.95rem', opacity: 0.8, paddingLeft: '1.5rem' }}>
-              <li>{isZh ? '构建者档案' : 'Builder profiles'}</li>
-              <li>{isZh ? '技能标签系统' : 'Skill tags system'}</li>
-              <li>{isZh ? '黑客松足迹地图' : 'Hackathon footprint map'}</li>
-              <li>{isZh ? '成就与奖项展示' : 'Achievements & awards display'}</li>
-            </ul>
-          </div>
-
-          {/* Feature 3 */}
-          <div style={{
-            padding: '1.5rem',
-            background: 'rgba(102, 126, 234, 0.05)',
-            borderLeft: '3px solid #667eea',
-            borderRadius: '4px'
-          }}>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#667eea' }}>
-              {isZh ? '🏆 成就系统（Achievement System）' : '🏆 Achievement System'}
-            </h3>
-            <p style={{ fontSize: '1rem', opacity: 0.9, marginBottom: '0.5rem' }}>
-              {isZh
-                ? '通过徽章和奖项记录创新者的成长轨迹'
-                : 'Track innovators\' growth journey through badges and awards'}
-            </p>
-            <ul style={{ fontSize: '0.95rem', opacity: 0.8, paddingLeft: '1.5rem' }}>
-              <li>{isZh ? '黑客松成就徽章' : 'Hackathon achievement badges'}</li>
-              <li>{isZh ? '项目里程碑' : 'Project milestones'}</li>
-              <li>{isZh ? '社区贡献记录' : 'Community contribution records'}</li>
-              <li>{isZh ? '技能认证系统' : 'Skill certification system'}</li>
-            </ul>
-          </div>
-
-          {/* Feature 4 */}
-          <div style={{
-            padding: '1.5rem',
-            background: 'rgba(245, 107, 82, 0.05)',
-            borderLeft: '3px solid var(--brand-coral)',
-            borderRadius: '4px'
-          }}>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--brand-coral)' }}>
-              {isZh ? '🌐 社区网络（Community Network）' : '🌐 Community Network'}
-            </h3>
-            <p style={{ fontSize: '1rem', opacity: 0.9, marginBottom: '0.5rem' }}>
-              {isZh
-                ? '连接志同道合的 Outlier，组建团队，分享知识'
-                : 'Connect like-minded outliers, form teams, share knowledge'}
-            </p>
-            <ul style={{ fontSize: '0.95rem', opacity: 0.8, paddingLeft: '1.5rem' }}>
-              <li>{isZh ? '团队组建' : 'Team formation'}</li>
-              <li>{isZh ? '项目协作' : 'Project collaboration'}</li>
-              <li>{isZh ? '知识分享与复盘' : 'Knowledge sharing & recaps'}</li>
-              <li>{isZh ? '黑客松信息聚合' : 'Hackathon information aggregation'}</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* Why AttraX */}
-      <section style={{ marginBottom: '4rem' }}>
-        <h2 style={sectionTitle}>
-          {isZh ? '为什么存在？' : 'Why AttraX?'}
-        </h2>
-        <div style={{ lineHeight: '1.8', fontSize: '1.05rem', color: 'var(--text-muted)' }}>
-          <p style={{ marginBottom: '1rem' }}>
-            {isZh
-              ? '在这个世界上，有一些创新者不愿意被主流归类。他们可能是学生、研究员、工程师，但更喜欢在黑客松中用 48-72 小时创造一些「不必要但令人惊叹」的东西。'
-              : 'In this world, there are innovators who refuse to be categorized. They might be students, researchers, or engineers, but prefer to spend 48-72 hours at hackathons creating things that are "unnecessary yet amazing".'}
-          </p>
-          <p style={{ marginBottom: '1rem' }}>
-            {isZh
-              ? '这些项目往往被遗忘在 GitHub 的角落，黑客松结束后就没有人再提起。但它们代表了最纯粹的创造力和探索精神。'
-              : 'These projects are often forgotten in corners of GitHub, never mentioned again after hackathons end. But they represent the purest creativity and spirit of exploration.'}
-          </p>
-          <p>
-            {isZh
-              ? 'AttraX 的使命就是记录这些「离群值」的作品，连接这些创新者，让「不必要」的想法得以延续和传播。'
-              : 'AttraX\'s mission is to document these "outlier" works, connect these innovators, and let "unnecessary" ideas continue and spread.'}
-          </p>
-        </div>
-      </section>
-
-      {/* Current Status */}
-      <section style={{ marginBottom: '4rem' }}>
-        <h2 style={sectionTitle}>
-          {isZh ? '现在状态' : 'Current Status'}
-        </h2>
-        <div style={{
-          background: 'var(--bg-card)',
+    <main style={containerStyle}>
+      <section
+        style={{
+          display: 'grid',
+          gap: 'var(--sp-6)',
+          marginBottom: 'var(--sp-8)',
+          padding: 'var(--sp-6)',
           border: '1px solid var(--border-base)',
-          padding: '2rem',
-          borderRadius: '8px'
-        }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
-            <div>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--brand-coral)', marginBottom: '0.5rem' }}>
-                8+
-              </div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                {isZh ? '黑客松活动记录' : 'Hackathons Recorded'}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--brand-green)', marginBottom: '0.5rem' }}>
-                25+
-              </div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                {isZh ? '创新项目档案' : 'Innovative Projects'}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#667eea', marginBottom: '0.5rem' }}>
-                10+
-              </div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                {isZh ? '徽章与成就' : 'Badges & Achievements'}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--brand-coral)', marginBottom: '0.5rem' }}>
-                3000+
-              </div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                {isZh ? '构建者连接' : 'Builders Connected'}
-              </div>
-            </div>
-          </div>
-          <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-            {isZh
-              ? '* 数据持续增长中 | 欢迎提交你的项目和成就'
-              : '* Data growing daily | Submit your projects and achievements'}
+          background:
+            'linear-gradient(135deg, rgba(245, 107, 82, 0.12), rgba(0, 255, 65, 0.04) 58%, rgba(255,255,255,0.02))',
+        }}
+      >
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--brand-coral)' }}>
+          {content.eyebrow}
+        </div>
+        <div>
+          <h1 style={heroTitleStyle}>{content.title}</h1>
+          <p style={{ ...proseStyle, maxWidth: '760px', fontSize: '18px', color: 'var(--text-main)' }}>
+            {content.lead}
           </p>
         </div>
       </section>
 
-      {/* Call to Action */}
-      <section style={{
-        padding: '3rem',
-        background: 'linear-gradient(135deg, rgba(245, 107, 82, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%)',
-        borderRadius: '12px',
-        textAlign: 'center',
-        border: '1px solid rgba(245, 107, 82, 0.2)'
-      }}>
-        <h2 style={{
-          fontSize: '1.8rem',
-          fontWeight: 'bold',
-          marginBottom: '1rem',
-          color: 'var(--text-main)'
-        }}>
-          {isZh ? '加入 Outlier 社区' : 'Join the Outlier Community'}
-        </h2>
-        <p style={{ fontSize: '1.1rem', marginBottom: '2rem', color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto 2rem auto' }}>
-          {isZh
-            ? '如果你也是一个「离群值」，如果你也在创造那些「不必要但令人惊叹」的作品，欢迎加入 AttraX！'
-            : 'If you\'re also an "outlier" creating "unnecessary yet amazing" works, welcome to AttraX!'}
-        </p>
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/hackathons">
-            <button style={{
-              padding: '0.75rem 2rem',
+      <section style={{ display: 'grid', gap: 'var(--sp-5)', marginBottom: 'var(--sp-8)' }}>
+        {content.intro.map((paragraph) => (
+          <p key={paragraph} style={proseStyle}>
+            {paragraph}
+          </p>
+        ))}
+      </section>
+
+      <section
+        style={{
+          marginBottom: 'var(--sp-8)',
+          padding: 'var(--sp-6)',
+          border: '1px solid var(--border-base)',
+          background: 'var(--bg-card)',
+        }}
+      >
+        <div style={{ marginBottom: 'var(--sp-5)' }}>
+          <h2 style={sectionTitleStyle}>{content.storyTitle}</h2>
+        </div>
+        <div style={{ display: 'grid', gap: 'var(--sp-4)' }}>
+          {content.story.map((paragraph) => (
+            <p key={paragraph} style={proseStyle}>
+              {paragraph}
+            </p>
+          ))}
+        </div>
+      </section>
+
+      <section style={{ marginBottom: 'var(--sp-8)' }}>
+        <div style={{ marginBottom: 'var(--sp-5)' }}>
+          <h2 style={sectionTitleStyle}>{content.principlesTitle}</h2>
+        </div>
+        <div style={{ display: 'grid', gap: 'var(--sp-4)' }}>
+          {content.principles.map((paragraph) => (
+            <div
+              key={paragraph}
+              style={{
+                padding: 'var(--sp-4) var(--sp-5)',
+                borderLeft: '3px solid var(--brand-coral)',
+                background: 'rgba(245, 107, 82, 0.05)',
+              }}
+            >
+              <p style={proseStyle}>{paragraph}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section style={{ marginBottom: 'var(--sp-8)' }}>
+        <div style={{ marginBottom: 'var(--sp-5)' }}>
+          <h2 style={sectionTitleStyle}>{content.missionTitle}</h2>
+        </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: 'var(--sp-4)',
+          }}
+        >
+          {content.missionCards.map((card) => (
+            <div
+              key={card.title}
+              style={{
+                padding: 'var(--sp-5)',
+                border: '1px solid var(--border-base)',
+                background: 'var(--bg-card)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 var(--sp-3) 0', fontFamily: 'var(--font-hero)', fontSize: '28px' }}>
+                {card.title}
+              </h3>
+              <p style={proseStyle}>{card.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section
+        style={{
+          padding: 'var(--sp-6)',
+          border: '1px solid rgba(245, 107, 82, 0.2)',
+          background: 'linear-gradient(135deg, rgba(245, 107, 82, 0.1), rgba(255,255,255,0.02))',
+        }}
+      >
+        <h2 style={{ ...sectionTitleStyle, marginBottom: 'var(--sp-3)' }}>{content.ctaTitle}</h2>
+        <p style={{ ...proseStyle, marginBottom: 'var(--sp-5)' }}>{content.ctaBody}</p>
+        <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
+          <Link
+            href="/hackathons"
+            style={{
+              padding: '12px 20px',
               background: 'var(--brand-coral)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              transition: 'all 0.3s'
+              color: '#fff',
+              textDecoration: 'none',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '13px',
             }}
-            onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#d64545'}
-            onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = 'var(--brand-coral)'}
-            >
-              {isZh ? '浏览黑客松' : 'Browse Hackathons'}
-            </button>
+          >
+            {content.ctaPrimary}
           </Link>
-          <Link href="/goat-hunt">
-            <button style={{
-              padding: '0.75rem 2rem',
-              background: '#667eea',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              transition: 'all 0.3s'
-            }}
-              onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#5a67d8'}
-              onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#667eea'}
-            >
-              {isZh ? '探索项目' : 'Explore Projects'}
-            </button>
-          </Link>
-          <Link href="/register">
-            <button style={{
-              padding: '0.75rem 2rem',
+          <Link
+            href="/publish"
+            style={{
+              padding: '12px 20px',
+              border: '1px solid var(--border-base)',
+              color: 'var(--text-main)',
+              textDecoration: 'none',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '13px',
               background: 'transparent',
-              color: 'var(--brand-coral)',
-              border: '2px solid var(--brand-coral)',
-              borderRadius: '8px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              transition: 'all 0.3s'
             }}
-              onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = 'rgba(245, 107, 82, 0.1)'}
-              onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = 'transparent'}
-            >
-              {isZh ? '立即加入' : 'Join Now'}
-            </button>
+          >
+            {content.ctaSecondary}
           </Link>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer style={{
-        marginTop: '4rem',
-        paddingTop: '2rem',
-        borderTop: '1px solid var(--border-base)',
-        textAlign: 'center',
-        fontSize: '0.9rem',
-        color: 'var(--text-muted)'
-      }}>
-        <p>
-          © 2024-{new Date().getFullYear()} AttraX. {isZh ? '保留所有权利' : 'All rights reserved.'}
-        </p>
-        <p style={{ marginTop: '0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
-          {isZh
-            ? '> We Engineer the UNNECESSARY_'
-            : '> We Engineer the UNNECESSARY_'}
-        </p>
+      <footer
+        style={{
+          marginTop: 'var(--sp-8)',
+          paddingTop: 'var(--sp-5)',
+          borderTop: '1px solid var(--border-base)',
+          color: 'var(--text-muted)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '12px',
+        }}
+      >
+        © 2024-{new Date().getFullYear()} AttraX. {isZh ? '保留所有权利。' : 'All rights reserved.'}
       </footer>
-    </div>
+    </main>
   );
 }

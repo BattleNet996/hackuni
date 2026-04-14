@@ -169,13 +169,15 @@ export function HomePageClient({
       >
         <div style={{ display: 'grid' }} className="content-grid">
           <section className="content-stream">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'var(--sp-4)' }}>
-              <h2 className="content-heading" style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h2)', margin: 0, textTransform: 'uppercase' }}>
-                {t('home.featured_ops')}
-              </h2>
-              <Link href="/hackathons"><Button variant="ghost">{t('home.view_all')}</Button></Link>
+            <div className="content-stream-head">
+              <div className="content-toolbar">
+                <h2 className="content-heading" style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h2)', margin: 0, textTransform: 'uppercase' }}>
+                  {t('home.featured_ops')}
+                </h2>
+                <Link href="/hackathons"><Button variant="ghost">{t('home.view_all')}</Button></Link>
+              </div>
+              <div className="divider-dashed content-divider"></div>
             </div>
-            <div className="divider-dashed" style={{ marginBottom: 'var(--sp-5)' }}></div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }} className="content-column-list">
               {initialHackathons.map((hackathon) => (
@@ -220,13 +222,15 @@ export function HomePageClient({
           </section>
 
           <section className="content-stream">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'var(--sp-4)' }}>
-              <h2 className="content-heading" style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h2)', margin: 0, textTransform: 'uppercase' }}>
-                {t('home.trending')}
-              </h2>
-              <Link href="/goat-hunt"><Button variant="ghost">{t('home.goats')}</Button></Link>
+            <div className="content-stream-head">
+              <div className="content-toolbar">
+                <h2 className="content-heading" style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h2)', margin: 0, textTransform: 'uppercase' }}>
+                  {t('home.trending')}
+                </h2>
+                <Link href="/goat-hunt"><Button variant="ghost">{t('home.goats')}</Button></Link>
+              </div>
+              <div className="divider-dashed content-divider"></div>
             </div>
-            <div className="divider-dashed" style={{ marginBottom: 'var(--sp-5)' }}></div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }} className="content-column-list">
               {initialProjects.map((project) => {
@@ -236,7 +240,7 @@ export function HomePageClient({
                   <Link key={project.id} href={`/goat-hunt/${project.id}`} onMouseEnter={() => prefetchJsonWithCache(`/api/projects/${project.id}`)} style={{ textDecoration: 'none' }}>
                     <HackerCard className="responsive-flex-col desktop-row stream-card" style={{ alignItems: 'center', gap: 'var(--sp-3)', padding: 'var(--sp-3)', cursor: 'pointer' }}>
                       <div style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--text-muted)', width: '40px', textAlign: 'center' }}>
-                        {project.rank_score ?? '-'}
+                        {project.rank_score ?? 'NEW'}
                       </div>
                       <div style={{ flex: 1 }}>
                         <h4 style={{ margin: '0 0 4px 0', fontFamily: 'var(--font-hero)', fontSize: '17px', color: 'var(--text-main)', lineHeight: 1.15 }}>{project.title}</h4>
@@ -271,12 +275,15 @@ export function HomePageClient({
           </section>
 
           <section className="content-stream">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'var(--sp-4)' }}>
-              <h2 className="content-heading" style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h2)', margin: 0, textTransform: 'uppercase' }}>
-                &gt; {t('home.goat_builders')}
-              </h2>
+            <div className="content-stream-head">
+              <div className="content-toolbar">
+                <h2 className="content-heading" style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h2)', margin: 0, textTransform: 'uppercase' }}>
+                  &gt; {t('home.goat_builders')}
+                </h2>
+                <span className="toolbar-spacer" aria-hidden="true" />
+              </div>
+              <div className="divider-dashed content-divider"></div>
             </div>
-            <div className="divider-dashed" style={{ marginBottom: 'var(--sp-5)' }}></div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }} className="content-column-list">
               {initialBuilders.map((builder) => (
@@ -317,7 +324,7 @@ export function HomePageClient({
             padding-bottom: var(--sp-5) !important;
           }
           .content-grid {
-            grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             height: 100%;
             align-items: stretch;
             gap: var(--sp-4);
@@ -332,6 +339,22 @@ export function HomePageClient({
             font-size: clamp(28px, 1.9vw, var(--text-h2)) !important;
             line-height: 1.05;
             word-break: keep-all;
+          }
+          .content-stream-head {
+            display: flex;
+            flex-direction: column;
+            gap: var(--sp-4);
+            margin-bottom: var(--sp-5);
+          }
+          .content-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: var(--sp-3);
+            min-height: 42px;
+          }
+          .content-divider {
+            margin: 0;
           }
           .content-stream {
             min-height: 0;
@@ -352,6 +375,13 @@ export function HomePageClient({
             padding-right: 6px;
             scrollbar-width: thin;
           }
+          .toolbar-spacer {
+            display: inline-block;
+            min-width: 84px;
+            height: 32px;
+            opacity: 0;
+            pointer-events: none;
+          }
           .stream-card {
             min-height: 0;
           }
@@ -367,6 +397,19 @@ export function HomePageClient({
           }
           .content-shell {
             height: auto;
+          }
+          .content-stream-head {
+            margin-bottom: var(--sp-5);
+          }
+          .content-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: var(--sp-3);
+            margin-bottom: var(--sp-4);
+          }
+          .content-divider {
+            margin: 0;
           }
           .content-column-list {
             overflow: visible;

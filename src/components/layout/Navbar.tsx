@@ -22,7 +22,7 @@ export function Navbar() {
     } else if (href === '/stories') {
       prefetchJsonWithCache('/api/stories');
     } else if (href === '/goat-hunt') {
-      prefetchJsonWithCache('/api/projects?awarded=true');
+      prefetchJsonWithCache('/api/projects?sort=created_at');
     } else if (href === '/badges') {
       const badgeUrl = user?.id ? `/api/badges?user_id=${user.id}` : '/api/badges';
       prefetchJsonWithCache(badgeUrl);

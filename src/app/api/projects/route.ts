@@ -2,25 +2,76 @@ import { NextRequest, NextResponse } from 'next/server';
 import { projectDAO } from '@/lib/dao';
 import { authService } from '@/lib/services';
 
+function toTimestamp(value: string | undefined | null): number {
+  if (!value) return 0;
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function sortProjects(projects: any[], sort: string): any[] {
+  const normalizedSort = sort === 'recent' ? 'created_at' : sort;
+  const next = [...projects];
+
+  if (normalizedSort === 'rank_score') {
+    next.sort((left, right) => {
+      const leftRank = typeof left.rank_score === 'number' ? left.rank_score : Number.POSITIVE_INFINITY;
+      const rightRank = typeof right.rank_score === 'number' ? right.rank_score : Number.POSITIVE_INFINITY;
+      if (leftRank !== rightRank) return leftRank - rightRank;
+
+      const likeDelta = (right.like_count || 0) - (left.like_count || 0);
+      if (likeDelta !== 0) return likeDelta;
+
+      return toTimestamp(right.created_at) - toTimestamp(left.created_at);
+    });
+    return next;
+  }
+
+  if (normalizedSort === 'like_count') {
+    next.sort((left, right) => {
+      const likeDelta = (right.like_count || 0) - (left.like_count || 0);
+      if (likeDelta !== 0) return likeDelta;
+
+      const leftRank = typeof left.rank_score === 'number' ? left.rank_score : Number.POSITIVE_INFINITY;
+      const rightRank = typeof right.rank_score === 'number' ? right.rank_score : Number.POSITIVE_INFINITY;
+      if (leftRank !== rightRank) return leftRank - rightRank;
+
+      return toTimestamp(right.created_at) - toTimestamp(left.created_at);
+    });
+    return next;
+  }
+
+  next.sort((left, right) => {
+    const createdDelta = toTimestamp(right.created_at) - toTimestamp(left.created_at);
+    if (createdDelta !== 0) return createdDelta;
+    return (right.like_count || 0) - (left.like_count || 0);
+  });
+  return next;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const sort = searchParams.get('sort') || 'rank_score';
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.max(1, parseInt(searchParams.get('limit') || '20', 10));
+    const sort = searchParams.get('sort') || 'created_at';
     const awarded = searchParams.get('awarded') === 'true';
+    const status = searchParams.get('status') || 'published';
 
-    let data;
-    if (sort === 'like_count') {
-      data = await projectDAO.getMostLiked(limit * 2); // Get more for filtering
-    } else {
-      data = await projectDAO.getTopRanked(limit * 2); // Get more for filtering
+    const filters: Record<string, any> = {
+      hidden: 0,
+    };
+
+    if (status !== 'all') {
+      filters.status = status;
     }
 
-    // Filter by awarded status if requested
+    let data = await projectDAO.findAll(filters);
+
     if (awarded) {
       data = data.filter((p: any) => p.is_awarded === 1 || p.is_awarded === true);
     }
+
+    data = sortProjects(data, sort);
 
     const paginatedData = data.slice((page - 1) * limit, page * limit);
 

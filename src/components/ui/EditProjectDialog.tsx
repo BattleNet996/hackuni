@@ -24,9 +24,10 @@ interface EditProjectDialogProps {
   onClose: () => void;
   project: Project | null;
   onSuccess: () => void;
+  submitUrlBase?: string;
 }
 
-export function EditProjectDialog({ isOpen, onClose, project, onSuccess }: EditProjectDialogProps) {
+export function EditProjectDialog({ isOpen, onClose, project, onSuccess, submitUrlBase = '/api/projects' }: EditProjectDialogProps) {
   const { t, language } = useLanguage();
   const [formData, setFormData] = useState<Partial<Project>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,7 +54,7 @@ export function EditProjectDialog({ isOpen, onClose, project, onSuccess }: EditP
     setMessage('');
 
     try {
-      const response = await fetch(`/api/projects/${project.id}`, {
+      const response = await fetch(`${submitUrlBase}/${project.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

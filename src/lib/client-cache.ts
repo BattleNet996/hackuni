@@ -84,3 +84,15 @@ export function prefetchJsonWithCache<T>(
 ) {
   void fetchJsonWithCache<T>(key, options).catch(() => {});
 }
+
+export function clearJsonCache(key: string) {
+  jsonCache.delete(key);
+}
+
+export function clearJsonCacheByPrefix(prefix: string) {
+  Array.from(jsonCache.keys()).forEach((key) => {
+    if (key.startsWith(prefix)) {
+      jsonCache.delete(key);
+    }
+  });
+}

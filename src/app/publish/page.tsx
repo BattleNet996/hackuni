@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api-client';
+import { clearJsonCacheByPrefix } from '@/lib/client-cache';
 
 interface HackathonOption {
   id: string;
@@ -98,10 +99,13 @@ export default function PublishProjectPage() {
       const data = await response.json();
 
       if (response.ok) {
+        clearJsonCacheByPrefix('/api/projects');
+        clearJsonCacheByPrefix('/api/builders');
         setMessage(language === 'zh' ? '发布成功！' : 'Published successfully!');
         setTimeout(() => {
           router.push('/goat-hunt');
-        }, 1500);
+          router.refresh();
+        }, 400);
       } else {
         setMessage(data.error?.message || (language === 'zh' ? '发布失败' : 'Failed to publish'));
       }

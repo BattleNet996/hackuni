@@ -14,6 +14,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    await adminAuthService.createInitialAdminUser();
+
     // Clean up expired sessions
     await adminAuthService.cleanupExpiredSessions();
 

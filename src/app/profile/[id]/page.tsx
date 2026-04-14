@@ -265,13 +265,14 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
             )}
 
             {activeTab === 'HEATMAP' && (
-              heatmapActivities.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
                 <Heatmap activities={heatmapActivities} />
-              ) : (
-                <div style={{ textAlign: 'center', padding: 'var(--sp-8)', color: 'var(--text-muted)' }}>
-                  {t('profile.no_heatmap')}
-                </div>
-              )
+                {heatmapActivities.length === 0 && (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px', fontFamily: 'var(--font-mono)' }}>
+                    {t('profile.no_heatmap')}
+                  </div>
+                )}
+              </div>
             )}
 
             {activeTab === 'RECORDS' && (

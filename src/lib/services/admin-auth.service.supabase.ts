@@ -89,28 +89,35 @@ export class AdminAuthServiceSupabase {
    * Verify admin token and return admin user
    */
   async verifyToken(token: string): Promise<AdminUser | null> {
-    const now = new Date().toISOString();
-
-    const { data, error } = await supabase
+    const { data: session, error: sessionError } = await supabase
       .from('admin_sessions')
-      .select('expires_at, admin_users(*)')
+      .select('admin_user_id, expires_at')
       .eq('token', token)
       .single();
 
-    if (error || !data || !data.admin_users) {
+    if (sessionError || !session) {
       return null;
     }
 
-    const result = data as unknown as { expires_at: string; admin_users: AdminUser };
-
     // Check if token is expired
-    if (new Date(result.expires_at) < new Date()) {
+    if (new Date(session.expires_at) < new Date()) {
       // Delete expired session
       await this.deleteSession(token);
       return null;
     }
 
-    return result.admin_users;
+    const { data: adminUser, error: adminError } = await supabase
+      .from('admin_users')
+      .select('*')
+      .eq('id', session.admin_user_id)
+      .eq('is_active', 1)
+      .single();
+
+    if (adminError || !adminUser) {
+      return null;
+    }
+
+    return adminUser as AdminUser;
   }
 
   /**

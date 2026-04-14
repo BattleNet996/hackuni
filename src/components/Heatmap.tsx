@@ -5,62 +5,156 @@ interface HeatmapProps {
   activities: Array<{ date: string; type: string }>;
 }
 
-export function Heatmap({ activities }: HeatmapProps) {
-  // Generate a larger heatmap grid (last 16 weeks x 7 days)
-  const weeks = 16;
-  const days = 7;
+const WEEKS = 16;
+const DAYS_PER_WEEK = 7;
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  // Create activity data map
-  const activityMap = new Map<string, number>();
-  activities.forEach(activity => {
-    const date = new Date(activity.date);
-    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-    activityMap.set(key, (activityMap.get(key) || 0) + 1);
-  });
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
 
-  // Generate grid data
-  const gridData: Array<{ date: string; count: number; week: number; day: number }> = [];
-  const today = new Date();
-  for (let week = 0; week < weeks; week++) {
-    for (let day = 0; day < days; day++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - ((weeks - week - 1) * 7 + (days - day - 1)));
-      const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-      const count = activityMap.get(key) || 0;
-      gridData.push({ date: key, count, week, day });
-    }
+function startOfWeek(date: Date): Date {
+  const next = startOfDay(date);
+  next.setDate(next.getDate() - next.getDay());
+  return next;
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function formatDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parseActivityDate(value: string): Date | null {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
   }
+  return startOfDay(parsed);
+}
 
-  const getIntensityColor = (count: number) => {
-    if (count === 0) return 'var(--bg-secondary)';
-    if (count === 1) return 'rgba(0, 255, 65, 0.25)';
-    if (count === 2) return 'rgba(0, 255, 65, 0.4)';
-    if (count === 3) return 'rgba(0, 255, 65, 0.6)';
-    if (count === 4) return 'rgba(0, 255, 65, 0.8)';
-    return 'var(--brand-green)';
-  };
+function getIntensityColor(count: number) {
+  if (count === 0) return 'var(--bg-secondary)';
+  if (count === 1) return 'rgba(0, 255, 65, 0.25)';
+  if (count === 2) return 'rgba(0, 255, 65, 0.4)';
+  if (count === 3) return 'rgba(0, 255, 65, 0.6)';
+  if (count === 4) return 'rgba(0, 255, 65, 0.8)';
+  return 'var(--brand-green)';
+}
 
-  const getIntensityBorder = (count: number) => {
-    if (count === 0) return '1px solid var(--border-base)';
-    if (count <= 2) return '1px solid rgba(0, 255, 65, 0.3)';
-    return '1px solid var(--brand-green)';
-  };
+function getIntensityBorder(count: number) {
+  if (count === 0) return '1px solid var(--border-base)';
+  if (count <= 2) return '1px solid rgba(0, 255, 65, 0.3)';
+  return '1px solid var(--brand-green)';
+}
 
-  const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export function Heatmap({ activities }: HeatmapProps) {
+  const dateFormatter = React.useMemo(() => (
+    new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  ), []);
 
-  // Calculate statistics
-  const totalActivities = activities.length;
-  const activeDays = new Set(activities.map(a => {
-    const date = new Date(a.date);
-    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-  })).size;
-  const maxStreak = Math.floor(totalActivities / 3);
-  const currentDate = new Date();
-  const currentStreak = gridData.filter(d => {
-    const diff = currentDate.getTime() - new Date(d.date).getTime();
-    return diff >= 0 && diff < 30 * 24 * 60 * 60 * 1000 && d.count > 0;
-  }).length;
+  const {
+    weekColumns,
+    visibleCells,
+    monthLabels,
+    totalActivities,
+    activeDays,
+    currentStreak,
+    maxStreak,
+  } = React.useMemo(() => {
+    const activityMap = new Map<string, number>();
+
+    activities.forEach((activity) => {
+      const date = parseActivityDate(activity.date);
+      if (!date) return;
+
+      const key = formatDateKey(date);
+      activityMap.set(key, (activityMap.get(key) || 0) + 1);
+    });
+
+    const today = startOfDay(new Date());
+    const currentWeekStart = startOfWeek(today);
+    const firstWeekStart = addDays(currentWeekStart, -(WEEKS - 1) * DAYS_PER_WEEK);
+
+    const columns = Array.from({ length: WEEKS }, (_, weekIndex) => {
+      const weekStart = addDays(firstWeekStart, weekIndex * DAYS_PER_WEEK);
+      const days = Array.from({ length: DAYS_PER_WEEK }, (_, dayIndex) => {
+        const date = addDays(weekStart, dayIndex);
+        const key = formatDateKey(date);
+        const isFuture = date.getTime() > today.getTime();
+
+        return {
+          date,
+          key,
+          count: isFuture ? 0 : (activityMap.get(key) || 0),
+          isFuture,
+          weekIndex,
+          dayIndex,
+        };
+      });
+
+      return {
+        weekStart,
+        days,
+      };
+    });
+
+    const cells = columns
+      .flatMap((column) => column.days)
+      .filter((cell) => !cell.isFuture);
+
+    const labels = columns.map((column, index) => {
+      const month = column.weekStart.toLocaleString(undefined, { month: 'short' });
+      if (index === 0) {
+        return month;
+      }
+
+      const prevMonth = columns[index - 1].weekStart.getMonth();
+      return prevMonth !== column.weekStart.getMonth() ? month : '';
+    });
+
+    const streakCounts = cells.map((cell) => cell.count > 0);
+    let bestStreak = 0;
+    let runningStreak = 0;
+    streakCounts.forEach((isActive) => {
+      if (isActive) {
+        runningStreak += 1;
+        bestStreak = Math.max(bestStreak, runningStreak);
+      } else {
+        runningStreak = 0;
+      }
+    });
+
+    let liveStreak = 0;
+    for (let index = cells.length - 1; index >= 0; index -= 1) {
+      if (cells[index].count > 0) {
+        liveStreak += 1;
+      } else {
+        break;
+      }
+    }
+
+    return {
+      weekColumns: columns,
+      visibleCells: cells,
+      monthLabels: labels,
+      totalActivities: cells.reduce((sum, cell) => sum + cell.count, 0),
+      activeDays: cells.filter((cell) => cell.count > 0).length,
+      currentStreak: liveStreak,
+      maxStreak: bestStreak,
+    };
+  }, [activities]);
+
+  const contributionRate = visibleCells.length > 0
+    ? Math.round((activeDays / visibleCells.length) * 100)
+    : 0;
 
   return (
     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
@@ -76,10 +170,29 @@ export function Heatmap({ activities }: HeatmapProps) {
         padding: 'var(--sp-5)',
         borderRadius: 'var(--radius-sm)'
       }}>
+        <div style={{ display: 'flex', gap: '3px', marginBottom: 'var(--sp-2)' }}>
+          <div style={{ width: '24px', marginRight: 'var(--sp-3)' }} />
+          <div style={{ display: 'flex', gap: '3px' }}>
+            {monthLabels.map((label, index) => (
+              <div
+                key={`${label}-${index}`}
+                style={{
+                  width: '14px',
+                  fontSize: '10px',
+                  color: 'var(--text-muted)',
+                  textAlign: 'left',
+                }}
+              >
+                {label}
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div style={{ display: 'flex', gap: '3px' }}>
           {/* Day labels */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginRight: 'var(--sp-3)' }}>
-            {dayLabels.map((label, i) => (
+            {DAY_LABELS.map((label, i) => (
               <div
                 key={label}
                 style={{
@@ -97,31 +210,33 @@ export function Heatmap({ activities }: HeatmapProps) {
           </div>
 
           {/* Heatmap cells */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            {Array.from({ length: days }).map((_, dayIndex) => (
-              <div key={dayIndex} style={{ display: 'flex', gap: '3px' }}>
-                {Array.from({ length: weeks }).map((_, weekIndex) => {
-                  const cell = gridData.find(d => d.week === weekIndex && d.day === dayIndex);
-                  const count = cell?.count || 0;
+          <div style={{ display: 'flex', gap: '3px' }}>
+            {weekColumns.map((column, weekIndex) => (
+              <div key={weekIndex} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                {column.days.map((cell) => {
+                  const tooltipCount = `${cell.count} activit${cell.count === 1 ? 'y' : 'ies'}`;
                   return (
                     <div
-                      key={`${weekIndex}-${dayIndex}`}
+                      key={cell.key}
                       style={{
                         width: '14px',
                         height: '14px',
-                        background: getIntensityColor(count),
-                        border: getIntensityBorder(count),
+                        background: cell.isFuture ? 'transparent' : getIntensityColor(cell.count),
+                        border: cell.isFuture ? '1px dashed rgba(255,255,255,0.08)' : getIntensityBorder(cell.count),
                         borderRadius: '3px',
-                        cursor: 'pointer',
+                        cursor: cell.isFuture ? 'default' : 'pointer',
                         transition: 'all 0.2s ease',
                         position: 'relative',
+                        opacity: cell.isFuture ? 0.35 : 1,
                       }}
-                      title={cell ? `${cell.date}: ${count} activities` : ''}
+                      title={cell.isFuture ? 'Future day' : `${dateFormatter.format(cell.date)}: ${tooltipCount}`}
                       onMouseEnter={(e) => {
+                        if (cell.isFuture) return;
                         e.currentTarget.style.transform = 'scale(1.3)';
                         e.currentTarget.style.zIndex = '10';
                       }}
                       onMouseLeave={(e) => {
+                        if (cell.isFuture) return;
                         e.currentTarget.style.transform = 'scale(1)';
                         e.currentTarget.style.zIndex = '1';
                       }}
@@ -131,25 +246,6 @@ export function Heatmap({ activities }: HeatmapProps) {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Month labels */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--sp-3)', marginLeft: '27px' }}>
-          {monthLabels.map((month, i) => (
-            <div
-              key={month}
-              style={{
-                fontSize: '10px',
-                color: 'var(--text-muted)',
-                flex: 1,
-                textAlign: i % 2 === 0 ? 'left' : 'right',
-                paddingRight: i % 2 === 0 ? '5px' : 0,
-                paddingLeft: i % 2 === 1 ? '5px' : 0
-              }}
-            >
-              {month}
-            </div>
-          ))}
         </div>
       </div>
 
@@ -225,7 +321,7 @@ export function Heatmap({ activities }: HeatmapProps) {
           textAlign: 'center'
         }}>
           <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--brand-coral)', marginBottom: '4px' }}>
-            {maxStreak}+
+            {maxStreak}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>MAX_STREAK</div>
         </div>
@@ -242,7 +338,7 @@ export function Heatmap({ activities }: HeatmapProps) {
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--sp-2)' }}>
           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>CONTRIBUTION_LEVEL</span>
           <span style={{ fontSize: '12px', color: 'var(--brand-green)', fontWeight: 'bold' }}>
-            {Math.round((activeDays / (weeks * 7)) * 100)}%
+            {contributionRate}%
           </span>
         </div>
         <div style={{
@@ -253,7 +349,7 @@ export function Heatmap({ activities }: HeatmapProps) {
           overflow: 'hidden'
         }}>
           <div style={{
-            width: `${(activeDays / (weeks * 7)) * 100}%`,
+            width: `${contributionRate}%`,
             height: '100%',
             background: 'linear-gradient(90deg, var(--brand-green), var(--brand-coral))',
             transition: 'width 0.3s ease',

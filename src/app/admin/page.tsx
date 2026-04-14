@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { PublishDialog } from '@/components/ui/PublishDialog';
+import { EditProjectDialog } from '@/components/ui/EditProjectDialog';
 import { EditHackathonDialog } from '@/components/ui/admin/EditHackathonDialog';
 import { EditStoryDialog } from '@/components/ui/admin/EditStoryDialog';
 import { EditBadgeDialog } from '@/components/ui/admin/EditBadgeDialog';
@@ -37,10 +38,21 @@ interface Hackathon {
 interface Project {
   id: string;
   title: string;
-  description?: string;
+  short_desc: string;
+  long_desc?: string | null;
   like_count: number;
+  rank_score?: number | null;
+  team_member_text: string;
+  tags_json?: string[];
+  is_awarded?: boolean;
+  award_text?: string | null;
+  images?: string[];
+  demo_url?: string | null;
+  github_url?: string | null;
+  website_url?: string | null;
+  related_hackathon_id?: string | null;
   status: string;
-  user_id: string;
+  author_id: string;
   hidden?: number;
   created_at: string;
 }
@@ -104,6 +116,7 @@ export default function AdminDashboard() {
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [publishDialogType, setPublishDialogType] = useState<'hackathon' | 'story' | 'badge'>('hackathon');
   const [editHackathonOpen, setEditHackathonOpen] = useState(false);
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
   const [editStoryOpen, setEditStoryOpen] = useState(false);
   const [editBadgeOpen, setEditBadgeOpen] = useState(false);
   const [manageAdminsOpen, setManageAdminsOpen] = useState(false);
@@ -360,6 +373,11 @@ export default function AdminDashboard() {
     setConfirmDialogOpen(true);
   };
 
+  const handleEditProject = (project: Project) => {
+    setEditingItem(project);
+    setEditProjectOpen(true);
+  };
+
   const handleEditStory = (story: Story) => {
     setEditingItem(story);
     setEditStoryOpen(true);
@@ -455,11 +473,13 @@ export default function AdminDashboard() {
 
   const handleEditSuccess = () => {
     setEditHackathonOpen(false);
+    setEditProjectOpen(false);
     setEditStoryOpen(false);
     setEditBadgeOpen(false);
     setEditingItem(null);
     // Refresh current tab data
     if (activeTab === 'hackathons') fetchHackathons();
+    if (activeTab === 'projects') fetchProjects();
     if (activeTab === 'stories') fetchStories();
     if (activeTab === 'badges') fetchBadges();
   };
@@ -718,7 +738,7 @@ export default function AdminDashboard() {
                             {proj.title}
                           </Link>
                         </td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>{proj.user_id}</td>
+                        <td style={{ padding: 'var(--sp-3) 0' }}>{proj.author_id}</td>
                         <td style={{ padding: 'var(--sp-3) 0' }}>{proj.like_count}</td>
                         <td style={{ padding: 'var(--sp-3) 0' }}>
                           <span style={{ color: proj.hidden ? 'var(--text-muted)' : 'var(--brand-green)' }}>
@@ -727,6 +747,9 @@ export default function AdminDashboard() {
                         </td>
                         <td style={{ padding: 'var(--sp-3) 0' }}>
                           <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+                            <Button variant="ghost" onClick={() => handleEditProject(proj)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>
+                              {t('common.edit')}
+                            </Button>
                             <Button variant="ghost" onClick={() => handleHideProject(proj.id, proj.hidden || 0)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>
                               {proj.hidden ? (language === 'zh' ? '显示' : 'Show') : (language === 'zh' ? '隐藏' : 'Hide')}
                             </Button>
@@ -1173,6 +1196,14 @@ export default function AdminDashboard() {
         isOpen={editHackathonOpen}
         onClose={() => setEditHackathonOpen(false)}
         hackathon={editingItem}
+        onSuccess={handleEditSuccess}
+      />
+
+      <EditProjectDialog
+        isOpen={editProjectOpen}
+        onClose={() => setEditProjectOpen(false)}
+        project={editProjectOpen ? editingItem : null}
+        submitUrlBase="/api/admin/projects"
         onSuccess={handleEditSuccess}
       />
 
