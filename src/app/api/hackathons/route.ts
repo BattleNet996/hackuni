@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hackathonDAO } from '@/lib/dao';
 import { getDatabaseRuntimeConfig } from '@/lib/db/runtime';
+import { buildFeaturedHackathonList } from '@/lib/hackathon-curation';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,17 +12,19 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const allHackathons = await hackathonDAO.findAll();
+    const featuredHackathons = buildFeaturedHackathonList(allHackathons || []);
+    const offset = (page - 1) * limit;
+    const paginatedHackathons = featuredHackathons.slice(offset, offset + limit);
 
-    const result = await hackathonDAO.getPaginated(page, limit);
-
-    console.log('🔍 API: Result count =', result.data?.length || 0);
+    console.log('🔍 API: Result count =', paginatedHackathons.length);
 
     return NextResponse.json({
-      data: result.data,
-      total: result.total,
+      data: paginatedHackathons,
+      total: featuredHackathons.length,
       page,
       limit,
-      hasMore: page * limit < result.total
+      hasMore: page * limit < featuredHackathons.length
     });
   } catch (error: any) {
     console.error('Get hackathons error:', error);
