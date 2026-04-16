@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { projectDAO } from '@/lib/dao';
+import { likeDAO, projectDAO } from '@/lib/dao';
 import { authService } from '@/lib/services';
 
 function toTimestamp(value: string | undefined | null): number {
@@ -48,6 +48,26 @@ function sortProjects(projects: any[], sort: string): any[] {
   return next;
 }
 
+async function withProjectLikeCounts(projects: any[]) {
+  if (projects.length === 0) {
+    return projects;
+  }
+
+  const counts = await Promise.all(
+    projects.map(async (project) => ({
+      id: project.id,
+      count: await likeDAO.countLikes('project', project.id),
+    }))
+  );
+
+  const countMap = new Map(counts.map((item) => [item.id, item.count]));
+
+  return projects.map((project) => ({
+    ...project,
+    like_count: countMap.get(project.id) ?? 0,
+  }));
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -66,6 +86,7 @@ export async function GET(request: NextRequest) {
     }
 
     let data = await projectDAO.findAll(filters);
+    data = await withProjectLikeCounts(data);
 
     if (awarded) {
       data = data.filter((p: any) => p.is_awarded === 1 || p.is_awarded === true);

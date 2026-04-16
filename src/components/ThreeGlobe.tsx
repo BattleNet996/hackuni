@@ -11,12 +11,12 @@ function seededRandom(seed: number) {
   return value - Math.floor(value);
 }
 
-function latLonToVector3(lat: number, lon: number, radius: number = 2.08): THREE.Vector3 {
-  const phi = (90 - lat) * (Math.PI / 180);
-  const theta = (lon + 180) * (Math.PI / 180);
+function seededPointOnSphere(seed: number, radius: number = 2.08): THREE.Vector3 {
+  const theta = seededRandom(seed + 11) * Math.PI * 2;
+  const phi = Math.acos(seededRandom(seed + 29) * 2 - 1);
 
   return new THREE.Vector3(
-    -(radius * Math.sin(phi) * Math.cos(theta)),
+    radius * Math.sin(phi) * Math.cos(theta),
     radius * Math.cos(phi),
     radius * Math.sin(phi) * Math.sin(theta)
   );
@@ -46,7 +46,7 @@ function TalentMarker({
 }) {
   const pulseRef = useRef<THREE.Mesh>(null);
   const color = markerColor(talent);
-  const position = latLonToVector3(talent.lat, talent.lon);
+  const position = useMemo(() => seededPointOnSphere(talent.seed), [talent.seed]);
 
   useFrame((state) => {
     if (!pulseRef.current) return;
@@ -158,10 +158,10 @@ function TalentPlanetScene({
 
   const connectionPositions = useMemo(() => {
     const values: number[] = [];
-    talents.slice(0, 36).forEach((talent, index) => {
-      const from = latLonToVector3(talent.lat, talent.lon, 2.11);
+    talents.slice(0, 72).forEach((talent, index) => {
+      const from = seededPointOnSphere(talent.seed, 2.11);
       const next = talents[(index + 5) % talents.length] || talent;
-      const to = latLonToVector3(next.lat, next.lon, 2.11);
+      const to = seededPointOnSphere(next.seed, 2.11);
       values.push(from.x, from.y, from.z, to.x, to.y, to.z);
     });
     return new Float32Array(values);
@@ -213,7 +213,7 @@ function TalentPlanetScene({
             userSelect: 'none',
           }}
         >
-          TALENT PLANET
+          ATTRAX
         </Html>
 
         {talents.map((talent) => (
@@ -267,17 +267,14 @@ export function ThreeGlobe() {
         top: 0,
         right: 0,
         zIndex: 0,
-        transform: 'translateX(12%)',
+        transform: 'translateX(-3%)',
       }}
     >
       <Canvas camera={{ position: [3.4, 1.15, 6.2], fov: 44 }}>
         <OrbitControls
-          enableZoom
+          enableZoom={false}
           enablePan={false}
-          minDistance={4.2}
-          maxDistance={7.2}
           rotateSpeed={0.55}
-          zoomSpeed={0.45}
           autoRotate={false}
         />
         <TalentPlanetScene
@@ -288,7 +285,7 @@ export function ThreeGlobe() {
       </Canvas>
 
       <div className="talent-filter-panel">
-        <div className="talent-filter-eyebrow">TALENT_PLANET // ACTIVITY_FILTER</div>
+        <div className="talent-filter-eyebrow">ATTRAX // ACTIVITY_FILTER</div>
         <div className="talent-filter-grid">
           {talentPlanetEvents.map((event) => {
             const count = event.id === 'all'
@@ -366,9 +363,9 @@ export function ThreeGlobe() {
       <style jsx>{`
         .talent-filter-panel {
           position: absolute;
-          left: 54%;
+          left: 38%;
           top: var(--sp-5);
-          width: min(420px, 42vw);
+          width: min(780px, 58vw);
           z-index: 4;
           pointer-events: auto;
           font-family: var(--font-mono);
@@ -385,14 +382,18 @@ export function ThreeGlobe() {
 
         .talent-filter-grid {
           display: flex;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
+          overflow-x: auto;
           gap: 6px;
+          padding-bottom: 2px;
+          scrollbar-width: thin;
         }
 
         .talent-filter {
           display: flex;
           align-items: center;
           gap: 6px;
+          white-space: nowrap;
           border: 1px solid rgba(255, 255, 255, 0.14);
           background: rgba(0, 0, 0, 0.42);
           color: var(--text-muted);
@@ -419,9 +420,9 @@ export function ThreeGlobe() {
 
         .talent-info-card {
           position: absolute;
-          right: var(--sp-5);
+          right: var(--sp-4);
           top: 52%;
-          width: min(390px, 34vw);
+          width: min(420px, 35vw);
           transform: translateY(-50%);
           z-index: 5;
           pointer-events: auto;
@@ -549,7 +550,7 @@ export function ThreeGlobe() {
 
         @media (max-width: 900px) {
           .talent-planet-shell {
-            transform: none !important;
+            transform: translateX(0) !important;
           }
 
           .talent-filter-panel {

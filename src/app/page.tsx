@@ -1,5 +1,6 @@
 import { hackathonDAO, projectDAO, userDAO } from '@/lib/dao';
 import { HomePageClient, type Builder, type Hackathon, type HomeStats, type Project } from '@/components/home/HomePageClient';
+import { talentPlanetPoints } from '@/data/talent-planet';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,7 +64,7 @@ async function getHomeData(): Promise<{
 
   return {
     stats: {
-      buildersConnected: buildersCount,
+      buildersConnected: buildersCount + talentPlanetPoints.length,
       projectsShipped: projectsCount,
       citiesCovered: uniqueCities.size,
       badgesEarned,

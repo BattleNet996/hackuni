@@ -56,7 +56,7 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
     try {
       // Fetch projects and stories to get their like counts
       const [projectsData, storiesData] = await Promise.all([
-        fetchJsonWithCache<{ data?: CountableProject[] }>('/api/projects?limit=1000'),
+        fetchJsonWithCache<{ data?: CountableProject[] }>('/api/projects?limit=1000&sort=like_count'),
         fetchJsonWithCache<{ data?: CountableStory[] }>('/api/stories?limit=1000')
       ]);
 

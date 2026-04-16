@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { projectDAO } from '@/lib/dao';
+import { likeDAO, projectDAO } from '@/lib/dao';
 import { authService } from '@/lib/services';
 
 // GET /api/projects/[id] - Get single project
@@ -19,7 +19,14 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ data: project });
+    const count = await likeDAO.countLikes('project', id);
+
+    return NextResponse.json({
+      data: {
+        ...project,
+        like_count: count,
+      }
+    });
   } catch (error: any) {
     console.error('Get project error:', error);
     return NextResponse.json(
