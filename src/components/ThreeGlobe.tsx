@@ -1,301 +1,576 @@
 'use client';
-import React, { useRef, useMemo, useState } from 'react';
+
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Sphere, Points, PointMaterial, OrbitControls, Html, Text } from '@react-three/drei';
+import { Html, OrbitControls, PointMaterial, Points, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
+import { talentPlanetEvents, talentPlanetPoints, type TalentPlanetPoint } from '@/data/talent-planet';
 
-interface HackathonMarker {
-  lat: number;
-  lon: number;
-  title: string;
-  icon?: string;
+function seededRandom(seed: number) {
+  const value = Math.sin(seed * 9973.13) * 10000;
+  return value - Math.floor(value);
 }
 
-interface ThreeGlobeProps {
-  hackathons?: HackathonMarker[];
+function latLonToVector3(lat: number, lon: number, radius: number = 2.08): THREE.Vector3 {
+  const phi = (90 - lat) * (Math.PI / 180);
+  const theta = (lon + 180) * (Math.PI / 180);
+
+  return new THREE.Vector3(
+    -(radius * Math.sin(phi) * Math.cos(theta)),
+    radius * Math.cos(phi),
+    radius * Math.sin(phi) * Math.sin(theta)
+  );
 }
 
+function markerColor(talent: TalentPlanetPoint) {
+  const text = `${talent.skills.join(' ')} ${talent.signal}`.toLowerCase();
+  if (text.includes('finance')) return '#FFB000';
+  if (text.includes('hardware') || text.includes('robot') || text.includes('drone')) return '#00D1FF';
+  if (text.includes('design')) return '#F56B52';
+  if (text.includes('community') || text.includes('ecosystem')) return '#B7FF4A';
+  return '#00FF41';
+}
 
-function Earth({ hackathons = [] }: ThreeGlobeProps) {
-  const earthRef = useRef<THREE.Mesh>(null);
-  const pointsRef = useRef<THREE.Points>(null);
-  const markersRef = useRef<THREE.Group>(null);
-  const [hoveredMarker, setHoveredMarker] = useState<string | null>(null);
+function TalentMarker({
+  talent,
+  selected,
+  hovered,
+  onSelect,
+  onHover,
+}: {
+  talent: TalentPlanetPoint;
+  selected: boolean;
+  hovered: boolean;
+  onSelect: (talent: TalentPlanetPoint) => void;
+  onHover: (id: string | null) => void;
+}) {
+  const pulseRef = useRef<THREE.Mesh>(null);
+  const color = markerColor(talent);
+  const position = latLonToVector3(talent.lat, talent.lon);
 
   useFrame((state) => {
-    // Slower rotation for better viewing
-    if (earthRef.current) {
-      earthRef.current.rotation.y += 0.0003;
-    }
-    if (pointsRef.current) {
-      pointsRef.current.rotation.y += 0.0005;
-    }
-    if (markersRef.current) {
-      markersRef.current.rotation.y += 0.0003;
-    }
+    if (!pulseRef.current) return;
+    const wave = 1 + Math.sin(state.clock.elapsedTime * 3.2 + talent.id.length) * 0.22;
+    pulseRef.current.scale.setScalar(selected ? 1.75 : hovered ? 1.45 : wave);
   });
 
-  // Background network nodes with more depth variation
-  const particlesCount = 800;
-  const positions = useMemo(() => {
-    const pos = new Float32Array(particlesCount * 3);
-    const colors = new Float32Array(particlesCount * 3);
-    for(let i = 0; i < particlesCount; i++) {
-      const r = 2.2 + Math.random() * 1.2;
-      const theta = Math.random() * 2 * Math.PI;
-      const phi = Math.acos((Math.random() * 2) - 1);
-      pos[i*3] = r * Math.sin(phi) * Math.cos(theta);
-      pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-      pos[i*3+2] = r * Math.cos(phi);
-
-      // Color variation between coral and green
-      const colorMix = Math.random();
-      colors[i*3] = colorMix > 0.5 ? 0.96 : 0.0;     // R
-      colors[i*3+1] = colorMix > 0.5 ? 0.42 : 1.0;   // G
-      colors[i*3+2] = colorMix > 0.5 ? 0.32 : 0.25; // B
-    }
-    return { pos, colors };
-  }, []);
-
-  // Convert lat/lon to 3D position on sphere with elevation
-  const latLonToVector3 = (lat: number, lon: number, radius: number = 2.05): THREE.Vector3 => {
-    const phi = (90 - lat) * (Math.PI / 180);
-    const theta = (lon + 180) * (Math.PI / 180);
-
-    const x = -(radius * Math.sin(phi) * Math.cos(theta));
-    const z = (radius * Math.sin(phi) * Math.sin(theta));
-    const y = (radius * Math.cos(phi));
-
-    return new THREE.Vector3(x, y, z);
-  };
-
-  // Get icon for hackathon based on title/tags
-  const getHackathonIcon = (hackathon: HackathonMarker) => {
-    const title = hackathon.title.toLowerCase();
-    if (title.includes('web3') || title.includes('crypto')) return '⛓️';
-    if (title.includes('hardware') || title.includes('robot')) return '🔧';
-    return '🏆';
-  };
-
   return (
-    <group>
-      {/* Lighting setup - increased brightness */}
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[10, 10, 10]} intensity={3.5} color="#F56B52" />
-      <directionalLight position={[-10, 5, -10]} intensity={2.0} color="#00FF41" />
-      <directionalLight position={[0, -5, 5]} intensity={1.5} color="#4A90E2" />
-      <pointLight position={[5, 5, 5]} intensity={1.5} color="#ffffff" />
-      <pointLight position={[-5, -5, -5]} intensity={1.0} color="#ffffff" />
+    <group
+      position={[position.x, position.y, position.z]}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect(talent);
+      }}
+      onPointerOver={(event) => {
+        event.stopPropagation();
+        onHover(talent.id);
+      }}
+      onPointerOut={(event) => {
+        event.stopPropagation();
+        onHover(null);
+      }}
+    >
+      <mesh ref={pulseRef} rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.075, 0.12, 36]} />
+        <meshBasicMaterial color={color} transparent opacity={selected ? 0.72 : 0.34} side={THREE.DoubleSide} />
+      </mesh>
 
-      {/* Main Globe with lighter material */}
-      <Sphere ref={earthRef} args={[2, 64, 64]} position={[0, 0, 0]}>
+      <Sphere args={[selected ? 0.075 : 0.052, 20, 20]}>
         <meshStandardMaterial
-          color="#1a1a1a"
-          roughness={0.7}
-          metalness={0.3}
+          color={color}
+          emissive={color}
+          emissiveIntensity={selected ? 5.8 : hovered ? 4.6 : 3.2}
+          roughness={0.28}
+          metalness={0.42}
         />
       </Sphere>
 
-      {/* Inner glow sphere */}
-      <Sphere args={[1.95, 64, 64]}>
-        <meshBasicMaterial
-          color="#1a1a1a"
-        />
-      </Sphere>
-
-      {/* Outer atmosphere glow */}
-      <Sphere args={[2.08, 64, 64]}>
-        <meshBasicMaterial
-          color="#2a2a2a"
-          transparent
-          opacity={0.3}
-        />
-      </Sphere>
-
-      {/* Wireframe overlay with more detail */}
-      <Sphere args={[2.03, 64, 64]}>
-        <meshBasicMaterial
-          color="#3a3a3a"
-          wireframe={true}
-          transparent
-          opacity={0.25}
-          blending={THREE.AdditiveBlending}
-        />
-      </Sphere>
-
-      {/* AttraX Text on Earth Surface */}
-      <Html
-        position={[0, 0.5, 2.05]}
-        center
-        distanceFactor={8}
-        style={{
-          pointerEvents: 'none',
-          fontFamily: 'var(--font-hero)',
-          fontSize: '28px',
-          fontWeight: 'bold',
-          color: 'rgba(255, 255, 255, 0.15)',
-          textShadow: '0 0 20px rgba(255, 255, 255, 0.3)',
-          letterSpacing: '8px',
-          userSelect: 'none',
-        }}
-      >
-        AttraX
-      </Html>
-
-      {/* Elevation contour lines */}
-      <Sphere args={[2.06, 72, 72]}>
-        <meshBasicMaterial
-          color="#444444"
-          wireframe={true}
-          transparent
-          opacity={0.15}
-        />
-      </Sphere>
-
-      {/* Background network nodes with colors */}
-      <Points ref={pointsRef}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[positions.pos, 3]}
-          />
-          <bufferAttribute
-            attach="attributes-color"
-            args={[positions.colors, 3]}
-          />
-        </bufferGeometry>
-        <PointMaterial
-          vertexColors
-          size={0.025}
-          sizeAttenuation={true}
-          transparent
-          opacity={0.7}
-          blending={THREE.AdditiveBlending}
-        />
-      </Points>
-
-      {/* 3D Hackathon Markers with icons */}
-      <group ref={markersRef}>
-        {hackathons.map((hack, index) => {
-          const position = latLonToVector3(hack.lat, hack.lon);
-          const icon = hack.icon || getHackathonIcon(hack);
-          const isHovered = hoveredMarker === hack.title;
-
-          return (
-            <group
-              key={hack.title}
-              position={[position.x, position.y, position.z]}
-              onPointerOver={(e) => {
-                e.stopPropagation();
-                setHoveredMarker(hack.title);
-              }}
-              onPointerOut={(e) => {
-                e.stopPropagation();
-                setHoveredMarker(null);
-              }}
-            >
-              {/* Animated pulsing rings */}
-              <group>
-                <mesh rotation={[Math.PI / 2, 0, 0]}>
-                  <ringGeometry args={[0.06, 0.08, 32]} />
-                  <meshBasicMaterial
-                    color="#F56B52"
-                    transparent
-                    opacity={0.6}
-                    side={THREE.DoubleSide}
-                  />
-                </mesh>
-                <mesh rotation={[Math.PI / 2, 0, 0]}>
-                  <ringGeometry args={[0.09, 0.11, 32]} />
-                  <meshBasicMaterial
-                    color="#F56B52"
-                    transparent
-                    opacity={0.3}
-                    side={THREE.DoubleSide}
-                  />
-                </mesh>
-              </group>
-
-              {/* Central glowing sphere */}
-              <Sphere args={[0.05, 16, 16]}>
-                <meshStandardMaterial
-                  color="#F56B52"
-                  emissive="#F56B52"
-                  emissiveIntensity={isHovered ? 6 : 4}
-                />
-              </Sphere>
-
-              {/* Icon label */}
-              <Html
-                position={[0, 0.18, 0]}
-                center
-                distanceFactor={8}
-                style={{
-                  pointerEvents: 'none',
-                  fontSize: '20px',
-                  filter: 'drop-shadow(0 0 10px rgba(245, 107, 82, 0.8))',
-                  opacity: isHovered ? 1 : 0.7,
-                  transition: 'opacity 0.2s ease'
-                }}
-              >
-                {icon}
-              </Html>
-
-              {/* Title label that shows on hover */}
-              <Html
-                position={[0, 0.35, 0]}
-                center
-                distanceFactor={8}
-                style={{
-                  pointerEvents: 'none',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '9px',
-                  color: 'var(--brand-coral)',
-                  textShadow: '0 0 10px rgba(245, 107, 82, 0.8), 0 0 20px rgba(0, 0, 0, 0.8)',
-                  whiteSpace: 'nowrap',
-                  opacity: isHovered ? 0.95 : 0,
-                  fontWeight: 'bold',
-                  background: 'rgba(0, 0, 0, 0.7)',
-                  padding: '3px 6px',
-                  borderRadius: '4px',
-                  transition: 'opacity 0.2s ease',
-                  transform: isHovered ? 'translateY(0)' : 'translateY(5px)',
-                }}
-              >
-                {hack.title.length > 25 ? hack.title.substring(0, 25) + '...' : hack.title}
-              </Html>
-            </group>
-          );
-        })}
-      </group>
+      {(selected || hovered) && (
+        <Html
+          position={[0, 0.24, 0]}
+          center
+          distanceFactor={7}
+          style={{
+            pointerEvents: 'none',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '10px',
+            color,
+            whiteSpace: 'nowrap',
+            textShadow: `0 0 12px ${color}, 0 0 24px rgba(0,0,0,0.9)`,
+            background: 'rgba(0, 0, 0, 0.72)',
+            border: `1px solid ${color}`,
+            padding: '4px 7px',
+            letterSpacing: '0.03em',
+          }}
+        >
+          {talent.maskedName} // {talent.signal}
+        </Html>
+      )}
     </group>
   );
 }
 
-export function ThreeGlobe({ hackathons }: ThreeGlobeProps) {
+function TalentPlanetScene({
+  talents,
+  selectedTalent,
+  onSelectTalent,
+}: {
+  talents: TalentPlanetPoint[];
+  selectedTalent: TalentPlanetPoint | null;
+  onSelectTalent: (talent: TalentPlanetPoint) => void;
+}) {
+  const planetRef = useRef<THREE.Group>(null);
+  const particleRef = useRef<THREE.Points>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  useFrame((state) => {
+    if (planetRef.current) {
+      planetRef.current.rotation.y += hoveredId ? 0.0007 : 0.0014;
+      planetRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.18) * 0.018;
+    }
+    if (particleRef.current) {
+      particleRef.current.rotation.y -= 0.0009;
+    }
+  });
+
+  const particles = useMemo(() => {
+    const count = 1050;
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+
+    for (let index = 0; index < count; index += 1) {
+      const radius = 2.25 + seededRandom(index + 1) * 1.18;
+      const theta = seededRandom(index + 11) * 2 * Math.PI;
+      const phi = Math.acos(seededRandom(index + 23) * 2 - 1);
+      const mix = seededRandom(index + 37);
+
+      positions[index * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      positions[index * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      positions[index * 3 + 2] = radius * Math.cos(phi);
+
+      colors[index * 3] = mix > 0.56 ? 0.96 : 0;
+      colors[index * 3 + 1] = mix > 0.56 ? 0.42 : 1;
+      colors[index * 3 + 2] = mix > 0.56 ? 0.32 : 0.35;
+    }
+
+    return { positions, colors };
+  }, []);
+
+  const connectionPositions = useMemo(() => {
+    const values: number[] = [];
+    talents.slice(0, 36).forEach((talent, index) => {
+      const from = latLonToVector3(talent.lat, talent.lon, 2.11);
+      const next = talents[(index + 5) % talents.length] || talent;
+      const to = latLonToVector3(next.lat, next.lon, 2.11);
+      values.push(from.x, from.y, from.z, to.x, to.y, to.z);
+    });
+    return new Float32Array(values);
+  }, [talents]);
+
   return (
-    <div style={{
-      height: '100%',
-      width: '100%',
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      zIndex: 0,
-      cursor: 'grab',
-      transform: 'translateX(15%)'
-    }}>
-      <Canvas camera={{ position: [3, 1, 6], fov: 45 }}>
+    <group>
+      <ambientLight intensity={0.74} />
+      <directionalLight position={[8, 8, 8]} intensity={3.2} color="#F56B52" />
+      <directionalLight position={[-8, 3, -9]} intensity={2.3} color="#00FF41" />
+      <pointLight position={[0, -5, 5]} intensity={1.8} color="#00D1FF" />
+      <pointLight position={[3, 2, 5]} intensity={1.1} color="#ffffff" />
+
+      <group ref={planetRef}>
+        <Sphere args={[2, 96, 96]}>
+          <meshStandardMaterial color="#101614" roughness={0.62} metalness={0.34} />
+        </Sphere>
+
+        <Sphere args={[2.02, 96, 96]}>
+          <meshBasicMaterial color="#15251F" wireframe transparent opacity={0.28} blending={THREE.AdditiveBlending} />
+        </Sphere>
+
+        <Sphere args={[2.09, 96, 96]}>
+          <meshBasicMaterial color="#00FF41" transparent opacity={0.045} blending={THREE.AdditiveBlending} />
+        </Sphere>
+
+        <Sphere args={[2.18, 96, 96]}>
+          <meshBasicMaterial color="#F56B52" transparent opacity={0.035} blending={THREE.AdditiveBlending} />
+        </Sphere>
+
+        <lineSegments>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" args={[connectionPositions, 3]} />
+          </bufferGeometry>
+          <lineBasicMaterial color="#00FF41" transparent opacity={0.18} blending={THREE.AdditiveBlending} />
+        </lineSegments>
+
+        <Html
+          position={[0, 0.32, 2.13]}
+          center
+          distanceFactor={8}
+          style={{
+            pointerEvents: 'none',
+            fontFamily: 'var(--font-hero)',
+            fontSize: '24px',
+            color: 'rgba(255,255,255,0.18)',
+            textShadow: '0 0 20px rgba(0,255,65,0.38)',
+            letterSpacing: '7px',
+            userSelect: 'none',
+          }}
+        >
+          TALENT PLANET
+        </Html>
+
+        {talents.map((talent) => (
+          <TalentMarker
+            key={talent.id}
+            talent={talent}
+            selected={selectedTalent?.id === talent.id}
+            hovered={hoveredId === talent.id}
+            onSelect={onSelectTalent}
+            onHover={setHoveredId}
+          />
+        ))}
+      </group>
+
+      <Points ref={particleRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[particles.positions, 3]} />
+          <bufferAttribute attach="attributes-color" args={[particles.colors, 3]} />
+        </bufferGeometry>
+        <PointMaterial vertexColors size={0.023} sizeAttenuation transparent opacity={0.72} blending={THREE.AdditiveBlending} />
+      </Points>
+    </group>
+  );
+}
+
+export function ThreeGlobe() {
+  const [selectedEventId, setSelectedEventId] = useState('all');
+  const filteredTalents = useMemo(() => (
+    selectedEventId === 'all'
+      ? talentPlanetPoints
+      : talentPlanetPoints.filter((talent) => talent.eventId === selectedEventId)
+  ), [selectedEventId]);
+  const [selectedTalentId, setSelectedTalentId] = useState(talentPlanetPoints[0]?.id || '');
+
+  useEffect(() => {
+    if (!filteredTalents.some((talent) => talent.id === selectedTalentId)) {
+      setSelectedTalentId(filteredTalents[0]?.id || '');
+    }
+  }, [filteredTalents, selectedTalentId]);
+
+  const selectedTalent = filteredTalents.find((talent) => talent.id === selectedTalentId) || filteredTalents[0] || null;
+  const selectedEvent = talentPlanetEvents.find((event) => event.id === selectedEventId) || talentPlanetEvents[0];
+
+  return (
+    <div
+      className="talent-planet-shell"
+      style={{
+        height: '100%',
+        width: '100%',
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        zIndex: 0,
+        transform: 'translateX(12%)',
+      }}
+    >
+      <Canvas camera={{ position: [3.4, 1.15, 6.2], fov: 44 }}>
         <OrbitControls
-          enableZoom={false}
+          enableZoom
           enablePan={false}
+          minDistance={4.2}
+          maxDistance={7.2}
+          rotateSpeed={0.55}
+          zoomSpeed={0.45}
           autoRotate={false}
-          minPolarAngle={0}
-          maxPolarAngle={Math.PI}
-          minAzimuthAngle={-Math.PI}
-          maxAzimuthAngle={Math.PI}
         />
-        <Earth hackathons={hackathons} />
+        <TalentPlanetScene
+          talents={filteredTalents}
+          selectedTalent={selectedTalent}
+          onSelectTalent={(talent) => setSelectedTalentId(talent.id)}
+        />
       </Canvas>
+
+      <div className="talent-filter-panel">
+        <div className="talent-filter-eyebrow">TALENT_PLANET // ACTIVITY_FILTER</div>
+        <div className="talent-filter-grid">
+          {talentPlanetEvents.map((event) => {
+            const count = event.id === 'all'
+              ? talentPlanetPoints.length
+              : talentPlanetPoints.filter((talent) => talent.eventId === event.id).length;
+
+            if (event.id !== 'all' && count === 0) return null;
+
+            return (
+              <button
+                key={event.id}
+                type="button"
+                onClick={() => setSelectedEventId(event.id)}
+                className={selectedEventId === event.id ? 'talent-filter active' : 'talent-filter'}
+              >
+                <span>{event.label}</span>
+                <strong>{count}</strong>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {selectedTalent && (
+        <aside className="talent-info-card" aria-label="Selected talent profile">
+          <div className="talent-info-topline">
+            <span>{selectedTalent.maskedName}</span>
+            <span>{selectedEvent.city.toUpperCase()}</span>
+          </div>
+
+          <h3>{selectedTalent.signal}</h3>
+
+          <div className="talent-info-meta">
+            <span>{selectedTalent.eventName}</span>
+            <span>{selectedTalent.city}, {selectedTalent.country}</span>
+          </div>
+
+          <div className="talent-field-grid">
+            <div>
+              <span>EDU</span>
+              <strong>{selectedTalent.education}</strong>
+            </div>
+            <div>
+              <span>ORG</span>
+              <strong>{selectedTalent.organization}</strong>
+            </div>
+            <div>
+              <span>MAJOR / ROLE</span>
+              <strong>{selectedTalent.major}</strong>
+            </div>
+          </div>
+
+          <div className="talent-story-block">
+            <span>COOLEST_THING</span>
+            <p>{selectedTalent.coolestThing}</p>
+          </div>
+
+          <div className="talent-story-block">
+            <span>BUILDING_NOW</span>
+            <p>{selectedTalent.building}</p>
+          </div>
+
+          <div className="talent-tags">
+            {selectedTalent.skills.map((skill) => (
+              <span key={skill}>#{skill}</span>
+            ))}
+          </div>
+
+          <div className="talent-privacy-note">
+            DATA_MASKED // NO_NAME_NO_CONTACT
+          </div>
+        </aside>
+      )}
+
+      <style jsx>{`
+        .talent-filter-panel {
+          position: absolute;
+          left: 54%;
+          top: var(--sp-5);
+          width: min(420px, 42vw);
+          z-index: 4;
+          pointer-events: auto;
+          font-family: var(--font-mono);
+          color: var(--text-main);
+        }
+
+        .talent-filter-eyebrow {
+          margin-bottom: var(--sp-2);
+          color: var(--text-muted);
+          font-size: 11px;
+          letter-spacing: 0.08em;
+          text-shadow: 0 0 14px rgba(0, 255, 65, 0.5);
+        }
+
+        .talent-filter-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .talent-filter {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          background: rgba(0, 0, 0, 0.42);
+          color: var(--text-muted);
+          padding: 5px 7px;
+          font: inherit;
+          font-size: 10px;
+          cursor: pointer;
+          backdrop-filter: blur(10px);
+          transition: all 0.18s ease;
+        }
+
+        .talent-filter strong {
+          color: var(--brand-green);
+          font-weight: 700;
+        }
+
+        .talent-filter.active,
+        .talent-filter:hover {
+          color: var(--text-main);
+          border-color: var(--brand-coral);
+          box-shadow: 0 0 18px rgba(245, 107, 82, 0.25);
+          transform: translateY(-1px);
+        }
+
+        .talent-info-card {
+          position: absolute;
+          right: var(--sp-5);
+          top: 52%;
+          width: min(390px, 34vw);
+          transform: translateY(-50%);
+          z-index: 5;
+          pointer-events: auto;
+          padding: var(--sp-4);
+          color: var(--text-main);
+          border: 1px solid rgba(0, 255, 65, 0.32);
+          background:
+            linear-gradient(135deg, rgba(0, 255, 65, 0.12), rgba(245, 107, 82, 0.08)),
+            rgba(5, 8, 7, 0.82);
+          backdrop-filter: blur(18px);
+          box-shadow:
+            0 0 40px rgba(0, 255, 65, 0.14),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
+          font-family: var(--font-mono);
+        }
+
+        .talent-info-card::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background: linear-gradient(transparent 50%, rgba(255,255,255,0.03) 50%);
+          background-size: 100% 6px;
+          mix-blend-mode: screen;
+          opacity: 0.45;
+        }
+
+        .talent-info-topline {
+          display: flex;
+          justify-content: space-between;
+          gap: var(--sp-3);
+          color: var(--brand-green);
+          font-size: 11px;
+          margin-bottom: var(--sp-2);
+          letter-spacing: 0.08em;
+        }
+
+        .talent-info-card h3 {
+          position: relative;
+          margin: 0 0 var(--sp-3) 0;
+          font-family: var(--font-hero);
+          font-size: clamp(28px, 3vw, 42px);
+          line-height: 0.96;
+          color: var(--text-main);
+          text-transform: uppercase;
+          text-shadow: 0 0 24px rgba(245, 107, 82, 0.35);
+        }
+
+        .talent-info-meta {
+          display: flex;
+          justify-content: space-between;
+          gap: var(--sp-3);
+          color: var(--text-muted);
+          font-size: 11px;
+          padding-bottom: var(--sp-3);
+          margin-bottom: var(--sp-3);
+          border-bottom: 1px dashed rgba(255, 255, 255, 0.18);
+        }
+
+        .talent-field-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: var(--sp-2);
+          margin-bottom: var(--sp-3);
+        }
+
+        .talent-field-grid div,
+        .talent-story-block {
+          position: relative;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: rgba(0, 0, 0, 0.28);
+          padding: var(--sp-2);
+        }
+
+        .talent-field-grid span,
+        .talent-story-block span {
+          display: block;
+          color: var(--brand-coral);
+          font-size: 10px;
+          margin-bottom: 4px;
+          letter-spacing: 0.06em;
+        }
+
+        .talent-field-grid strong {
+          display: block;
+          color: var(--text-main);
+          font-size: 12px;
+          line-height: 1.35;
+          font-weight: 600;
+        }
+
+        .talent-story-block {
+          margin-bottom: var(--sp-2);
+        }
+
+        .talent-story-block p {
+          margin: 0;
+          font-family: var(--font-body);
+          color: var(--text-muted);
+          font-size: 12px;
+          line-height: 1.55;
+        }
+
+        .talent-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: var(--sp-3);
+        }
+
+        .talent-tags span {
+          color: var(--brand-green);
+          border: 1px solid rgba(0, 255, 65, 0.28);
+          background: rgba(0, 255, 65, 0.06);
+          padding: 4px 7px;
+          font-size: 10px;
+        }
+
+        .talent-privacy-note {
+          margin-top: var(--sp-3);
+          color: var(--text-muted);
+          font-size: 10px;
+          letter-spacing: 0.08em;
+        }
+
+        @media (max-width: 900px) {
+          .talent-planet-shell {
+            transform: none !important;
+          }
+
+          .talent-filter-panel {
+            left: var(--sp-3);
+            right: var(--sp-3);
+            top: var(--sp-3);
+            width: auto;
+          }
+
+          .talent-info-card {
+            left: var(--sp-3);
+            right: var(--sp-3);
+            bottom: var(--sp-3);
+            top: auto;
+            width: auto;
+            transform: none;
+            max-height: 42vh;
+            overflow: auto;
+          }
+        }
+      `}</style>
     </div>
   );
 }

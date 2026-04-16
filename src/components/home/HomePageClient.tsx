@@ -77,14 +77,6 @@ export function HomePageClient({
   const { t } = useLanguage();
   const { isProjectLiked, toggleLikeProject, getProjectLikes } = useLike();
 
-  const hackathonMarkers = initialHackathons
-    .filter((hackathon) => typeof hackathon.latitude === 'number' && typeof hackathon.longitude === 'number')
-    .map((hackathon) => ({
-      lat: hackathon.latitude,
-      lon: hackathon.longitude,
-      title: hackathon.title,
-    }));
-
   return (
     <main style={{ position: 'relative', overflowX: 'hidden' }}>
       <div
@@ -97,7 +89,7 @@ export function HomePageClient({
           position: 'relative',
         }}
       >
-        <ThreeGlobe hackathons={hackathonMarkers} />
+        <ThreeGlobe />
 
         <div style={{ maxWidth: '800px', pointerEvents: 'none', position: 'relative', zIndex: 10, marginRight: 'auto' }}>
           <h1
