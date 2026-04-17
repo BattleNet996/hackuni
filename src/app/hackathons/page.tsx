@@ -23,6 +23,41 @@ interface Hackathon {
   start_time: string;
 }
 
+const posterPalettes = [
+  {
+    base: 'linear-gradient(135deg, #ff7a18 0%, #24120b 46%, #00ff41 100%)',
+    glow: 'radial-gradient(circle at 28% 20%, rgba(255,255,255,0.34), transparent 30%)',
+  },
+  {
+    base: 'linear-gradient(145deg, #0a1b2f 0%, #123b4a 42%, #f5c84b 100%)',
+    glow: 'radial-gradient(circle at 78% 18%, rgba(255,255,255,0.28), transparent 28%)',
+  },
+  {
+    base: 'linear-gradient(150deg, #101010 0%, #3b1d11 45%, #ff4f2e 100%)',
+    glow: 'radial-gradient(circle at 22% 82%, rgba(255,255,255,0.22), transparent 34%)',
+  },
+  {
+    base: 'linear-gradient(135deg, #07171a 0%, #164e45 48%, #a7f070 100%)',
+    glow: 'radial-gradient(circle at 72% 74%, rgba(255,255,255,0.24), transparent 32%)',
+  },
+];
+
+function getPosterPalette(id: string) {
+  const hash = id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return posterPalettes[hash % posterPalettes.length];
+}
+
+function getPosterInitials(title: string) {
+  const cleanTitle = title.replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  const parts = cleanTitle.split(/\s+/).filter(Boolean);
+
+  if (parts.length >= 2 && /^[a-z0-9]+$/i.test(parts[0])) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+
+  return cleanTitle.slice(0, 2).toUpperCase() || 'HX';
+}
+
 interface HackathonListResponse {
   data: Hackathon[];
 }
@@ -125,21 +160,91 @@ export default function HackathonsPage() {
       <div className="divider-dashed" style={{ marginBottom: 'var(--sp-6)' }}></div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-5)' }}>
-        {filteredHackathons.map(hack => (
+        {filteredHackathons.map((hack, index) => {
+          const posterPalette = getPosterPalette(hack.id);
+          const primaryTag = ensureTagsArray(hack.tags_json)[0] || '#HACK';
+          const posterInitials = getPosterInitials(hack.title);
+
+          return (
           <HackerCard key={hack.id} className="responsive-flex-col desktop-row" style={{ gap: 'var(--sp-5)' }}>
-            <div style={{
-              width: '200px',
-              height: '200px',
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-base)',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-disabled)',
-              fontFamily: 'var(--font-mono)'
-            }}>
-              [POSTER_IMAGE]
+            <div
+              aria-label={`${hack.title} poster`}
+              style={{
+                width: '200px',
+                height: '200px',
+                background: `${posterPalette.glow}, ${posterPalette.base}`,
+                border: '1px solid var(--border-base)',
+                flexShrink: 0,
+                position: 'relative',
+                overflow: 'hidden',
+                color: '#fff',
+                fontFamily: 'var(--font-mono)',
+                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
+              }}
+            >
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundImage:
+                  'linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)',
+                backgroundSize: '18px 18px',
+                opacity: 0.35,
+              }} />
+              <div style={{
+                position: 'absolute',
+                top: '14px',
+                left: '14px',
+                right: '14px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: '10px',
+                letterSpacing: '0.08em',
+                color: 'rgba(255,255,255,0.78)',
+              }}>
+                <span>HACK_OP</span>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+              </div>
+              <div style={{
+                position: 'absolute',
+                left: '16px',
+                right: '16px',
+                top: '54px',
+                fontFamily: 'var(--font-hero)',
+                fontSize: posterInitials.length > 2 ? '42px' : '58px',
+                lineHeight: 0.88,
+                letterSpacing: '-0.05em',
+                textShadow: '4px 4px 0 rgba(0,0,0,0.28)',
+              }}>
+                {posterInitials}
+              </div>
+              <div style={{
+                position: 'absolute',
+                left: '16px',
+                right: '16px',
+                bottom: '44px',
+                fontSize: '11px',
+                lineHeight: 1.35,
+                color: 'rgba(255,255,255,0.86)',
+                textTransform: 'uppercase',
+              }}>
+                {primaryTag.replace(/^#/, '')}
+              </div>
+              <div style={{
+                position: 'absolute',
+                left: '16px',
+                right: '16px',
+                bottom: '16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 'var(--sp-2)',
+                fontSize: '10px',
+                color: 'rgba(255,255,255,0.72)',
+              }}>
+                <span>{hack.city || 'GLOBAL'}</span>
+                <span>{new Date(hack.start_time).getFullYear() || '2026'}</span>
+              </div>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -190,7 +295,7 @@ export default function HackathonsPage() {
               </div>
             </div>
           </HackerCard>
-        ))}
+        )})}
       </div>
 
       {filteredHackathons.length === 0 && !isLoading && (

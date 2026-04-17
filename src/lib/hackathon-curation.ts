@@ -49,7 +49,47 @@ function isTsinghuaOpenClawHackathon(hackathon: Hackathon): boolean {
 function getHackathonPriority(hackathon: Hackathon): number {
   if (isSpringHackathon(hackathon)) return 0;
   if (isTsinghuaOpenClawHackathon(hackathon)) return 1;
-  return Number.POSITIVE_INFINITY;
+  return 2;
+}
+
+function getRegistrationStatusRank(hackathon: Hackathon): number {
+  const status = normalizeHackathonText(hackathon.registration_status);
+
+  if (
+    status.includes('报名中') ||
+    status.includes('进行中') ||
+    status.includes('open') ||
+    status.includes('upcoming') ||
+    status.includes('registering')
+  ) {
+    return 0;
+  }
+
+  if (
+    status.includes('已结束') ||
+    status.includes('结束') ||
+    status.includes('closed') ||
+    status.includes('ended')
+  ) {
+    return 1;
+  }
+
+  return 2;
+}
+
+function getReferenceTime(hackathon: Hackathon, now: number): number {
+  const startTime = toTimestamp(hackathon.start_time);
+  const endTime = toTimestamp(hackathon.end_time);
+
+  if (startTime && endTime && startTime <= now && now <= endTime) {
+    return now;
+  }
+
+  if (startTime && now < startTime) {
+    return startTime;
+  }
+
+  return endTime || startTime;
 }
 
 export const TSINGHUA_OPENCLAW_HACKATHON: Hackathon = {
@@ -140,6 +180,7 @@ export function enrichFeaturedHackathon(hackathon: Hackathon): Hackathon {
 
 export function buildFeaturedHackathonList(hackathons: Hackathon[]): Hackathon[] {
   const curatedHackathons = hackathons.map((hackathon) => enrichFeaturedHackathon(hackathon));
+  const now = Date.now();
 
   if (!curatedHackathons.some(isSpringHackathon)) {
     curatedHackathons.push(SPRING_HACKATHON);
@@ -150,10 +191,20 @@ export function buildFeaturedHackathonList(hackathons: Hackathon[]): Hackathon[]
   }
 
   return curatedHackathons.sort((left, right) => {
-    const priorityDelta = getHackathonPriority(left) - getHackathonPriority(right);
+    const leftPriority = getHackathonPriority(left);
+    const rightPriority = getHackathonPriority(right);
+    const priorityDelta = leftPriority - rightPriority;
     if (priorityDelta !== 0) return priorityDelta;
 
-    const startTimeDelta = toTimestamp(right.start_time) - toTimestamp(left.start_time);
+    const statusDelta = getRegistrationStatusRank(left) - getRegistrationStatusRank(right);
+    if (statusDelta !== 0) return statusDelta;
+
+    const leftReferenceTime = getReferenceTime(left, now);
+    const rightReferenceTime = getReferenceTime(right, now);
+    const distanceDelta = Math.abs(leftReferenceTime - now) - Math.abs(rightReferenceTime - now);
+    if (distanceDelta !== 0) return distanceDelta;
+
+    const startTimeDelta = toTimestamp(left.start_time) - toTimestamp(right.start_time);
     if (startTimeDelta !== 0) return startTimeDelta;
 
     return toTimestamp(right.created_at) - toTimestamp(left.created_at);
