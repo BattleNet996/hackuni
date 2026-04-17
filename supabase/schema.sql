@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS users (
     twitter_url TEXT,
     github_url TEXT,
     website_url TEXT,
+    coolest_thing TEXT,
+    current_build TEXT,
     looking_for TEXT, -- JSONB array
     total_hackathon_count INTEGER DEFAULT 0,
     total_work_count INTEGER DEFAULT 0,
@@ -158,6 +160,31 @@ CREATE TABLE IF NOT EXISTS user_badges (
 CREATE INDEX IF NOT EXISTS idx_user_badges_user_id ON user_badges(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_badges_badge_id ON user_badges(badge_id);
 CREATE INDEX IF NOT EXISTS idx_user_badges_status ON user_badges(status);
+
+-- User Hackathon Records table
+CREATE TABLE IF NOT EXISTS user_hackathon_records (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    hackathon_id TEXT,
+    hackathon_title TEXT NOT NULL,
+    role TEXT,
+    project_name TEXT,
+    project_url TEXT,
+    award_text TEXT,
+    proof_url TEXT,
+    notes TEXT,
+    status TEXT DEFAULT 'pending', -- pending, verified, rejected
+    verified_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (hackathon_id) REFERENCES hackathons(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_hackathon_records_user_id ON user_hackathon_records(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_hackathon_records_hackathon_id ON user_hackathon_records(hackathon_id);
+CREATE INDEX IF NOT EXISTS idx_user_hackathon_records_status ON user_hackathon_records(status);
+CREATE INDEX IF NOT EXISTS idx_user_hackathon_records_created_at ON user_hackathon_records(created_at);
 
 -- Likes table (polymorphic)
 CREATE TABLE IF NOT EXISTS likes (

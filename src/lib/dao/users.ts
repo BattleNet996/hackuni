@@ -39,6 +39,8 @@ export class UserDAO extends BaseDAO<User> {
           twitter_url = COALESCE(?, twitter_url),
           github_url = COALESCE(?, github_url),
           website_url = COALESCE(?, website_url),
+          coolest_thing = COALESCE(?, coolest_thing),
+          current_build = COALESCE(?, current_build),
           looking_for = COALESCE(?, looking_for),
           updated_at = datetime('now')
       WHERE id = ?
@@ -102,6 +104,8 @@ export class UserDAO extends BaseDAO<User> {
       input.twitter_url,
       input.github_url,
       input.website_url,
+      input.coolest_thing,
+      input.current_build,
       lookingForJson,
       id
     );

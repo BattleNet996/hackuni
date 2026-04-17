@@ -88,6 +88,8 @@ export class UserSupabaseDAO extends BaseSupabaseDAO<User> {
     if (input.twitter_url !== undefined) updateData.twitter_url = input.twitter_url;
     if (input.github_url !== undefined) updateData.github_url = input.github_url;
     if (input.website_url !== undefined) updateData.website_url = input.website_url;
+    if ((input as any).coolest_thing !== undefined) updateData.coolest_thing = (input as any).coolest_thing;
+    if ((input as any).current_build !== undefined) updateData.current_build = (input as any).current_build;
     if (input.looking_for !== undefined) updateData.looking_for = input.looking_for;
 
     const { data, error } = await supabase

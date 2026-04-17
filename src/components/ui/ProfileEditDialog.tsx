@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { UserProfile } from '@/contexts/AuthContext';
+import { apiFetch } from '@/lib/api-client';
+import { clearJsonCacheByPrefix } from '@/lib/client-cache';
 
 interface ProfileEditDialogProps {
   isOpen: boolean;
@@ -14,6 +16,8 @@ export function ProfileEditDialog({ isOpen, onClose }: ProfileEditDialogProps) {
   const { user, updateProfile } = useAuth();
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
   const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [message, setMessage] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -30,6 +34,11 @@ export function ProfileEditDialog({ isOpen, onClose }: ProfileEditDialogProps) {
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
+      if (file.size > 450 * 1024) {
+        setMessage(language === 'zh' ? '头像图片请控制在 450KB 以内' : 'Avatar image must be under 450KB');
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target?.result as string;
@@ -48,11 +57,34 @@ export function ProfileEditDialog({ isOpen, onClose }: ProfileEditDialogProps) {
     setFormData(prev => ({ ...prev, looking_for: newLookingFor }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData) {
-      updateProfile(formData);
+    setMessage('');
+    setIsSaving(true);
+
+    try {
+      const response = await apiFetch('/api/profile', {
+        method: 'PATCH',
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || (language === 'zh' ? '保存失败' : 'Failed to save'));
+      }
+
+      updateProfile(data.data);
+      clearJsonCacheByPrefix('/api/builders');
       onClose();
+    } catch (error: any) {
+      const messageText = String(error?.message || '');
+      setMessage(
+        messageText.includes('schema migration')
+          ? (language === 'zh' ? '需要先执行 Supabase 个人资料字段迁移 SQL' : 'Supabase profile schema migration must be applied first')
+          : messageText
+      );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -129,7 +161,9 @@ export function ProfileEditDialog({ isOpen, onClose }: ProfileEditDialogProps) {
               <div style={{
                 width: '100px',
                 height: '100px',
-                background: avatarPreview || `url(https://picsum.photos/seed/${user.id}/200/200) center/cover`,
+                backgroundImage: avatarPreview ? `url(${avatarPreview})` : `url(https://picsum.photos/seed/${user.id}/200/200)`,
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
                 backgroundSize: 'cover',
                 border: '2px solid var(--brand-coral)',
                 borderRadius: '50%',
@@ -327,6 +361,54 @@ export function ProfileEditDialog({ isOpen, onClose }: ProfileEditDialogProps) {
             />
           </div>
 
+          {/* Outlier Signals */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)' }}>
+            <div>
+              <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)', marginBottom: 'var(--sp-2)' }}>
+                {language === 'zh' ? '做过最酷的事情' : 'Coolest thing you have done'}
+              </label>
+              <textarea
+                name="coolest_thing"
+                value={formData.coolest_thing || ''}
+                onChange={handleChange}
+                rows={4}
+                placeholder={language === 'zh' ? '例如：48 小时做出一个能跑的硬件 demo...' : 'e.g., Shipped a working hardware demo in 48 hours...'}
+                style={{
+                  width: '100%',
+                  padding: 'var(--sp-2)',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-base)',
+                  borderRadius: '4px',
+                  color: 'var(--text-main)',
+                  fontFamily: 'var(--font-body)',
+                  resize: 'vertical',
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)', marginBottom: 'var(--sp-2)' }}>
+                {language === 'zh' ? '目前在 Build 的产品' : 'What are you building now'}
+              </label>
+              <textarea
+                name="current_build"
+                value={formData.current_build || ''}
+                onChange={handleChange}
+                rows={4}
+                placeholder={language === 'zh' ? '例如：一个 AI Agent / 硬件 / 社区实验...' : 'e.g., An AI agent, hardware prototype, or community experiment...'}
+                style={{
+                  width: '100%',
+                  padding: 'var(--sp-2)',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-base)',
+                  borderRadius: '4px',
+                  color: 'var(--text-main)',
+                  fontFamily: 'var(--font-body)',
+                  resize: 'vertical',
+                }}
+              />
+            </div>
+          </div>
+
           {/* Contact */}
           <div>
             <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)', marginBottom: 'var(--sp-2)' }}>
@@ -439,6 +521,19 @@ export function ProfileEditDialog({ isOpen, onClose }: ProfileEditDialogProps) {
               ))}
             </div>
           </div>
+
+          {message && (
+            <div style={{
+              padding: 'var(--sp-3)',
+              border: '1px solid var(--brand-coral)',
+              background: 'rgba(245, 107, 82, 0.1)',
+              color: 'var(--brand-coral)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '12px',
+            }}>
+              {message}
+            </div>
+          )}
         </form>
 
         {/* Footer */}
@@ -467,18 +562,19 @@ export function ProfileEditDialog({ isOpen, onClose }: ProfileEditDialogProps) {
           </button>
           <button
             onClick={handleSubmit}
+            disabled={isSaving}
             style={{
               padding: 'var(--sp-2) var(--sp-4)',
               background: 'var(--brand-coral)',
               color: '#fff',
               border: 'none',
               borderRadius: '4px',
-              cursor: 'pointer',
+              cursor: isSaving ? 'not-allowed' : 'pointer',
               fontSize: '14px',
               fontFamily: 'var(--font-mono)',
             }}
           >
-            {t('common.save')}
+            {isSaving ? (language === 'zh' ? '保存中...' : 'Saving...') : t('common.save')}
           </button>
         </div>
       </div>

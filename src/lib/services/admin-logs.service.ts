@@ -7,7 +7,7 @@ interface AdminUser {
 }
 
 interface LogOptions {
-  entity_type?: 'user' | 'hackathon' | 'project' | 'story' | 'badge' | 'admin';
+  entity_type?: 'user' | 'hackathon' | 'hackathon_record' | 'project' | 'story' | 'badge' | 'admin';
   entity_id?: string;
   entity_name?: string;
   details?: Record<string, any>;

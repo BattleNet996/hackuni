@@ -101,9 +101,9 @@ export default function PublishProjectPage() {
       if (response.ok) {
         clearJsonCacheByPrefix('/api/projects');
         clearJsonCacheByPrefix('/api/builders');
-        setMessage(language === 'zh' ? '发布成功！' : 'Published successfully!');
+        setMessage(language === 'zh' ? '已提交管理员审核，通过后会公开展示。' : 'Submitted for admin review. It will be public after approval.');
         setTimeout(() => {
-          router.push('/goat-hunt');
+          router.push(user?.id ? `/profile/${user.id}` : '/goat-hunt');
           router.refresh();
         }, 400);
       } else {
@@ -558,10 +558,10 @@ export default function PublishProjectPage() {
             padding: 'var(--sp-3)',
             borderRadius: 'var(--radius-sm)',
             textAlign: 'center',
-            background: message.includes(language === 'zh' ? '成功' : 'success')
+            background: (message.includes(language === 'zh' ? '成功' : 'success') || message.includes(language === 'zh' ? '已提交' : 'Submitted'))
               ? 'rgba(0, 255, 65, 0.1)'
               : 'rgba(255, 65, 65, 0.1)',
-            color: message.includes(language === 'zh' ? '成功' : 'success')
+            color: (message.includes(language === 'zh' ? '成功' : 'success') || message.includes(language === 'zh' ? '已提交' : 'Submitted'))
               ? 'var(--brand-green)'
               : 'var(--brand-coral)',
             fontSize: '14px',

@@ -171,10 +171,14 @@ export async function POST(request: NextRequest) {
       related_hackathon_id: data.hackathon_id,
       images: data.images || [],
       is_awarded: data.is_awarded || false,
-      award_text: data.award_text
+      award_text: data.award_text,
+      status: 'pending'
     }, user.id);
 
-    return NextResponse.json({ data: project });
+    return NextResponse.json({
+      data: project,
+      message: 'Project submitted for admin review'
+    });
   } catch (error: any) {
     console.error('Create project error:', error);
     return NextResponse.json(

@@ -26,6 +26,7 @@ interface ProjectDetail {
   images: string[];
   related_hackathon_id: string | null;
   author_id: string | null;
+  status?: string;
   like_count?: number;
 }
 
@@ -204,6 +205,20 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
                   {project.title}
                 </h1>
                 {project.is_awarded && project.award_text && <Badge type="award" label={project.award_text} />}
+                {project.status && project.status !== 'published' && (
+                  <span style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '12px',
+                    color: project.status === 'pending' ? 'var(--brand-amber)' : 'var(--brand-coral)',
+                    border: `1px solid ${project.status === 'pending' ? 'var(--brand-amber)' : 'var(--brand-coral)'}`,
+                    padding: '4px 10px',
+                    borderRadius: '999px',
+                  }}>
+                    {project.status === 'pending'
+                      ? (language === 'zh' ? '待管理员审核' : 'Pending Review')
+                      : (language === 'zh' ? '未通过审核' : project.status.toUpperCase())}
+                  </span>
+                )}
               </div>
               <p style={{ fontSize: '20px', color: 'var(--text-muted)', margin: '0 0 var(--sp-4) 0' }}>
                 {project.short_desc}

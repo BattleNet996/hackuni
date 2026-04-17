@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { badgeDAO, projectDAO, userDAO } from '@/lib/dao';
+import { supabase } from '@/lib/db/supabase-client';
+import { authService } from '@/lib/services';
 
 const earnedStatuses = new Set(['verified', 'approved', 'earned']);
 
@@ -10,11 +12,17 @@ function sanitizeUser(user: any) {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+    const token =
+      request.cookies.get('auth_token')?.value ||
+      request.headers.get('authorization')?.replace('Bearer ', '') ||
+      request.headers.get('x-auth-token');
+    const viewer = token ? await authService.verifyToken(token) : null;
+    const isOwnProfile = viewer?.id === id;
     const user = await userDAO.findById(id);
 
     if (!user) {
@@ -24,9 +32,14 @@ export async function GET(
       );
     }
 
-    const projects = typeof (projectDAO as any).findByAuthorId === 'function'
+    const allProjects = typeof (projectDAO as any).findByAuthorId === 'function'
       ? await (projectDAO as any).findByAuthorId(id)
       : [];
+    const projects = allProjects.filter((project: any) => {
+      if (project.hidden) return false;
+      if (project.status === 'published') return true;
+      return isOwnProfile && ['pending', 'rejected'].includes(project.status);
+    });
 
     const userBadges = typeof (badgeDAO as any).getUserBadges === 'function'
       ? await (badgeDAO as any).getUserBadges(id)
@@ -44,7 +57,42 @@ export async function GET(
         is_earned: earnedStatuses.has(item.status),
       }));
 
-    const footprintCities: Array<{ city: string; country: string; date: string }> = [];
+    const { data: recordRows, error: recordError } = await supabase
+      .from('user_hackathon_records')
+      .select(`
+        id,
+        user_id,
+        hackathon_id,
+        hackathon_title,
+        role,
+        project_name,
+        project_url,
+        award_text,
+        proof_url,
+        notes,
+        status,
+        verified_at,
+        created_at,
+        hackathon:hackathons(city, country, start_time)
+      `)
+      .eq('user_id', id)
+      .order('created_at', { ascending: false });
+
+    if (recordError && recordError.code !== '42P01') {
+      throw recordError;
+    }
+
+    const hackathonRecords = recordError?.code === '42P01' ? [] : (recordRows || []);
+    const publicHackathonRecords = hackathonRecords.filter((record: any) => ['approved', 'verified'].includes(record.status));
+
+    const footprintCities = publicHackathonRecords
+      .map((record: any) => ({
+        city: record.hackathon?.city,
+        country: record.hackathon?.country,
+        date: record.hackathon?.start_time || record.verified_at || record.created_at,
+      }))
+      .filter((item: any) => item.city && item.country && item.date);
+
     const heatmapActivities = [
       ...(user.created_at ? [{
         date: user.created_at,
@@ -60,13 +108,18 @@ export async function GET(
         date: badge.verified_at || badge.earned_at || badge.created_at,
         type: 'badge',
       })),
+      ...publicHackathonRecords.map((record: any) => ({
+        date: record.verified_at || record.created_at,
+        type: 'hackathon',
+      })),
     ];
 
     return NextResponse.json({
       data: {
         user: sanitizeUser(user),
         projects,
-        hackathons: [],
+        hackathons: publicHackathonRecords,
+        pendingHackathonRecords: hackathonRecords.filter((record: any) => record.status === 'pending'),
         badges,
         footprintCities,
         heatmapActivities,

@@ -19,6 +19,21 @@ export async function GET(
       );
     }
 
+    if (project.status !== 'published') {
+      const token =
+        request.cookies.get('auth_token')?.value ||
+        request.headers.get('authorization')?.replace('Bearer ', '') ||
+        request.headers.get('x-auth-token');
+      const user = token ? await authService.verifyToken(token) : null;
+
+      if (!user || user.id !== project.author_id) {
+        return NextResponse.json(
+          { error: { code: 'NOT_FOUND', message: 'Project not found' } },
+          { status: 404 }
+        );
+      }
+    }
+
     const count = await likeDAO.countLikes('project', id);
 
     return NextResponse.json({

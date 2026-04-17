@@ -15,6 +15,8 @@ export interface User {
   twitter_url?: string;
   github_url?: string;
   website_url?: string;
+  coolest_thing?: string;
+  current_build?: string;
   looking_for: string[];
   total_hackathon_count: number;
   total_work_count: number;
@@ -43,6 +45,8 @@ export interface UserUpdateInput {
   twitter_url?: string;
   github_url?: string;
   website_url?: string;
+  coolest_thing?: string;
+  current_build?: string;
   looking_for?: string[];
 }
 

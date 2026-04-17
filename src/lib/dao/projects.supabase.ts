@@ -90,7 +90,7 @@ export class ProjectSupabaseDAO extends BaseSupabaseDAO<Project> {
       is_awarded: input.is_awarded ? 1 : 0,
       award_text: input.award_text || null,
       like_count: 0,
-      status: 'published',
+      status: input.status || 'published',
       hidden: 0,
       created_at: now,
       updated_at: now

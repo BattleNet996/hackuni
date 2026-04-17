@@ -88,6 +88,7 @@ interface AdminStats {
   totalBadges: number;
   pendingReviews: number;
   pendingBadges: number;
+  pendingHackathonRecords?: number;
 }
 
 export default function AdminDashboard() {
@@ -102,6 +103,7 @@ export default function AdminDashboard() {
     totalBadges: 0,
     pendingReviews: 0,
     pendingBadges: 0,
+    pendingHackathonRecords: 0,
   });
 
   // Data states
@@ -484,7 +486,7 @@ export default function AdminDashboard() {
     if (activeTab === 'badges') fetchBadges();
   };
 
-  const handleReview = async (itemId: string, type: 'project' | 'story' | 'badge', action: 'approve' | 'reject') => {
+  const handleReview = async (itemId: string, type: 'project' | 'story' | 'badge' | 'hackathon_record', action: 'approve' | 'reject') => {
     try {
       const response = await fetch(`/api/admin/reviews/${itemId}`, {
         method: 'PATCH',
@@ -1006,7 +1008,7 @@ export default function AdminDashboard() {
                   {language === 'zh' ? '审核提交' : 'REVIEW_SUBMISSIONS'}
                 </h3>
                 <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontSize: '13px', marginTop: 'var(--sp-2)' }}>
-                  {language === 'zh' ? '审核用户提交的项目、文章和徽章申请' : 'Review user-submitted projects, stories, and badge requests'}
+                  {language === 'zh' ? '审核用户提交的项目、文章、徽章申请和黑客松认证记录' : 'Review user-submitted projects, stories, badge requests, and verified hackathon records'}
                 </p>
               </div>
 
@@ -1075,6 +1077,73 @@ export default function AdminDashboard() {
                               <Button
                                 variant="ghost"
                                 onClick={() => handleReview(project.id, 'project', 'reject')}
+                                style={{ cursor: 'pointer', fontSize: '11px', color: 'var(--brand-coral)' }}
+                              >
+                                {language === 'zh' ? '拒绝' : 'Reject'}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pending Hackathon Records */}
+                  {pendingReviews.hackathonRecords && pendingReviews.hackathonRecords.length > 0 && (
+                    <div>
+                      <h4 style={{ fontFamily: 'var(--font-mono)', margin: '0 0 var(--sp-3) 0', fontSize: '14px', color: 'var(--brand-green)' }}>
+                        {language === 'zh' ? '待认证黑客松记录' : 'Pending Hackathon Records'} ({pendingReviews.hackathonRecords.length})
+                      </h4>
+                      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-4)' }}>
+                        {pendingReviews.hackathonRecords.map((record: any) => (
+                          <div key={record.id} style={{
+                            padding: 'var(--sp-3)',
+                            borderBottom: '1px solid var(--bg-elevated)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            gap: 'var(--sp-4)',
+                            alignItems: 'center',
+                          }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                                {record.hackathon_title}
+                              </div>
+                              <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                                {language === 'zh' ? '提交人' : 'User'}: {record.user_name || record.user_id}
+                                {record.role ? ` | ${language === 'zh' ? '角色' : 'Role'}: ${record.role}` : ''}
+                                {record.project_name ? ` | ${language === 'zh' ? '项目' : 'Project'}: ${record.project_name}` : ''}
+                                {record.award_text ? ` | ${language === 'zh' ? '奖项' : 'Award'}: ${record.award_text}` : ''}
+                              </div>
+                              {record.notes && (
+                                <div style={{ fontSize: '12px', color: 'var(--text-main)', marginTop: '6px', lineHeight: 1.5 }}>
+                                  {record.notes}
+                                </div>
+                              )}
+                              <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap', fontSize: '11px', marginTop: '6px' }}>
+                                {record.project_url && (
+                                  <a href={record.project_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-coral)' }}>
+                                    {language === 'zh' ? '项目链接' : 'Project link'}
+                                  </a>
+                                )}
+                                {record.proof_url && (
+                                  <a href={record.proof_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-coral)' }}>
+                                    {language === 'zh' ? '证明链接' : 'Proof link'}
+                                  </a>
+                                )}
+                                <span style={{ color: 'var(--text-muted)' }}>{new Date(record.created_at).toLocaleString()}</span>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                              <Button
+                                variant="ghost"
+                                onClick={() => handleReview(record.id, 'hackathon_record', 'approve')}
+                                style={{ cursor: 'pointer', fontSize: '11px', color: 'var(--brand-green)' }}
+                              >
+                                {language === 'zh' ? '认证通过' : 'Verify'}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() => handleReview(record.id, 'hackathon_record', 'reject')}
                                 style={{ cursor: 'pointer', fontSize: '11px', color: 'var(--brand-coral)' }}
                               >
                                 {language === 'zh' ? '拒绝' : 'Reject'}

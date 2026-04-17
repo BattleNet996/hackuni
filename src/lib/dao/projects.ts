@@ -74,8 +74,8 @@ export class ProjectDAO extends BaseDAO<Project> {
         id, title, short_desc, long_desc, team_member_text,
         tags_json, demo_url, github_url, website_url,
         related_hackathon_id, author_id, images, is_awarded, award_text,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -93,6 +93,7 @@ export class ProjectDAO extends BaseDAO<Project> {
       JSON.stringify(input.images || []),
       input.is_awarded ? 1 : 0,
       input.award_text || null,
+      input.status || 'published',
       now,
       now
     );

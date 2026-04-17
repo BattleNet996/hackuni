@@ -13,6 +13,64 @@ function getRequestMetadata(request: NextRequest) {
   };
 }
 
+function isMissingRelation(error: any) {
+  return error?.code === '42P01' || /does not exist|user_hackathon_records/i.test(error?.message || '');
+}
+
+async function refreshUserCounters(userId: string) {
+  const [
+    { count: verifiedRecordsCount, error: recordsError },
+    { count: publishedProjectsCount, error: projectsError },
+    { count: verifiedBadgesCount, error: badgesError },
+    { count: awardedProjectsCount, error: awardsError },
+  ] = await Promise.all([
+    supabase
+      .from('user_hackathon_records')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .in('status', ['verified', 'approved']),
+    supabase
+      .from('projects')
+      .select('*', { count: 'exact', head: true })
+      .eq('author_id', userId)
+      .eq('status', 'published'),
+    supabase
+      .from('user_badges')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'verified'),
+    supabase
+      .from('projects')
+      .select('*', { count: 'exact', head: true })
+      .eq('author_id', userId)
+      .eq('status', 'published')
+      .eq('is_awarded', 1),
+  ]);
+
+  if (recordsError && !isMissingRelation(recordsError)) throw recordsError;
+  if (projectsError) throw projectsError;
+  if (badgesError) throw badgesError;
+  if (awardsError) throw awardsError;
+
+  const verifiedRecords = recordsError && isMissingRelation(recordsError) ? 0 : (verifiedRecordsCount || 0);
+  const verifiedBadges = verifiedBadgesCount || 0;
+  const publishedProjects = publishedProjectsCount || 0;
+
+  const { error: userUpdateError } = await supabase
+    .from('users')
+    .update({
+      total_hackathon_count: verifiedRecords,
+      total_work_count: publishedProjects + verifiedRecords,
+      total_award_count: awardsError ? 0 : (awardedProjectsCount || 0),
+      badge_count: verifiedBadges,
+      certification_count: verifiedRecords + verifiedBadges,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+
+  if (userUpdateError) throw userUpdateError;
+}
+
 // PATCH /api/admin/reviews/[id] - Approve or reject a submission
 export async function PATCH(
   request: NextRequest,
@@ -48,7 +106,6 @@ export async function PATCH(
     }
 
     const logsService = new AdminLogsService();
-    const newStatus = action === 'approve' ? 'approved' : 'rejected';
     const requestMetadata = getRequestMetadata(request);
 
     if (type === 'project') {
@@ -71,6 +128,7 @@ export async function PATCH(
         );
       }
 
+      const newStatus = action === 'approve' ? 'published' : 'rejected';
       const { error: updateError } = await supabase
         .from('projects')
         .update({
@@ -90,6 +148,10 @@ export async function PATCH(
         details: { status: newStatus },
         ...requestMetadata,
       });
+
+      if (project.author_id) {
+        await refreshUserCounters(project.author_id);
+      }
 
     } else if (type === 'story') {
       const { data: stories, error: storyError } = await supabase
@@ -111,6 +173,7 @@ export async function PATCH(
         );
       }
 
+      const newStatus = action === 'approve' ? 'published' : 'rejected';
       const { error: updateError } = await supabase
         .from('stories')
         .update({
@@ -136,6 +199,7 @@ export async function PATCH(
         .from('user_badges')
         .select(`
           id,
+          user_id,
           user:users(display_name),
           badge:badges(badge_name)
         `)
@@ -155,11 +219,12 @@ export async function PATCH(
         );
       }
 
+      const newStatus = action === 'approve' ? 'verified' : 'rejected';
       const { error: updateError } = await supabase
         .from('user_badges')
         .update({
           status: newStatus,
-          verified_at: new Date().toISOString(),
+          verified_at: action === 'approve' ? new Date().toISOString() : null,
         })
         .eq('id', itemId);
 
@@ -174,6 +239,53 @@ export async function PATCH(
         details: { status: newStatus },
         ...requestMetadata,
       });
+
+      if ((badgeInfo as any).user_id) {
+        await refreshUserCounters((badgeInfo as any).user_id);
+      }
+    } else if (type === 'hackathon_record') {
+      const { data: recordRows, error: recordError } = await supabase
+        .from('user_hackathon_records')
+        .select('id, user_id, hackathon_title, role, project_name')
+        .eq('id', itemId)
+        .limit(1);
+
+      if (recordError) {
+        throw recordError;
+      }
+
+      const record = recordRows?.[0];
+
+      if (!record) {
+        return NextResponse.json(
+          { error: { code: 'NOT_FOUND', message: 'Hackathon record not found' } },
+          { status: 404 }
+        );
+      }
+
+      const newStatus = action === 'approve' ? 'verified' : 'rejected';
+      const { error: updateError } = await supabase
+        .from('user_hackathon_records')
+        .update({
+          status: newStatus,
+          verified_at: action === 'approve' ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', itemId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      await refreshUserCounters(record.user_id);
+
+      await logsService.log(adminUser, action, {
+        entity_type: 'hackathon_record',
+        entity_id: itemId,
+        entity_name: `${record.hackathon_title}${record.project_name ? ` - ${record.project_name}` : ''}`,
+        details: { status: newStatus, role: record.role },
+        ...requestMetadata,
+      });
     } else {
       return NextResponse.json(
         { error: { code: 'VALIDATION_ERROR', message: 'Invalid type' } },
@@ -182,7 +294,7 @@ export async function PATCH(
     }
 
     return NextResponse.json({
-      data: { success: true, status: newStatus },
+      data: { success: true },
       message: action === 'approve'
         ? 'Submission approved successfully'
         : 'Submission rejected successfully'

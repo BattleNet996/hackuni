@@ -4,11 +4,17 @@ import Link from 'next/link';
 import { Badge as BadgePill } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ProfileEditDialog } from '@/components/ui/ProfileEditDialog';
+import { HackathonRecordDialog } from '@/components/ui/HackathonRecordDialog';
 import { FootprintMap } from '@/components/FootprintMap';
 import { Heatmap } from '@/components/Heatmap';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchJsonWithCache, getCachedJson } from '@/lib/client-cache';
+
+function toBackgroundImage(value: string | undefined, fallback: string) {
+  if (!value) return fallback;
+  return value.startsWith('url(') ? value : `url(${value})`;
+}
 
 interface BuilderUser {
   id: string;
@@ -29,6 +35,8 @@ interface BuilderUser {
   total_award_count?: number;
   badge_count?: number;
   certification_count?: number;
+  coolest_thing?: string;
+  current_build?: string;
 }
 
 interface BuilderProject {
@@ -38,6 +46,7 @@ interface BuilderProject {
   like_count: number;
   is_awarded: boolean;
   award_text?: string | null;
+  status?: string;
 }
 
 interface BuilderBadge {
@@ -52,7 +61,19 @@ interface BuilderBadge {
 interface BuilderProfileResponse {
   user: BuilderUser;
   projects: BuilderProject[];
-  hackathons: Array<{ id: string; title: string }>;
+  hackathons: Array<{
+    id: string;
+    hackathon_id?: string | null;
+    hackathon_title: string;
+    role?: string | null;
+    project_name?: string | null;
+    project_url?: string | null;
+    award_text?: string | null;
+    status: string;
+    verified_at?: string | null;
+    created_at: string;
+  }>;
+  pendingHackathonRecords?: Array<{ id: string; hackathon_title: string; status: string; created_at: string }>;
   badges: BuilderBadge[];
   footprintCities: Array<{ city: string; country: string; date: string }>;
   heatmapActivities: Array<{ date: string; type: string }>;
@@ -69,6 +90,14 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
   const [profileData, setProfileData] = React.useState<BuilderProfileResponse | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+  const [recordDialogOpen, setRecordDialogOpen] = React.useState(false);
+  const [hackathonOptions, setHackathonOptions] = React.useState<Array<{ id: string; title: string }>>([]);
+
+  const refreshProfile = React.useCallback(async () => {
+    const { id } = await params;
+    const data = await fetchJsonWithCache<BuilderProfileApiResponse>(`/api/builders/${id}`, { force: true });
+    setProfileData(data.data);
+  }, [params]);
 
   React.useEffect(() => {
     let isActive = true;
@@ -105,6 +134,29 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     };
   }, [params]);
 
+  React.useEffect(() => {
+    if (!user) return;
+
+    let isActive = true;
+    fetch('/api/hackathons?limit=100')
+      .then((response) => response.json())
+      .then((data) => {
+        if (isActive) {
+          setHackathonOptions((data.data || []).map((hackathon: any) => ({
+            id: hackathon.id,
+            title: hackathon.title,
+          })));
+        }
+      })
+      .catch(() => {
+        if (isActive) setHackathonOptions([]);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [user]);
+
   if (loading) {
     return (
       <main style={{ padding: 'var(--sp-8)', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
@@ -132,6 +184,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
   const heatmapActivities = profileData.heatmapActivities || [];
   const projects = profileData.projects || [];
   const badges = profileData.badges || [];
+  const hackathons = profileData.hackathons || [];
+  const pendingHackathonRecords = profileData.pendingHackathonRecords || [];
 
   return (
     <main style={{ padding: 'var(--sp-8) var(--sp-6)', maxWidth: '1200px', margin: '0 auto' }}>
@@ -139,7 +193,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         <div style={{
           width: '180px',
           height: '180px',
-          backgroundImage: displayUser.avatar || `url('https://picsum.photos/seed/${displayUser.id}/360/360')`,
+          backgroundImage: toBackgroundImage(displayUser.avatar, `url('https://picsum.photos/seed/${displayUser.id}/360/360')`),
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundSize: 'cover',
@@ -175,6 +229,27 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
           <p style={{ color: 'var(--text-muted)', fontSize: '16px', maxWidth: '600px', margin: '0 0 var(--sp-3) 0' }}>
             {displayUser.bio || (language === 'zh' ? '还没有个人简介' : 'No bio yet')}
           </p>
+
+          {(displayUser.coolest_thing || displayUser.current_build) && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)', maxWidth: '760px' }}>
+              {displayUser.coolest_thing && (
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-3)' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--brand-coral)', marginBottom: '4px' }}>
+                    {language === 'zh' ? '做过最酷的事' : 'COOLEST_THING'}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-main)', lineHeight: 1.5 }}>{displayUser.coolest_thing}</div>
+                </div>
+              )}
+              {displayUser.current_build && (
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-3)' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--brand-green)', marginBottom: '4px' }}>
+                    {language === 'zh' ? '正在 Build' : 'CURRENT_BUILD'}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-main)', lineHeight: 1.5 }}>{displayUser.current_build}</div>
+                </div>
+              )}
+            </div>
+          )}
 
           {isOwnProfile && displayUser.email && (
             <div style={{ display: 'flex', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -277,20 +352,62 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
             {activeTab === 'RECORDS' && (
               <div>
-                <h3 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)', marginTop: 0, marginBottom: 'var(--sp-4)' }}>
-                  {t('profile.hackathon_records')}
-                </h3>
-                <div style={{ textAlign: 'center', padding: 'var(--sp-8)', color: 'var(--text-muted)' }}>
-                  {language === 'zh' ? '当前还没有可公开展示的参赛记录。' : 'No public hackathon records are available yet.'}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--sp-3)', marginBottom: 'var(--sp-4)' }}>
+                  <h3 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)', margin: 0 }}>
+                    {t('profile.hackathon_records')}
+                  </h3>
+                  {isOwnProfile && (
+                    <Button variant="primary" onClick={() => setRecordDialogOpen(true)} style={{ fontSize: '12px' }}>
+                      {language === 'zh' ? '+ 新增记录' : '+ Add Record'}
+                    </Button>
+                  )}
                 </div>
+                {pendingHackathonRecords.length > 0 && isOwnProfile && (
+                  <div style={{ marginBottom: 'var(--sp-4)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--brand-amber)' }}>
+                    {language === 'zh' ? `你有 ${pendingHackathonRecords.length} 条记录待管理员审核。` : `${pendingHackathonRecords.length} records are pending admin review.`}
+                  </div>
+                )}
+                {hackathons.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+                    {hackathons.map((record) => (
+                      <div key={record.id} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', padding: 'var(--sp-3)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--sp-3)', alignItems: 'flex-start' }}>
+                          <div>
+                            <h4 style={{ margin: '0 0 4px 0', color: 'var(--text-main)' }}>{record.hackathon_title}</h4>
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                              {[record.role, record.project_name, record.award_text].filter(Boolean).join(' / ') || (language === 'zh' ? '已认证参与' : 'Verified participation')}
+                            </div>
+                          </div>
+                          <BadgePill type="verified" label={language === 'zh' ? '已认证' : 'Verified'} />
+                        </div>
+                        {record.project_url && (
+                          <a href={record.project_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 'var(--sp-2)', fontSize: '12px', color: 'var(--brand-coral)' }}>
+                            {language === 'zh' ? '查看项目' : 'View project'}
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: 'var(--sp-8)', color: 'var(--text-muted)' }}>
+                    {language === 'zh' ? '当前还没有可公开展示的参赛记录。' : 'No public hackathon records are available yet.'}
+                  </div>
+                )}
               </div>
             )}
 
             {activeTab === 'PORTFOLIO' && (
               <div>
-                <h3 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)', marginTop: 0, marginBottom: 'var(--sp-4)' }}>
-                  {t('profile.project_portfolio')}
-                </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--sp-3)', marginBottom: 'var(--sp-4)' }}>
+                  <h3 style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)', margin: 0 }}>
+                    {t('profile.project_portfolio')}
+                  </h3>
+                  {isOwnProfile && (
+                    <Link href="/publish">
+                      <Button variant="primary" style={{ fontSize: '12px' }}>{language === 'zh' ? '+ 发布作品' : '+ Add Project'}</Button>
+                    </Link>
+                  )}
+                </div>
                 {projects.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
                     {projects.map((project) => (
@@ -303,7 +420,23 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                         }} className="hover-color">
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--sp-3)' }}>
                             <div>
-                              <h4 style={{ margin: '0 0 4px 0', color: 'var(--text-main)' }}>{project.title}</h4>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', flexWrap: 'wrap', marginBottom: '4px' }}>
+                                <h4 style={{ margin: 0, color: 'var(--text-main)' }}>{project.title}</h4>
+                                {project.status && project.status !== 'published' && (
+                                  <span style={{
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '10px',
+                                    color: project.status === 'pending' ? 'var(--brand-amber)' : 'var(--brand-coral)',
+                                    border: `1px solid ${project.status === 'pending' ? 'var(--brand-amber)' : 'var(--brand-coral)'}`,
+                                    padding: '2px 6px',
+                                    borderRadius: '999px',
+                                  }}>
+                                    {project.status === 'pending'
+                                      ? (language === 'zh' ? '待审核' : 'PENDING')
+                                      : (language === 'zh' ? '未通过' : project.status.toUpperCase())}
+                                  </span>
+                                )}
+                              </div>
                               <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>{project.short_desc}</p>
                             </div>
                             <div style={{ textAlign: 'right' }}>
@@ -430,6 +563,14 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         <ProfileEditDialog
           isOpen={editDialogOpen}
           onClose={() => setEditDialogOpen(false)}
+        />
+      )}
+      {isOwnProfile && (
+        <HackathonRecordDialog
+          isOpen={recordDialogOpen}
+          onClose={() => setRecordDialogOpen(false)}
+          hackathons={hackathonOptions}
+          onSuccess={() => void refreshProfile()}
         />
       )}
     </main>

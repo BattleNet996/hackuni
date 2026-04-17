@@ -36,6 +36,7 @@ export interface ProjectCreateInput {
   images?: string[];
   is_awarded?: boolean;
   award_text?: string;
+  status?: string;
 }
 
 export interface ProjectUpdateInput {
