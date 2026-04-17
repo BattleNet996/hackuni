@@ -1,9 +1,14 @@
 import type { Hackathon } from '@/lib/models/hackathon';
 
 const TSINGHUA_OPENCLAW_HACKATHON_ID = 'tsinghua-openclaw-hackathon-2026';
+const SPRING_HACKATHON_ID = 'h0';
 const TSINGHUA_OPENCLAW_ALIASES = new Set([
   TSINGHUA_OPENCLAW_HACKATHON_ID,
   'beijing-hackathon-0314',
+]);
+const SPRING_HACKATHON_ALIASES = new Set([
+  SPRING_HACKATHON_ID,
+  'spring-shenzhen-ai-hardware-hackathon-2026',
 ]);
 
 function normalizeHackathonText(value: string | null | undefined): string {
@@ -24,7 +29,7 @@ function isSpringHackathon(hackathon: Hackathon): boolean {
   const city = normalizeHackathonText(hackathon.city);
 
   return (
-    hackathon.id === 'h0' ||
+    SPRING_HACKATHON_ALIASES.has(hackathon.id) ||
     title.includes('春潮') ||
     (title.includes('spring') &&
       (title.includes('硬件') || title.includes('hardware')) &&
@@ -77,8 +82,68 @@ export const TSINGHUA_OPENCLAW_HACKATHON: Hackathon = {
   updated_at: '2026-04-16T00:00:00+08:00',
 };
 
+export const SPRING_HACKATHON: Hackathon = {
+  id: SPRING_HACKATHON_ID,
+  title: '春潮 Spring｜深圳 AI/硬件黑客松',
+  short_desc:
+    '4 月 23 日至 26 日，AttraX 与 BREWTOWN 在深圳发起四天三夜 Outlier 黑客松，用软件、硬件、艺术和城市生活场景定义下一个可能性。',
+  description:
+    '春潮 Spring 是年轻创造者对时代精神的传承与重启。活动由 AttraX 与 BREWTOWN 主办，指导单位包括华润万象生活、共青团深圳市宝安区委员会，面向 200-250 位参赛选手，预计路演观众规模 1000 人。五大赛道包括 Software & Social & Entertainment、Hardware & Embodied Experience、Global Products / Going Global、AI Inspiration & Creation、AI for Better City Life。现场提供专业路演厅、独立开发区、能量补给区、住宿与休息区支持，并提供 AirJelly、灵光 App、LibTV、开发板、机械臂、龙虾盒子、3D 打印设备等软硬件资源。活动日程覆盖开幕式、团队组建、赞助商 workshop、48 小时深度创造、Live Coding、EXPO 巡场评审、Top20 决赛路演、颁奖礼与 AfterParty。',
+  start_time: '2026-04-23T13:30:00+08:00',
+  end_time: '2026-04-26T21:30:00+08:00',
+  registration_deadline: null,
+  city: 'Shenzhen',
+  country: 'China',
+  latitude: 22.5431,
+  longitude: 114.0579,
+  location_detail: '深圳 BREWTOWN 雪花啤酒小镇',
+  tags_json: ['#AI', '#Hardware', '#Outlier', '#Spring', '#Shenzhen'],
+  level_score: '',
+  level_code: '',
+  registration_status: '报名中',
+  poster_url: 'https://brewtown.cn/',
+  organizer: 'AttraX｜BREWTOWN',
+  organizer_url: 'https://brewtown.cn/',
+  registration_url: null,
+  requirements:
+    '活动规模 200-250 位参赛选手，欢迎软件、硬件、艺术、产品、设计、内容、商业、城市生活等跨学科背景的 Outlier 组队参赛。OpenClaw 可作为推荐工具但非强制。',
+  prizes:
+    '总奖金池超过 150000 元，并提供总价值超过 100000 元的软硬件奖品。五大赛道基础奖金：一等奖 12000 元、二等奖 9000 元、三等奖 6000 元；另设最佳人气奖 6666 元、最具玩心奖 3333 元、下一场海外黑客松直通奖，以及 6 个伦敦企业 3 周 Challenge 直通机会。',
+  fee: '免费；外地选手住宿与现场休息资源按录取和报名顺序发放',
+  created_at: '2026-04-07T17:21:58+08:00',
+  updated_at: '2026-04-17T00:00:00+08:00',
+};
+
+export function enrichFeaturedHackathon(hackathon: Hackathon): Hackathon {
+  if (isSpringHackathon(hackathon)) {
+    return {
+      ...hackathon,
+      ...SPRING_HACKATHON,
+      id: hackathon.id,
+      created_at: hackathon.created_at || SPRING_HACKATHON.created_at,
+      updated_at: hackathon.updated_at || SPRING_HACKATHON.updated_at,
+    };
+  }
+
+  if (isTsinghuaOpenClawHackathon(hackathon)) {
+    return {
+      ...hackathon,
+      ...TSINGHUA_OPENCLAW_HACKATHON,
+      id: hackathon.id === 'beijing-hackathon-0314' ? TSINGHUA_OPENCLAW_HACKATHON_ID : hackathon.id,
+      created_at: hackathon.created_at || TSINGHUA_OPENCLAW_HACKATHON.created_at,
+      updated_at: hackathon.updated_at || TSINGHUA_OPENCLAW_HACKATHON.updated_at,
+    };
+  }
+
+  return hackathon;
+}
+
 export function buildFeaturedHackathonList(hackathons: Hackathon[]): Hackathon[] {
-  const curatedHackathons = [...hackathons];
+  const curatedHackathons = hackathons.map((hackathon) => enrichFeaturedHackathon(hackathon));
+
+  if (!curatedHackathons.some(isSpringHackathon)) {
+    curatedHackathons.push(SPRING_HACKATHON);
+  }
 
   if (!curatedHackathons.some(isTsinghuaOpenClawHackathon)) {
     curatedHackathons.push(TSINGHUA_OPENCLAW_HACKATHON);
@@ -96,6 +161,10 @@ export function buildFeaturedHackathonList(hackathons: Hackathon[]): Hackathon[]
 }
 
 export function getFeaturedHackathonFallbackById(id: string): Hackathon | null {
+  if (SPRING_HACKATHON_ALIASES.has(id)) {
+    return SPRING_HACKATHON;
+  }
+
   if (TSINGHUA_OPENCLAW_ALIASES.has(id)) {
     return TSINGHUA_OPENCLAW_HACKATHON;
   }

@@ -19,10 +19,6 @@ function buildTrendingProjects(projects: any[], limit: number): Project[] {
       const likeDelta = (right.like_count || 0) - (left.like_count || 0);
       if (likeDelta !== 0) return likeDelta;
 
-      const leftRank = typeof left.rank_score === 'number' ? left.rank_score : Number.POSITIVE_INFINITY;
-      const rightRank = typeof right.rank_score === 'number' ? right.rank_score : Number.POSITIVE_INFINITY;
-      if (leftRank !== rightRank) return leftRank - rightRank;
-
       return toTimestamp(right.created_at) - toTimestamp(left.created_at);
     })
     .slice(0, limit) as Project[];

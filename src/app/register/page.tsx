@@ -16,14 +16,97 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [emailVerificationToken, setEmailVerificationToken] = useState('');
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [emailNotice, setEmailNotice] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const emailInputId = 'register-email';
+  const verificationCodeInputId = 'register-email-code';
   const displayNameInputId = 'register-display-name';
   const passwordInputId = 'register-password';
   const confirmPasswordInputId = 'register-confirm-password';
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isEmailVerified = Boolean(emailVerificationToken);
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    setVerificationCode('');
+    setEmailVerificationToken('');
+    setEmailNotice('');
+  };
+
+  const sendVerificationCode = async () => {
+    setError('');
+    setEmailNotice('');
+
+    if (!emailRegex.test(email)) {
+      setError(language === 'zh' ? '请输入有效的邮箱地址' : 'Please enter a valid email address');
+      return;
+    }
+
+    setIsSendingCode(true);
+    try {
+      const response = await fetch('/api/auth/email-verification/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Failed to send verification code');
+      }
+
+      setEmailNotice(language === 'zh' ? '验证码已发送，请检查邮箱。' : 'Verification code sent. Please check your inbox.');
+    } catch (err: any) {
+      const message = String(err?.message || '');
+      if (message.toLowerCase().includes('already registered')) {
+        setError(language === 'zh' ? '该邮箱已被注册，请直接登录' : 'Email already registered, please login');
+      } else {
+        setError(language === 'zh' ? '验证码发送失败，请稍后重试' : 'Failed to send verification code, please try again');
+      }
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  const verifyEmailCode = async () => {
+    setError('');
+    setEmailNotice('');
+
+    if (!emailRegex.test(email) || !verificationCode.trim()) {
+      setError(language === 'zh' ? '请填写邮箱和验证码' : 'Please enter email and verification code');
+      return;
+    }
+
+    setIsVerifyingCode(true);
+    try {
+      const response = await fetch('/api/auth/email-verification/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: verificationCode }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Invalid verification code');
+      }
+
+      setEmailVerificationToken(data.data.email_verification_token);
+      setEmailNotice(language === 'zh' ? '邮箱验证成功，可以完成注册。' : 'Email verified. You can finish registration.');
+    } catch {
+      setEmailVerificationToken('');
+      setError(language === 'zh' ? '验证码无效或已过期' : 'Invalid or expired verification code');
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,15 +118,19 @@ export default function RegisterPage() {
     }
 
     // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError(language === 'zh' ? '请输入有效的邮箱地址' : 'Please enter a valid email address');
       return;
     }
 
+    if (!emailVerificationToken) {
+      setError(language === 'zh' ? '请先完成邮箱验证码验证' : 'Please verify your email first');
+      return;
+    }
+
     // Password validation
-    if (password.length < 6) {
-      setError(language === 'zh' ? '密码长度至少为6位' : 'Password must be at least 6 characters');
+    if (password.length < 8) {
+      setError(language === 'zh' ? '密码长度至少为8位' : 'Password must be at least 8 characters');
       return;
     }
 
@@ -55,7 +142,7 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      await register(email, password, displayName || undefined);
+      await register(email, password, displayName || undefined, emailVerificationToken);
       router.push('/profile');
     } catch (err: any) {
       console.error('Registration error:', err);
@@ -128,7 +215,7 @@ export default function RegisterPage() {
               id={emailInputId}
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => handleEmailChange(e.target.value)}
               placeholder="your@email.com"
               required
               style={{
@@ -146,6 +233,80 @@ export default function RegisterPage() {
               onBlur={(e) => e.target.style.borderColor = 'var(--border-base)'}
               disabled={isLoading}
             />
+          </div>
+
+          {/* Email Verification */}
+          <div style={{
+            padding: 'var(--sp-3)',
+            background: 'rgba(255, 122, 24, 0.08)',
+            border: `1px solid ${isEmailVerified ? 'var(--brand-green)' : 'var(--border-base)'}`,
+            borderRadius: 'var(--radius-sm)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--sp-3)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
+              <label htmlFor={verificationCodeInputId} style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '13px',
+                color: isEmailVerified ? 'var(--brand-green)' : 'var(--text-muted)'
+              }}>
+                {language === 'zh' ? '邮箱验证码' : 'Email verification code'}
+              </label>
+              <Button
+                variant="ghost"
+                type="button"
+                disabled={isLoading || isSendingCode || isEmailVerified || !emailRegex.test(email)}
+                onClick={sendVerificationCode}
+                style={{ padding: '6px 10px', fontSize: '12px' }}
+              >
+                {isSendingCode
+                  ? (language === 'zh' ? '发送中...' : 'Sending...')
+                  : isEmailVerified
+                    ? (language === 'zh' ? '已验证' : 'Verified')
+                    : (language === 'zh' ? '发送验证码' : 'Send code')}
+              </Button>
+            </div>
+
+            <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+              <input
+                id={verificationCodeInputId}
+                type="text"
+                value={verificationCode}
+                onChange={(e) => {
+                  setVerificationCode(e.target.value);
+                  setEmailVerificationToken('');
+                }}
+                placeholder={language === 'zh' ? '输入邮箱收到的 6 位验证码' : 'Enter the code from your email'}
+                disabled={isLoading || isEmailVerified}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  padding: 'var(--sp-3)',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-base)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--text-main)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '14px',
+                }}
+              />
+              <Button
+                variant="primary"
+                type="button"
+                disabled={isLoading || isVerifyingCode || isEmailVerified || !verificationCode.trim()}
+                onClick={verifyEmailCode}
+                style={{ padding: 'var(--sp-2) var(--sp-3)', fontSize: '12px', whiteSpace: 'nowrap' }}
+              >
+                {isVerifyingCode ? (language === 'zh' ? '验证中...' : 'Verifying...') : (language === 'zh' ? '验证' : 'Verify')}
+              </Button>
+            </div>
+
+            {emailNotice && (
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: isEmailVerified ? 'var(--brand-green)' : 'var(--text-muted)' }}>
+                {emailNotice}
+              </div>
+            )}
           </div>
 
           {/* Display Name Field (Optional) */}
@@ -201,7 +362,7 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                minLength={6}
+                minLength={8}
                 style={{
                   width: '100%',
                   padding: 'var(--sp-3)',
@@ -260,7 +421,7 @@ export default function RegisterPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                minLength={6}
+                minLength={8}
                 style={{
                   width: '100%',
                   padding: 'var(--sp-3)',
@@ -332,7 +493,7 @@ export default function RegisterPage() {
           <Button
             variant="primary"
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !isEmailVerified}
             style={{ width: '100%', padding: 'var(--sp-3)', fontSize: '14px' }}
           >
             {isLoading ? (

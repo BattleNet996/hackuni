@@ -27,7 +27,7 @@ interface ProjectListResponse {
 export default function GoatHuntPage() {
   const { t } = useLanguage();
   const { isProjectLiked, toggleLikeProject, getProjectLikes } = useLike();
-  const cacheKey = '/api/projects?sort=created_at';
+  const cacheKey = '/api/projects?sort=goat';
   const cachedResponse = React.useMemo(() => getCachedJson<ProjectListResponse>(cacheKey), [cacheKey]);
   const [projects, setProjects] = useState<Project[]>(cachedResponse?.data || []);
   const [isLoading, setIsLoading] = useState(!cachedResponse);
@@ -107,7 +107,7 @@ export default function GoatHuntPage() {
 
           return (
           <HackerCard key={proj.id} className="responsive-flex-col desktop-row" style={{ alignItems: 'center', gap: 'var(--sp-5)' }}>
-            <div style={{ fontFamily: 'var(--font-hero)', fontSize: '48px', color: 'var(--text-disabled)', width: '60px', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-hero)', fontSize: 'clamp(34px, 4vw, 48px)', color: 'var(--text-disabled)', width: '96px', minWidth: '96px', textAlign: 'center', whiteSpace: 'nowrap', lineHeight: 1 }}>
               #{index + 1}
             </div>
 

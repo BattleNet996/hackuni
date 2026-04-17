@@ -33,6 +33,7 @@ export default function StoriesPage() {
   const [stories, setStories] = useState<Story[]>(cachedResponse?.data || []);
   const [isLoading, setIsLoading] = useState(!cachedResponse);
   const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [showAllTags, setShowAllTags] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -75,6 +76,7 @@ export default function StoriesPage() {
 
   // Get all unique tags
   const allTags = Array.from(new Set(stories.flatMap(s => ensureTagsArray(s.tags_json))));
+  const visibleFilterTags = showAllTags ? allTags : allTags.slice(0, 10);
 
   // Filter stories by tag
   const filteredStories = filterTag
@@ -107,20 +109,42 @@ export default function StoriesPage() {
 
       {/* Filter Tags */}
       {allTags.length > 0 && (
-        <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-6)', flexWrap: 'wrap' }}>
-          <Tag
-            label="#All"
-            style={{ background: filterTag === null ? 'var(--brand-coral)' : 'transparent', cursor: 'pointer' }}
-            onClick={() => setFilterTag(null)}
-          />
-          {allTags.map(tag => (
+        <div style={{
+          marginBottom: 'var(--sp-6)',
+          padding: 'var(--sp-3)',
+          border: '1px solid var(--border-base)',
+          background: 'linear-gradient(135deg, rgba(255, 122, 24, 0.08), rgba(0, 255, 65, 0.03))'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
+              &gt; FILTER_TAGS / {showAllTags ? allTags.length : Math.min(10, allTags.length)}
+            </span>
+            {allTags.length > 10 && (
+              <Button
+                variant="ghost"
+                onClick={() => setShowAllTags((value) => !value)}
+                style={{ padding: '4px 8px', fontSize: '12px' }}
+              >
+                {showAllTags ? 'Collapse' : `Expand +${allTags.length - 10}`}
+              </Button>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
             <Tag
-              key={tag}
-              label={`#${tag}`}
-              style={{ background: filterTag === tag ? 'var(--brand-coral)' : 'transparent', cursor: 'pointer' }}
-              onClick={() => setFilterTag(tag)}
+              label="#All"
+              style={{ background: filterTag === null ? 'var(--brand-coral)' : 'transparent', cursor: 'pointer' }}
+              onClick={() => setFilterTag(null)}
             />
-          ))}
+            {visibleFilterTags.map(tag => (
+              <Tag
+                key={tag}
+                label={`#${tag}`}
+                style={{ background: filterTag === tag ? 'var(--brand-coral)' : 'transparent', cursor: 'pointer' }}
+                onClick={() => setFilterTag(tag)}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -166,10 +190,15 @@ export default function StoriesPage() {
               {story.summary}
             </p>
 
-            <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-3)' }}>
-              {ensureTagsArray(story.tags_json).map(tag => (
+            <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-3)', flexWrap: 'wrap', alignItems: 'center' }}>
+              {ensureTagsArray(story.tags_json).slice(0, 5).map(tag => (
                 <Tag key={tag} label={tag} />
               ))}
+              {ensureTagsArray(story.tags_json).length > 5 && (
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)' }}>
+                  +{ensureTagsArray(story.tags_json).length - 5}
+                </span>
+              )}
             </div>
 
             <div style={{

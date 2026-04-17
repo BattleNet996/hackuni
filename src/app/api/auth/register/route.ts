@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authService } from '@/lib/services';
+import { verifyEmailVerificationToken } from '@/lib/auth/email-verification';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, display_name } = await request.json();
+    const { email, password, display_name, email_verification_token } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json(
         { error: { code: 'VALIDATION_ERROR', message: 'Email and password are required' } },
         { status: 400 }
+      );
+    }
+
+    if (!email_verification_token || !verifyEmailVerificationToken(email_verification_token, email)) {
+      return NextResponse.json(
+        { error: { code: 'EMAIL_NOT_VERIFIED', message: 'Please verify your email before registering' } },
+        { status: 403 }
       );
     }
 

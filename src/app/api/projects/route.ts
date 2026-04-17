@@ -12,6 +12,16 @@ function sortProjects(projects: any[], sort: string): any[] {
   const normalizedSort = sort === 'recent' ? 'created_at' : sort;
   const next = [...projects];
 
+  if (normalizedSort === 'goat') {
+    next.sort((left, right) => {
+      const likeDelta = (right.like_count || 0) - (left.like_count || 0);
+      if (likeDelta !== 0) return likeDelta;
+
+      return toTimestamp(right.created_at) - toTimestamp(left.created_at);
+    });
+    return next;
+  }
+
   if (normalizedSort === 'rank_score') {
     next.sort((left, right) => {
       const leftRank = typeof left.rank_score === 'number' ? left.rank_score : Number.POSITIVE_INFINITY;
@@ -30,10 +40,6 @@ function sortProjects(projects: any[], sort: string): any[] {
     next.sort((left, right) => {
       const likeDelta = (right.like_count || 0) - (left.like_count || 0);
       if (likeDelta !== 0) return likeDelta;
-
-      const leftRank = typeof left.rank_score === 'number' ? left.rank_score : Number.POSITIVE_INFINITY;
-      const rightRank = typeof right.rank_score === 'number' ? right.rank_score : Number.POSITIVE_INFINITY;
-      if (leftRank !== rightRank) return leftRank - rightRank;
 
       return toTimestamp(right.created_at) - toTimestamp(left.created_at);
     });
@@ -73,7 +79,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const limit = Math.max(1, parseInt(searchParams.get('limit') || '20', 10));
-    const sort = searchParams.get('sort') || 'created_at';
+    const sort = searchParams.get('sort') || 'goat';
     const awarded = searchParams.get('awarded') === 'true';
     const status = searchParams.get('status') || 'published';
 

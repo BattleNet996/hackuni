@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hackathonDAO, projectDAO, userDAO } from '@/lib/dao';
-import { getFeaturedHackathonFallbackById } from '@/lib/hackathon-curation';
+import { enrichFeaturedHackathon, getFeaturedHackathonFallbackById } from '@/lib/hackathon-curation';
 
 export async function GET(
   _request: NextRequest,
@@ -8,7 +8,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const hackathon = (await hackathonDAO.findById(id)) || getFeaturedHackathonFallbackById(id);
+    const sourceHackathon = (await hackathonDAO.findById(id)) || getFeaturedHackathonFallbackById(id);
+    const hackathon = sourceHackathon ? enrichFeaturedHackathon(sourceHackathon) : null;
 
     if (!hackathon) {
       return NextResponse.json(
