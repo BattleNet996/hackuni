@@ -173,31 +173,6 @@ export const MOCK_HACKATHONS = [
     requirements: null,
     prizes: null,
     fee: null
-  },
-  {
-    id: "h7",
-    title: "【一场为了\"好玩\"而存在的黑客松】Outlier招募！",
-    short_desc: "我们是一群因好奇而躁动、因热爱而相遇的人。我们快乐、叛逆、爱表达，命中注定要做一些打破规则的事。打造一场属于Outlier的黑客松。",
-    start_time: "2026-02-25T00:00:00Z",
-    end_time: "2026-02-27T23:59:59Z",
-    city: "Beijing",
-    country: "China",
-    tags_json: ["#Outlier", "#Innovation", "#Fun", "#Attrax"],
-    level_score: "98.0",
-    level_code: "S级",
-    registration_status: "报名中",
-    latitude: 39.9042,
-    longitude: 116.4074,
-    poster_url: "https://wcnhokdoviro.feishu.cn/docx/Wy5td0gb2ocjnrxKvJHcBS2an3d",
-    organizer: "Attrax倍道引力（由清华和北大学生发起）",
-    organizer_url: "https://wcnhokdoviro.feishu.cn",
-    location_detail: "北京",
-    registration_deadline: null,
-    registration_url: "https://wcnhokdoviro.feishu.cn/docx/Wy5td0gb2ocjnrxKvJHcBS2an3d",
-    description: "这是一场为了「好玩」而存在的黑客松。我们是一群因好奇而躁动、因热爱而相遇的人。我们快乐、叛逆、爱表达，命中注定要做一些打破规则的事。核心精神：快乐、叛逆、自由。我们想试一次，办一场属于Outlier的黑客松。",
-    requirements: "对创新有热情的跨学科创新者",
-    prizes: null,
-    fee: null
   }
 ];
 

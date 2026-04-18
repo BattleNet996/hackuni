@@ -47,17 +47,6 @@ function getPosterPalette(id: string) {
   return posterPalettes[hash % posterPalettes.length];
 }
 
-function getPosterInitials(title: string) {
-  const cleanTitle = title.replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-  const parts = cleanTitle.split(/\s+/).filter(Boolean);
-
-  if (parts.length >= 2 && /^[a-z0-9]+$/i.test(parts[0])) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-
-  return cleanTitle.slice(0, 2).toUpperCase() || 'HX';
-}
-
 interface HackathonListResponse {
   data: Hackathon[];
 }
@@ -160,10 +149,8 @@ export default function HackathonsPage() {
       <div className="divider-dashed" style={{ marginBottom: 'var(--sp-6)' }}></div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-5)' }}>
-        {filteredHackathons.map((hack, index) => {
+        {filteredHackathons.map((hack) => {
           const posterPalette = getPosterPalette(hack.id);
-          const primaryTag = ensureTagsArray(hack.tags_json)[0] || '#HACK';
-          const posterInitials = getPosterInitials(hack.title);
 
           return (
           <HackerCard key={hack.id} className="responsive-flex-col desktop-row" style={{ gap: 'var(--sp-5)' }}>
@@ -188,63 +175,66 @@ export default function HackathonsPage() {
                 backgroundImage:
                   'linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)',
                 backgroundSize: '18px 18px',
-                opacity: 0.35,
+                opacity: 0.18,
               }} />
               <div style={{
                 position: 'absolute',
-                top: '14px',
-                left: '14px',
-                right: '14px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                fontSize: '10px',
-                letterSpacing: '0.08em',
-                color: 'rgba(255,255,255,0.78)',
-              }}>
-                <span>HACK_OP</span>
-                <span>{String(index + 1).padStart(2, '0')}</span>
-              </div>
+                width: '220px',
+                height: '220px',
+                borderRadius: '50%',
+                top: '-48px',
+                right: '-36px',
+                background: 'radial-gradient(circle, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.06) 42%, transparent 72%)',
+                filter: 'blur(6px)',
+              }} />
               <div style={{
                 position: 'absolute',
-                left: '16px',
-                right: '16px',
-                top: '54px',
-                fontFamily: 'var(--font-hero)',
-                fontSize: posterInitials.length > 2 ? '42px' : '58px',
-                lineHeight: 0.88,
-                letterSpacing: '-0.05em',
-                textShadow: '4px 4px 0 rgba(0,0,0,0.28)',
-              }}>
-                {posterInitials}
-              </div>
+                width: '150px',
+                height: '150px',
+                borderRadius: '30px',
+                bottom: '-28px',
+                left: '-18px',
+                transform: 'rotate(-12deg)',
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03))',
+                border: '1px solid rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(4px)',
+              }} />
               <div style={{
                 position: 'absolute',
-                left: '16px',
-                right: '16px',
-                bottom: '44px',
-                fontSize: '11px',
-                lineHeight: 1.35,
-                color: 'rgba(255,255,255,0.86)',
-                textTransform: 'uppercase',
-              }}>
-                {primaryTag.replace(/^#/, '')}
-              </div>
+                width: '110px',
+                height: '110px',
+                borderRadius: '24px',
+                top: '50px',
+                left: '22px',
+                transform: 'rotate(18deg)',
+                background: 'linear-gradient(135deg, rgba(0,0,0,0.16), rgba(255,255,255,0.08))',
+                border: '1px solid rgba(255,255,255,0.14)',
+              }} />
               <div style={{
                 position: 'absolute',
-                left: '16px',
-                right: '16px',
-                bottom: '16px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 'var(--sp-2)',
-                fontSize: '10px',
-                color: 'rgba(255,255,255,0.72)',
-              }}>
-                <span>{hack.city || 'GLOBAL'}</span>
-                <span>{new Date(hack.start_time).getFullYear() || '2026'}</span>
-              </div>
+                inset: '22px',
+                border: '1px solid rgba(255,255,255,0.16)',
+                borderRadius: '20px',
+              }} />
+              <div style={{
+                position: 'absolute',
+                width: '52px',
+                height: '52px',
+                borderRadius: '50%',
+                right: '22px',
+                bottom: '24px',
+                background: 'radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.22) 38%, rgba(255,255,255,0.04) 68%, transparent 72%)',
+                boxShadow: '0 0 36px rgba(255,255,255,0.18)',
+              }} />
+              <div style={{
+                position: 'absolute',
+                left: '28px',
+                top: '30px',
+                width: '72px',
+                height: '72px',
+                borderRadius: '50%',
+                border: '1px solid rgba(255,255,255,0.18)',
+              }} />
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
