@@ -5,6 +5,10 @@ import { authService } from '@/lib/services';
 
 const earnedStatuses = new Set(['verified', 'approved', 'earned']);
 
+function isMissingHackathonRecordRelation(error: any) {
+  return error?.code === '42P01' || error?.code === 'PGRST205' || /user_hackathon_records/i.test(error?.message || '');
+}
+
 function sanitizeUser(user: any) {
   if (!user) return null;
   const { password_hash, ...rest } = user;
@@ -78,11 +82,11 @@ export async function GET(
       .eq('user_id', id)
       .order('created_at', { ascending: false });
 
-    if (recordError && recordError.code !== '42P01') {
+    if (recordError && !isMissingHackathonRecordRelation(recordError)) {
       throw recordError;
     }
 
-    const hackathonRecords = recordError?.code === '42P01' ? [] : (recordRows || []);
+    const hackathonRecords = recordError && isMissingHackathonRecordRelation(recordError) ? [] : (recordRows || []);
     const publicHackathonRecords = hackathonRecords.filter((record: any) => ['approved', 'verified'].includes(record.status));
 
     const footprintCities = publicHackathonRecords

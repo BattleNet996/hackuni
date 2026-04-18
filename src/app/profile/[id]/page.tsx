@@ -89,6 +89,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
   const [activeTab, setActiveTab] = useState('RECORDS');
   const [profileData, setProfileData] = React.useState<BuilderProfileResponse | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [recordDialogOpen, setRecordDialogOpen] = React.useState(false);
   const [hackathonOptions, setHackathonOptions] = React.useState<Array<{ id: string; title: string }>>([]);
@@ -97,6 +98,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     const { id } = await params;
     const data = await fetchJsonWithCache<BuilderProfileApiResponse>(`/api/builders/${id}`, { force: true });
     setProfileData(data.data);
+    setLoadError(null);
   }, [params]);
 
   React.useEffect(() => {
@@ -108,6 +110,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
       if (cachedResponse?.data && isActive) {
         setProfileData(cachedResponse.data);
+        setLoadError(null);
         setLoading(false);
       }
 
@@ -116,11 +119,14 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
         if (isActive) {
           setProfileData(data.data);
+          setLoadError(null);
         }
       } catch (error) {
         console.error('Failed to fetch builder profile:', error);
         if (isActive) {
           setProfileData(null);
+          const message = error instanceof Error ? error.message : '';
+          setLoadError(message || 'LOAD_FAILED');
         }
       } finally {
         if (isActive) {
@@ -166,9 +172,10 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
   }
 
   if (!profileData?.user) {
+    const isNotFound = loadError?.includes('Builder not found') || loadError?.includes('NOT_FOUND');
     return (
       <main style={{ padding: 'var(--sp-8)', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
-        &gt; ERROR_404_USER_NOT_FOUND_
+        &gt; {isNotFound ? 'ERROR_404_USER_NOT_FOUND_' : 'ERROR_PROFILE_LOAD_FAILED_'}
         <div style={{ marginTop: 'var(--sp-4)' }}>
           <Link href="/">
             <Button variant="primary">{t('common.back')}</Button>
