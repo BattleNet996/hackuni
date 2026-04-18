@@ -7,6 +7,11 @@
 
 **文件位置**: `supabase/migration/all_data_migration.sql`
 
+说明：
+- `supabase/migration/` 当前用于保存一次性的数据导出 SQL。
+- `supabase/migrations/` 才是 Supabase CLI 识别的标准 schema migration 目录。
+- 后续新增表、字段、索引这类结构变更，请放到 `supabase/migrations/` 后再执行 `supabase db push`。
+
 **数据统计**:
 - ✅ users: 3 条记录
 - ✅ hackathons: 17 条记录
