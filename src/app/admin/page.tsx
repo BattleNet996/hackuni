@@ -18,7 +18,11 @@ interface User {
   display_name?: string;
   avatar?: string;
   school?: string;
+  major?: string;
   company?: string;
+  position?: string;
+  coolest_thing?: string;
+  current_build?: string;
   is_banned?: number;
   total_projects?: number;
   pending_projects?: number;
@@ -59,6 +63,17 @@ interface Project {
   author_id: string;
   author_name?: string | null;
   hidden?: number;
+  created_at: string;
+}
+
+interface HackathonRecord {
+  id: string;
+  hackathon_title: string;
+  role?: string | null;
+  project_name?: string | null;
+  award_text?: string | null;
+  status: string;
+  verified_at?: string | null;
   created_at: string;
 }
 
@@ -1137,8 +1152,13 @@ export default function AdminDashboard() {
                               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                                 {project.short_desc || (language === 'zh' ? '无描述' : 'No description')}
                               </div>
-                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                                {language === 'zh' ? '作者' : 'Author'}: {project.author_id} | {language === 'zh' ? '点赞' : 'Likes'}: {project.like_count || 0} | {new Date(project.created_at).toLocaleString()}
+                              <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap', fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                                <span>{language === 'zh' ? '作者' : 'Author'}: {project.author_id}</span>
+                                <span>{language === 'zh' ? '点赞' : 'Likes'}: {project.like_count || 0}</span>
+                                {project.related_hackathon_id && (
+                                  <span>{language === 'zh' ? '关联黑客松' : 'Hackathon'}: {project.related_hackathon_id}</span>
+                                )}
+                                <span>{new Date(project.created_at).toLocaleString()}</span>
                               </div>
                             </div>
                             <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
@@ -1177,7 +1197,7 @@ export default function AdminDashboard() {
                             display: 'flex',
                             justifyContent: 'space-between',
                             gap: 'var(--sp-4)',
-                            alignItems: 'center',
+                            alignItems: 'flex-start',
                           }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
@@ -1251,8 +1271,10 @@ export default function AdminDashboard() {
                               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                                 {story.summary || (language === 'zh' ? '无摘要' : 'No summary')}
                               </div>
-                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                                {language === 'zh' ? '作者' : 'Author'}: {story.author_name} | {language === 'zh' ? '点赞' : 'Likes'}: {story.like_count || 0} | {new Date(story.created_at).toLocaleString()}
+                              <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap', fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                                <span>{language === 'zh' ? '作者' : 'Author'}: {story.author_name || '-'}</span>
+                                <span>{language === 'zh' ? '点赞' : 'Likes'}: {story.like_count || 0}</span>
+                                <span>{new Date(story.created_at).toLocaleString()}</span>
                               </div>
                             </div>
                             <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
@@ -1430,6 +1452,74 @@ export default function AdminDashboard() {
               <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-3)' }}>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)' }}>{language === 'zh' ? '活跃会话' : 'Active Sessions'}</div>
                 <div style={{ fontFamily: 'var(--font-hero)', fontSize: '26px', marginTop: '4px' }}>{(selectedUserDetail.sessions || []).length}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--sp-4)', marginBottom: 'var(--sp-5)' }}>
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-4)' }}>
+                <h4 style={{ margin: '0 0 var(--sp-3) 0', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {language === 'zh' ? '个人资料' : 'Profile Fields'}
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-3)', fontSize: '12px', lineHeight: 1.6 }}>
+                  <div>
+                    <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>{language === 'zh' ? '学校' : 'School'}</div>
+                    <div>{selectedUserDetail.school || '-'}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>{language === 'zh' ? '专业' : 'Major'}</div>
+                    <div>{selectedUserDetail.major || '-'}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>{language === 'zh' ? '公司' : 'Company'}</div>
+                    <div>{selectedUserDetail.company || '-'}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>{language === 'zh' ? '职位' : 'Position'}</div>
+                    <div>{selectedUserDetail.position || '-'}</div>
+                  </div>
+                </div>
+                {(selectedUserDetail.coolest_thing || selectedUserDetail.current_build) && (
+                  <div style={{ marginTop: 'var(--sp-4)', display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+                    {selectedUserDetail.coolest_thing && (
+                      <div>
+                        <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '11px', marginBottom: '4px' }}>
+                          {language === 'zh' ? '做过最酷的事' : 'Coolest Thing'}
+                        </div>
+                        <div style={{ fontSize: '12px', lineHeight: 1.6 }}>{selectedUserDetail.coolest_thing}</div>
+                      </div>
+                    )}
+                    {selectedUserDetail.current_build && (
+                      <div>
+                        <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '11px', marginBottom: '4px' }}>
+                          {language === 'zh' ? '正在 Build' : 'Current Build'}
+                        </div>
+                        <div style={{ fontSize: '12px', lineHeight: 1.6 }}>{selectedUserDetail.current_build}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-4)' }}>
+                <h4 style={{ margin: '0 0 var(--sp-3) 0', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {language === 'zh' ? '黑客松记录' : 'Hackathon Records'}
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+                  {(selectedUserDetail.hackathonRecords || []).slice(0, 8).map((record: HackathonRecord) => (
+                    <div key={record.id} style={{ paddingBottom: 'var(--sp-3)', borderBottom: '1px solid var(--bg-elevated)' }}>
+                      <div style={{ fontWeight: 700 }}>{record.hackathon_title}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+                        <span>{record.status}</span>
+                        {record.role && <span>{language === 'zh' ? '角色' : 'Role'}: {record.role}</span>}
+                        {record.project_name && <span>{language === 'zh' ? '项目' : 'Project'}: {record.project_name}</span>}
+                        {record.award_text && <span>{language === 'zh' ? '奖项' : 'Award'}: {record.award_text}</span>}
+                      </div>
+                    </div>
+                  ))}
+                  {(selectedUserDetail.hackathonRecords || []).length === 0 && (
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{language === 'zh' ? '暂无黑客松记录' : 'No hackathon records yet'}</div>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { storyDAO } from '@/lib/dao';
 import { mapRowToStory } from '@/lib/models/story';
+import { withStoryLikeCounts } from '@/lib/server/like-counts';
+
+const legacyStoryIdBySlug: Record<string, string> = {
+  'post-hackathon-recap': 's1',
+  'interview-goat': 's2',
+  'ai-in-2026-two-ais': 's3',
+  'ai-voice-agents-2025': 's4',
+  'ai-50-2025': 's5',
+  'big-ideas-tech-2025': 's6',
+  'consumer-ai-2025': 's7',
+  'enterprise-ai-2025': 's8',
+};
 
 export async function GET(
   _request: NextRequest,
@@ -17,7 +29,7 @@ export async function GET(
       );
     }
 
-    const data = mapRowToStory(story as any);
+    const [data] = await withStoryLikeCounts([mapRowToStory(story as any)], legacyStoryIdBySlug);
 
     if (data.status === 'draft' || data.hidden) {
       return NextResponse.json(

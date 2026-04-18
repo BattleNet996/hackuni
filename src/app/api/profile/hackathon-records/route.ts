@@ -73,18 +73,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: inserted });
   } catch (error: any) {
     console.error('Create hackathon record error:', error);
-    const isMissingTable = error?.code === '42P01' || /user_hackathon_records/i.test(error?.message || '');
 
     return NextResponse.json(
       {
         error: {
-          code: isMissingTable ? 'SCHEMA_MIGRATION_REQUIRED' : 'INTERNAL_ERROR',
-          message: isMissingTable
-            ? 'Hackathon record schema migration is required before submitting records'
-            : error.message,
+          code: 'INTERNAL_ERROR',
+          message: error.message,
         },
       },
-      { status: isMissingTable ? 409 : 500 }
+      { status: 500 }
     );
   }
 }

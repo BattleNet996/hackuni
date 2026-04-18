@@ -72,17 +72,14 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ data: safeUser });
   } catch (error: any) {
     console.error('Update profile error:', error);
-    const isMissingColumn = error?.code === 'PGRST204' || /coolest_thing|current_build/i.test(error?.message || '');
     return NextResponse.json(
       {
         error: {
-          code: isMissingColumn ? 'SCHEMA_MIGRATION_REQUIRED' : 'INTERNAL_ERROR',
-          message: isMissingColumn
-            ? 'Profile schema migration is required before saving these fields'
-            : error.message,
+          code: 'INTERNAL_ERROR',
+          message: error.message,
         },
       },
-      { status: isMissingColumn ? 409 : 500 }
+      { status: 500 }
     );
   }
 }

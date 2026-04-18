@@ -2,6 +2,7 @@ import { hackathonDAO, projectDAO, userDAO } from '@/lib/dao';
 import { HomePageClient, type Builder, type Hackathon, type HomeStats, type Project } from '@/components/home/HomePageClient';
 import { talentPlanetPoints } from '@/data/talent-planet';
 import { buildFeaturedHackathonList } from '@/lib/hackathon-curation';
+import { withProjectLikeCounts } from '@/lib/server/like-counts';
 import type { Hackathon as HackathonModel } from '@/lib/models/hackathon';
 
 export const dynamic = 'force-dynamic';
@@ -57,6 +58,7 @@ async function getHomeData(): Promise<{
   }, 0);
 
   const featuredHackathons = buildFeaturedHackathonList((allHackathons || []) as HackathonModel[]).slice(0, 6);
+  const allProjectsWithLikes = await withProjectLikeCounts(allProjects || []);
 
   return {
     stats: {
@@ -66,7 +68,7 @@ async function getHomeData(): Promise<{
       badgesEarned,
     },
     hackathons: featuredHackathons,
-    projects: buildTrendingProjects(allProjects || [], 6),
+    projects: buildTrendingProjects(allProjectsWithLikes || [], 6),
     builders: (topBuilders || []) as Builder[],
   };
 }

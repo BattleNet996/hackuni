@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuthService } from '@/lib/services';
 import { supabase } from '@/lib/db/supabase-client';
+import { withProjectLikeCounts, withStoryLikeCounts } from '@/lib/server/like-counts';
 
 function isMissingRelation(error: any) {
   return error?.code === '42P01' || /does not exist|user_hackathon_records/i.test(error?.message || '');
 }
+
+const legacyStoryIdBySlug: Record<string, string> = {
+  'post-hackathon-recap': 's1',
+  'interview-goat': 's2',
+  'ai-in-2026-two-ais': 's3',
+  'ai-voice-agents-2025': 's4',
+  'ai-50-2025': 's5',
+  'big-ideas-tech-2025': 's6',
+  'consumer-ai-2025': 's7',
+  'enterprise-ai-2025': 's8',
+};
 
 // GET /api/admin/reviews - Get pending items for review
 export async function GET(request: NextRequest) {
@@ -35,13 +47,13 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       supabase
         .from('projects')
-        .select('id, title, short_desc, author_id, like_count, related_hackathon_id, created_at')
+        .select('id, title, short_desc, author_id, related_hackathon_id, created_at')
         .eq('status', 'pending')
         .order('created_at', { ascending: false })
         .limit(20),
       supabase
         .from('stories')
-        .select('id, title, summary, author_name, like_count, created_at')
+        .select('id, slug, title, summary, author_name, created_at')
         .eq('status', 'pending')
         .order('created_at', { ascending: false })
         .limit(20),
@@ -85,12 +97,17 @@ export async function GET(request: NextRequest) {
     if (badgeError) throw badgeError;
     if (recordError && !isMissingRelation(recordError)) throw recordError;
 
-    const pendingProjects = (projectRows || []).map((project: any) => ({
+    const [projectRowsWithLikes, storyRowsWithLikes] = await Promise.all([
+      withProjectLikeCounts(projectRows || []),
+      withStoryLikeCounts(storyRows || [], legacyStoryIdBySlug),
+    ]);
+
+    const pendingProjects = projectRowsWithLikes.map((project: any) => ({
       ...project,
       type: 'project',
     }));
 
-    const pendingStories = (storyRows || []).map((story: any) => ({
+    const pendingStories = storyRowsWithLikes.map((story: any) => ({
       ...story,
       type: 'story',
     }));

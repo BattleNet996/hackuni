@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { userDAO } from '@/lib/dao';
 import { adminAuthService } from '@/lib/services';
 import { supabase } from '@/lib/db/supabase-client';
+import { withProjectLikeCounts } from '@/lib/server/like-counts';
+
+function isMissingRelation(error: any) {
+  return error?.code === '42P01' || error?.code === 'PGRST205' || /does not exist|user_hackathon_records/i.test(error?.message || '');
+}
 
 // GET /api/admin/users/[id] - Get user detail
 export async function GET(
@@ -43,10 +48,11 @@ export async function GET(
       { data: likes, error: likesError },
       { data: comments, error: commentsError },
       { data: sessions, error: sessionsError },
+      { data: hackathonRecords, error: hackathonRecordsError },
     ] = await Promise.all([
       supabase
         .from('projects')
-        .select('id, title, status, like_count, created_at')
+        .select('id, title, status, created_at')
         .eq('author_id', userId)
         .order('created_at', { ascending: false })
         .limit(12),
@@ -74,6 +80,12 @@ export async function GET(
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(5),
+      supabase
+        .from('user_hackathon_records')
+        .select('id, hackathon_id, hackathon_title, role, project_name, award_text, status, verified_at, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(12),
     ]);
 
     if (projectsError) throw projectsError;
@@ -81,17 +93,21 @@ export async function GET(
     if (likesError) throw likesError;
     if (commentsError) throw commentsError;
     if (sessionsError) throw sessionsError;
+    if (hackathonRecordsError && !isMissingRelation(hackathonRecordsError)) throw hackathonRecordsError;
+
+    const projectsWithLikes = await withProjectLikeCounts(projects || []);
 
     const { password_hash, ...sanitized } = user as any;
 
     return NextResponse.json({
       data: {
         ...sanitized,
-        projects: projects || [],
+        projects: projectsWithLikes,
         badges: badges || [],
         likes: likes || [],
         comments: comments || [],
         sessions: sessions || [],
+        hackathonRecords: hackathonRecordsError && isMissingRelation(hackathonRecordsError) ? [] : (hackathonRecords || []),
       }
     });
   } catch (error: any) {

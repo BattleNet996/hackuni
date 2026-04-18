@@ -4,7 +4,7 @@ import { adminAuthService } from '@/lib/services';
 import { supabase } from '@/lib/db/supabase-client';
 
 function isSeedUser(user: any) {
-  return user?.email?.endsWith('@example.com');
+  return user?.email?.endsWith('@example.com') || /^u\d+$/.test(user?.id || '');
 }
 
 async function enrichUsers(users: any[]) {

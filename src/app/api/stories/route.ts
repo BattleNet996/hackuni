@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { storyDAO } from '@/lib/dao';
 import { mapRowToStory, type Story } from '@/lib/models/story';
 import { getDatabaseRuntimeConfig } from '@/lib/db/runtime';
+import { withStoryLikeCounts } from '@/lib/server/like-counts';
+
+const legacyStoryIdBySlug: Record<string, string> = {
+  'post-hackathon-recap': 's1',
+  'interview-goat': 's2',
+  'ai-in-2026-two-ais': 's3',
+  'ai-voice-agents-2025': 's4',
+  'ai-50-2025': 's5',
+  'big-ideas-tech-2025': 's6',
+  'consumer-ai-2025': 's7',
+  'enterprise-ai-2025': 's8',
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,12 +25,12 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Stories API runtime:', runtime.databaseType, '-', runtime.reason);
 
-    const stories = (await storyDAO.findAll())
+    const stories = await withStoryLikeCounts((await storyDAO.findAll())
       .map((story: any) => mapRowToStory(story))
       .filter((story: Story) => story.status !== 'draft' && !story.hidden)
       .sort((a: Story, b: Story) => {
         return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
-      });
+      }), legacyStoryIdBySlug);
 
     const data = stories.slice(offset, offset + limit);
 

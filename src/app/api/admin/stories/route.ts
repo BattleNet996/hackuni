@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { storyDAO } from '@/lib/dao';
 import { adminAuthService } from '@/lib/services';
-import { supabase } from '@/lib/db/supabase-client';
+import { withStoryLikeCounts } from '@/lib/server/like-counts';
 
 const legacyStoryIdBySlug: Record<string, string> = {
   'post-hackathon-recap': 's1',
@@ -18,35 +18,7 @@ async function enrichStories(stories: any[]) {
   if (stories.length === 0) {
     return [];
   }
-
-  const storyIds = stories.map((story) => story.id);
-  const legacyIds = stories
-    .map((story) => legacyStoryIdBySlug[story.slug])
-    .filter(Boolean);
-
-  const likeTargetIds = Array.from(new Set([...storyIds, ...legacyIds]));
-  const { data: likes, error } = await supabase
-    .from('likes')
-    .select('target_id')
-    .eq('target_type', 'story')
-    .in('target_id', likeTargetIds);
-
-  if (error) {
-    throw error;
-  }
-
-  const likeCounts = (likes || []).reduce((acc: Record<string, number>, row: any) => {
-    acc[row.target_id] = (acc[row.target_id] || 0) + 1;
-    return acc;
-  }, {});
-
-  return stories.map((story) => {
-    const legacyId = legacyStoryIdBySlug[story.slug];
-    return {
-      ...story,
-      like_count: (likeCounts[story.id] || 0) + (legacyId ? (likeCounts[legacyId] || 0) : 0),
-    };
-  });
+  return withStoryLikeCounts(stories, legacyStoryIdBySlug);
 }
 
 // GET /api/admin/stories - Get all stories

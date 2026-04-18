@@ -1,40 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { projectDAO, userDAO } from '@/lib/dao';
 import { adminAuthService } from '@/lib/services';
-import { supabase } from '@/lib/db/supabase-client';
+import { withProjectLikeCounts } from '@/lib/server/like-counts';
 
 async function enrichProjects(projects: any[]) {
   if (projects.length === 0) {
     return [];
   }
 
-  const projectIds = projects.map((project) => project.id);
   const authorIds = Array.from(new Set(projects.map((project) => project.author_id).filter(Boolean)));
-
-  const [{ data: likes, error: likesError }, authors] = await Promise.all([
-    supabase
-      .from('likes')
-      .select('target_id')
-      .eq('target_type', 'project')
-      .in('target_id', projectIds),
+  const [projectsWithLikes, authors] = await Promise.all([
+    withProjectLikeCounts(projects),
     authorIds.length > 0 ? userDAO.findByIds(authorIds) : Promise.resolve([]),
   ]);
 
-  if (likesError) {
-    throw likesError;
-  }
+  const authorMap = new Map<string, any>((authors || []).map((author: any) => [author.id, author]));
 
-  const likeCounts = (likes || []).reduce((acc: Record<string, number>, row: any) => {
-    acc[row.target_id] = (acc[row.target_id] || 0) + 1;
-    return acc;
-  }, {});
-
-  const authorMap = new Map((authors || []).map((author: any) => [author.id, author as any]));
-
-  return projects.map((project) => ({
+  return projectsWithLikes.map((project) => ({
     ...project,
-    like_count: likeCounts[project.id] || 0,
-    author_name: project.author_id ? ((authorMap.get(project.author_id) as any)?.display_name || (authorMap.get(project.author_id) as any)?.email || null) : null,
+    author_name: project.author_id ? (authorMap.get(project.author_id)?.display_name || authorMap.get(project.author_id)?.email || null) : null,
   }));
 }
 
