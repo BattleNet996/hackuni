@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useComment } from '@/contexts/CommentContext';
 import { ensureTagsArray } from '@/lib/utils/data';
 import { fetchJsonWithCache, getCachedJson } from '@/lib/client-cache';
+import { getAvatarFallbackStyle, getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
 
 interface ProjectDetail {
   id: string;
@@ -181,7 +182,6 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
 
   const isOwner = user && user.id === project.author_id;
   const teamMembers = parseTeamMembers(project.team_member_text);
-  const heroImage = project.images?.[0] || `https://picsum.photos/seed/${project.id}_demo/1280/720`;
   const projectLikes = getProjectLikes(project.id) ?? project.like_count ?? 0;
 
   return (
@@ -194,9 +194,17 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div className="responsive-flex-col desktop-row" style={{ gap: 'var(--sp-6)', alignItems: 'center' }}>
             <div style={{
-              width: '160px', height: '160px',
-              background: `url(${project.images?.[0] || `https://picsum.photos/seed/${project.id}/320/320`}) center/cover`,
-              border: '2px solid var(--brand-coral)',
+              ...(project.images?.[0]
+                ? {
+                    width: '160px',
+                    height: '160px',
+                    background: `url(${project.images[0]}) center/cover`,
+                    border: '2px solid var(--brand-coral)',
+                  }
+                : {
+                    ...getPosterSurfaceStyle(project.id, { width: '160px', height: '160px' }),
+                    border: '2px solid var(--brand-coral)',
+                  }),
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }} />
             <div style={{ flex: 1 }}>
@@ -263,11 +271,18 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
       <div style={{ padding: 'var(--sp-8) var(--sp-6)', maxWidth: '1200px', margin: '0 auto' }}>
         <div className="divider-dashed" style={{ marginBottom: 'var(--sp-6)' }} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--sp-6)' }}>
+        <div className="responsive-poster-grid">
           <section>
             <div style={{
-              width: '100%', height: '400px',
-              background: `url(${heroImage}) center/cover`,
+              ...(project.images?.[0]
+                ? {
+                    width: '100%',
+                    height: '400px',
+                    background: `url(${project.images[0]}) center/cover`,
+                  }
+                : {
+                    ...getPosterSurfaceStyle(`${project.id}-hero`, { width: '100%', height: '400px' }),
+                  }),
               border: '1px solid var(--border-base)',
               marginBottom: 'var(--sp-6)',
               position: 'relative'
@@ -318,10 +333,7 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
                   }}>
                     <div style={{ display: 'flex', gap: 'var(--sp-3)' }}>
                       <div style={{
-                        width: '32px', height: '32px',
-                        background: `url(https://picsum.photos/seed/${comment.author_id || comment.author_name}/64/64) center/cover`,
-                        borderRadius: '50%',
-                        flexShrink: 0
+                        ...getAvatarFallbackStyle(comment.author_id || comment.author_name, '32px'),
                       }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--sp-1)' }}>
@@ -371,10 +383,7 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
                       padding: 'var(--sp-2)'
                     }}>
                       <div style={{
-                        width: '32px', height: '32px',
-                        background: `url(https://picsum.photos/seed/${member}/64/64) center/cover`,
-                        borderRadius: '50%',
-                        border: '1px solid var(--border-base)'
+                        ...getAvatarFallbackStyle(member, '32px'),
                       }} />
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-main)' }}>{member}</span>
                     </div>

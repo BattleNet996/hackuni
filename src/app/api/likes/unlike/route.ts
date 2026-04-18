@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { commentDAO, likeDAO, projectDAO, storyDAO } from '@/lib/dao';
+import { commentDAO, likeDAO } from '@/lib/dao';
 import { authService } from '@/lib/services';
 
 export async function DELETE(request: NextRequest) {
@@ -47,12 +47,7 @@ export async function DELETE(request: NextRequest) {
     // Toggle like (remove it)
     await likeDAO.toggleLike(user.id, target_type, target_id);
 
-    // Update like count on target
-    if (target_type === 'project') {
-      await projectDAO.updateLikeCount(target_id, -1);
-    } else if (target_type === 'story') {
-      await storyDAO.updateLikeCount(target_id, -1);
-    } else if (target_type === 'comment') {
+    if (target_type === 'comment') {
       await commentDAO.decrementLikes(target_id);
     }
 

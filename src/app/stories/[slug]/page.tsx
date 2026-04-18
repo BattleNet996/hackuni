@@ -8,6 +8,7 @@ import { useLike } from '@/contexts/LikeContext';
 import { useComment } from '@/contexts/CommentContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchJsonWithCache, getCachedJson } from '@/lib/client-cache';
+import { getAvatarFallbackStyle } from '@/lib/ui/fallback-visuals';
 
 interface StoryDetail {
   id: string;
@@ -148,10 +149,8 @@ export default function StoryDetailPage({ params }: { params: Promise<{ slug: st
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)', flexWrap: 'wrap', gap: 'var(--sp-2)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
               <div style={{
-                width: '32px',
-                height: '32px',
-                background: `url(https://picsum.photos/seed/${story.author_name}/64/64) center/cover`,
-                borderRadius: 'var(--radius-sm)'
+                ...getAvatarFallbackStyle(story.author_name, '32px'),
+                borderRadius: 'var(--radius-sm)',
               }} />
               <span>{t('stories.by')}: @{story.author_name.replace(/\s+/g, '_').toUpperCase()}</span>
             </div>
@@ -273,12 +272,7 @@ export default function StoryDetailPage({ params }: { params: Promise<{ slug: st
                 }}>
                   <div style={{ display: 'flex', gap: 'var(--sp-3)', marginBottom: 'var(--sp-2)' }}>
                     <div style={{
-                      width: '40px',
-                      height: '40px',
-                      background: `url(https://picsum.photos/seed/${comment.author_id || comment.author_name}/80/80) center/cover`,
-                      borderRadius: '50%',
-                      border: '1px solid var(--border-base)',
-                      flexShrink: 0
+                      ...getAvatarFallbackStyle(comment.author_id || comment.author_name, '40px'),
                     }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-2)' }}>

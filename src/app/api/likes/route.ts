@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { commentDAO, likeDAO, projectDAO, storyDAO } from '@/lib/dao';
+import { commentDAO, likeDAO } from '@/lib/dao';
 import { authService } from '@/lib/services';
 
 interface LikeRecord {
@@ -118,13 +118,7 @@ export async function POST(request: NextRequest) {
 
     const liked = await likeDAO.toggleLike(user.id, target_type, target_id);
 
-    // Update like count on target
-    const delta = liked ? 1 : -1;
-    if (target_type === 'project') {
-      await projectDAO.updateLikeCount(target_id, delta);
-    } else if (target_type === 'story') {
-      await storyDAO.updateLikeCount(target_id, delta);
-    } else if (target_type === 'comment') {
+    if (target_type === 'comment') {
       if (liked) {
         await commentDAO.incrementLikes(target_id);
       } else {

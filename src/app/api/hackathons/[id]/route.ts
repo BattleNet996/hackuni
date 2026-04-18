@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hackathonDAO, projectDAO, userDAO } from '@/lib/dao';
 import { enrichFeaturedHackathon, getFeaturedHackathonFallbackById } from '@/lib/hackathon-curation';
+import { withProjectLikeCounts } from '@/lib/server/like-counts';
+
+function toTimestamp(value: string | undefined | null): number {
+  if (!value) return 0;
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
 
 export async function GET(
   _request: NextRequest,
@@ -18,9 +25,14 @@ export async function GET(
       );
     }
 
-    const relatedProjects = typeof (projectDAO as any).findByHackathonId === 'function'
+    const relatedProjectsRaw = typeof (projectDAO as any).findByHackathonId === 'function'
       ? await (projectDAO as any).findByHackathonId(id)
       : [];
+    const relatedProjects = (await withProjectLikeCounts(relatedProjectsRaw)).sort((left: any, right: any) => {
+      const likeDelta = (right.like_count || 0) - (left.like_count || 0);
+      if (likeDelta !== 0) return likeDelta;
+      return toTimestamp(right.created_at) - toTimestamp(left.created_at);
+    });
 
     const participantIds = Array.from(
       new Set(

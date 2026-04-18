@@ -10,6 +10,7 @@ import { Heatmap } from '@/components/Heatmap';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchJsonWithCache, getCachedJson } from '@/lib/client-cache';
+import { getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
 
 function toBackgroundImage(value: string | undefined, fallback: string) {
   if (!value) return fallback;
@@ -200,7 +201,9 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         <div style={{
           width: '180px',
           height: '180px',
-          backgroundImage: toBackgroundImage(displayUser.avatar, `url('https://picsum.photos/seed/${displayUser.id}/360/360')`),
+          ...(displayUser.avatar
+            ? { backgroundImage: toBackgroundImage(displayUser.avatar, 'none') }
+            : { background: getPosterSurfaceStyle(displayUser.id, { width: '180px', height: '180px' }).background }),
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundSize: 'cover',

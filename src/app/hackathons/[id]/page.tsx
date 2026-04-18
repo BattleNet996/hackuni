@@ -5,12 +5,12 @@ import { Tag } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { fetchJsonWithCache, getCachedJson } from '@/lib/client-cache';
+import { getAvatarFallbackStyle, getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
 
 interface HackathonProject {
   id: string;
   title: string;
   short_desc: string;
-  rank_score?: number | null;
   like_count?: number;
 }
 
@@ -100,8 +100,7 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
   return (
     <main>
       <div style={{
-        height: '350px',
-        background: `url(https://picsum.photos/seed/${hackathon.id}/1280/400) center/cover`,
+        ...getPosterSurfaceStyle(hackathon.id, { width: '100%', height: '350px' }),
         borderBottom: '1px solid var(--border-base)',
         display: 'flex',
         flexDirection: 'column',
@@ -142,7 +141,7 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
       </div>
 
       <div style={{ padding: 'var(--sp-6)', maxWidth: '1280px', margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--sp-6)' }}>
+        <div className="responsive-poster-grid">
           <section>
             <div style={{ marginBottom: 'var(--sp-6)' }}>
               <h3 className="section-title" style={{ fontFamily: 'var(--font-hero)', fontSize: 'var(--text-h3)', marginTop: 0 }}>MISSION_BRIEFING</h3>
@@ -169,7 +168,7 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
 
               {hackathon.relatedProjects.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
-                  {hackathon.relatedProjects.map((project) => (
+                  {hackathon.relatedProjects.map((project, index) => (
                     <Link key={project.id} href={`/goat-hunt/${project.id}`} style={{ textDecoration: 'none' }}>
                       <div style={{
                         background: 'var(--bg-card)',
@@ -180,8 +179,8 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
                         alignItems: 'center',
                         cursor: 'pointer'
                       }} className="hover-color">
-                        <div style={{ fontFamily: 'var(--font-hero)', fontSize: '24px', color: 'var(--brand-coral)' }}>
-                          #{project.rank_score || '-'}
+                        <div style={{ fontFamily: 'var(--font-hero)', fontSize: '24px', color: 'var(--brand-coral)', whiteSpace: 'nowrap' }}>
+                          #{index + 1}
                         </div>
                         <div style={{ flex: 1 }}>
                           <h4 style={{ margin: '0 0 4px 0', color: 'var(--text-main)' }}>{project.title}</h4>
@@ -247,10 +246,7 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
                         cursor: 'pointer'
                       }} className="hover-color">
                         <div style={{
-                          width: '32px', height: '32px',
-                          background: `url(https://picsum.photos/seed/${participant.id}/64/64) center/cover`,
-                          borderRadius: '50%',
-                          border: '1px solid var(--border-base)'
+                          ...getAvatarFallbackStyle(participant.id, '32px'),
                         }} />
                         <span style={{ color: 'var(--text-main)' }}>{participant.display_name || participant.id}</span>
                         <span style={{ marginLeft: 'auto', fontSize: '10px', color: 'var(--brand-coral)' }}>{participant.total_work_count || 0} {t('profile.projects')}</span>

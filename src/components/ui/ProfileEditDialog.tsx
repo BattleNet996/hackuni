@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { UserProfile } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api-client';
 import { clearJsonCacheByPrefix } from '@/lib/client-cache';
+import { getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
 
 interface ProfileEditDialogProps {
   isOpen: boolean;
@@ -161,7 +162,9 @@ export function ProfileEditDialog({ isOpen, onClose }: ProfileEditDialogProps) {
               <div style={{
                 width: '100px',
                 height: '100px',
-                backgroundImage: avatarPreview ? `url(${avatarPreview})` : `url(https://picsum.photos/seed/${user.id}/200/200)`,
+                ...(avatarPreview
+                  ? { backgroundImage: `url(${avatarPreview})` }
+                  : { background: getPosterSurfaceStyle(user.id, { width: '100px', height: '100px' }).background }),
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
                 backgroundSize: 'cover',

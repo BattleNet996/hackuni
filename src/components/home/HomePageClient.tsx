@@ -8,6 +8,7 @@ import { Tag, Badge } from '@/components/ui/Badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLike } from '@/contexts/LikeContext';
 import { prefetchJsonWithCache } from '@/lib/client-cache';
+import { getAvatarFallbackStyle, getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
 
 export interface Hackathon {
   id: string;
@@ -29,8 +30,8 @@ export interface Project {
   team_member_text: string;
   is_awarded: boolean;
   award_text?: string | null;
-  rank_score: number | null;
   like_count?: number;
+  created_at?: string;
 }
 
 export interface Builder {
@@ -177,10 +178,7 @@ export function HomePageClient({
                   <HackerCard className="responsive-flex-col desktop-row stream-card stream-hackathon" style={{ gap: 'var(--sp-3)', cursor: 'pointer' }}>
                     <div
                       style={{
-                        width: '104px',
-                        height: '104px',
-                        background: `url(https://picsum.photos/seed/${hackathon.id}/300/300) center/cover`,
-                        border: '1px solid var(--border-base)',
+                        ...getPosterSurfaceStyle(hackathon.id, { width: '104px', height: '104px' }),
                         flexShrink: 0,
                       }}
                       className="hover-color"
@@ -225,20 +223,23 @@ export function HomePageClient({
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }} className="content-column-list">
-              {initialProjects.map((project) => {
+              {initialProjects.map((project, index) => {
                 const displayLikes = getProjectLikes(project.id) ?? project.like_count ?? 0;
 
                 return (
                   <Link key={project.id} href={`/goat-hunt/${project.id}`} onMouseEnter={() => prefetchJsonWithCache(`/api/projects/${project.id}`)} style={{ textDecoration: 'none' }}>
                     <HackerCard className="responsive-flex-col desktop-row stream-card" style={{ alignItems: 'center', gap: 'var(--sp-3)', padding: 'var(--sp-3)', cursor: 'pointer' }}>
-                      <div style={{ fontFamily: 'var(--font-hero)', fontSize: '32px', color: 'var(--text-muted)', width: '40px', textAlign: 'center' }}>
-                        {project.rank_score ?? 'NEW'}
+                      <div style={{ fontFamily: 'var(--font-hero)', fontSize: '28px', color: 'var(--text-muted)', width: '72px', textAlign: 'center', lineHeight: 1, whiteSpace: 'nowrap' }}>
+                        #{index + 1}
                       </div>
                       <div style={{ flex: 1 }}>
                         <h4 style={{ margin: '0 0 4px 0', fontFamily: 'var(--font-hero)', fontSize: '17px', color: 'var(--text-main)', lineHeight: 1.15 }}>{project.title}</h4>
                         <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{project.short_desc}</p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '11px', flexWrap: 'wrap' }}>
                           <span style={{ color: 'var(--brand-coral)' }}>{project.team_member_text}</span>
+                          {project.created_at && (
+                            <span style={{ color: 'var(--text-muted)' }}>{new Date(project.created_at).toLocaleDateString()}</span>
+                          )}
                           {project.is_awarded && project.award_text && (
                             <Badge type="award" label={project.award_text} style={{ transform: 'scale(0.8)', transformOrigin: 'left center' }} />
                           )}
@@ -284,10 +285,7 @@ export function HomePageClient({
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
                       <div
                         style={{
-                          width: '44px',
-                          height: '44px',
-                          background: `url(https://picsum.photos/seed/${builder.id}/100/100) center/cover`,
-                          borderRadius: '50%',
+                          ...getAvatarFallbackStyle(builder.id, '44px'),
                           border: '2px solid var(--brand-coral)',
                         }}
                       />

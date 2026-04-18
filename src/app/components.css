@@ -85,6 +85,9 @@
   border-radius: var(--radius-sm);
   padding: 2px 8px;
   white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* 获奖徽标：珊瑚橙红背景 */
@@ -166,6 +169,18 @@
 @media (min-width: 769px) {
   .responsive-flex-col.desktop-row {
     flex-direction: row;
+  }
+}
+
+.responsive-poster-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-6);
+}
+
+@media (min-width: 769px) {
+  .responsive-poster-grid {
+    grid-template-columns: 2fr 1fr;
   }
 }
 .hide-on-mobile {

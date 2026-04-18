@@ -7,17 +7,18 @@ import { Button } from '@/components/ui/Button';
 import { useLike } from '@/contexts/LikeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { fetchJsonWithCache, getCachedJson, prefetchJsonWithCache } from '@/lib/client-cache';
+import { getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
 
 interface Project {
   id: string;
   title: string;
   short_desc: string;
-  rank_score: number | null;
   is_awarded: boolean;
   award_text?: string;
   team_member_text: string;
   like_count: number;
   tags_json: string | string[];
+  created_at?: string;
 }
 
 interface ProjectListResponse {
@@ -112,9 +113,8 @@ export default function GoatHuntPage() {
             </div>
 
             <div style={{
-              width: '80px', height: '80px',
-              background: `url(https://picsum.photos/seed/${proj.id}_icon/160/160) center/cover`,
-              border: '1px solid var(--border-base)', flexShrink: 0,
+              ...getPosterSurfaceStyle(proj.id, { width: '80px', height: '80px' }),
+              flexShrink: 0,
               filter: 'grayscale(80%)'
             }}>
             </div>
@@ -128,16 +128,21 @@ export default function GoatHuntPage() {
               </Link>
               <p style={{ margin: '0 0 var(--sp-2) 0', color: 'var(--text-muted)' }}>{proj.short_desc}</p>
 
-              <div style={{ display: 'flex', gap: 'var(--sp-3)', fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
+              <div style={{ display: 'flex', gap: 'var(--sp-3)', fontFamily: 'var(--font-mono)', fontSize: '13px', flexWrap: 'wrap' }}>
                 <span style={{ color: 'var(--brand-coral)' }}>
                   ♥ {projectLikes} likes
                 </span>
                 <span style={{ color: 'var(--text-muted)' }}>
                   Team: {proj.team_member_text || 'N/A'}
                 </span>
+                {proj.created_at && (
+                  <span style={{ color: 'var(--text-muted)' }}>
+                    {new Date(proj.created_at).toLocaleDateString()}
+                  </span>
+                )}
               </div>
 
-              <div style={{ marginTop: 'var(--sp-3)', display: 'flex', gap: 'var(--sp-2)' }}>
+              <div style={{ marginTop: 'var(--sp-3)', display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
                 {ensureTagsArray(proj.tags_json).slice(0, 3).map(tag => (
                   <Tag key={tag} label={tag} />
                 ))}

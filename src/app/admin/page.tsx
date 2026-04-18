@@ -68,6 +68,7 @@ interface Project {
 
 interface HackathonRecord {
   id: string;
+  hackathon_id?: string | null;
   hackathon_title: string;
   role?: string | null;
   project_name?: string | null;
@@ -1148,7 +1149,9 @@ export default function AdminDashboard() {
                             gap: 'var(--sp-4)',
                           }}>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{project.title}</div>
+                              <Link href={`/goat-hunt/${project.id}`} style={{ textDecoration: 'none', color: 'var(--text-main)' }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{project.title}</div>
+                              </Link>
                               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                                 {project.short_desc || (language === 'zh' ? '无描述' : 'No description')}
                               </div>
@@ -1159,6 +1162,16 @@ export default function AdminDashboard() {
                                   <span>{language === 'zh' ? '关联黑客松' : 'Hackathon'}: {project.related_hackathon_id}</span>
                                 )}
                                 <span>{new Date(project.created_at).toLocaleString()}</span>
+                              </div>
+                              <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap', fontSize: '11px', marginTop: '8px' }}>
+                                <Link href={`/goat-hunt/${project.id}`} style={{ color: 'var(--brand-coral)' }}>
+                                  {language === 'zh' ? '查看公开页' : 'Open public page'}
+                                </Link>
+                                {project.author_id && (
+                                  <Link href={`/profile/${project.author_id}`} style={{ color: 'var(--brand-coral)' }}>
+                                    {language === 'zh' ? '查看作者' : 'Open author profile'}
+                                  </Link>
+                                )}
                               </div>
                             </div>
                             <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
@@ -1215,6 +1228,16 @@ export default function AdminDashboard() {
                                 </div>
                               )}
                               <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap', fontSize: '11px', marginTop: '6px' }}>
+                                {record.user_id && (
+                                  <Link href={`/profile/${record.user_id}`} style={{ color: 'var(--brand-coral)' }}>
+                                    {language === 'zh' ? '查看用户主页' : 'Open user profile'}
+                                  </Link>
+                                )}
+                                {record.hackathon_id && (
+                                  <Link href={`/hackathons/${record.hackathon_id}`} style={{ color: 'var(--brand-coral)' }}>
+                                    {language === 'zh' ? '查看活动页' : 'Open hackathon page'}
+                                  </Link>
+                                )}
                                 {record.project_url && (
                                   <a href={record.project_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-coral)' }}>
                                     {language === 'zh' ? '项目链接' : 'Project link'}
@@ -1267,7 +1290,9 @@ export default function AdminDashboard() {
                             gap: 'var(--sp-4)',
                           }}>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{story.title}</div>
+                              <Link href={`/stories/${story.slug || story.id}`} style={{ textDecoration: 'none', color: 'var(--text-main)' }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{story.title}</div>
+                              </Link>
                               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                                 {story.summary || (language === 'zh' ? '无摘要' : 'No summary')}
                               </div>
@@ -1275,6 +1300,11 @@ export default function AdminDashboard() {
                                 <span>{language === 'zh' ? '作者' : 'Author'}: {story.author_name || '-'}</span>
                                 <span>{language === 'zh' ? '点赞' : 'Likes'}: {story.like_count || 0}</span>
                                 <span>{new Date(story.created_at).toLocaleString()}</span>
+                              </div>
+                              <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap', fontSize: '11px', marginTop: '8px' }}>
+                                <Link href={`/stories/${story.slug || story.id}`} style={{ color: 'var(--brand-coral)' }}>
+                                  {language === 'zh' ? '查看公开页' : 'Open public page'}
+                                </Link>
                               </div>
                             </div>
                             <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
@@ -1430,6 +1460,11 @@ export default function AdminDashboard() {
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
                   {selectedUserDetail.email}
                 </div>
+                <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap', marginTop: '8px', fontSize: '12px' }}>
+                  <Link href={`/profile/${selectedUserDetail.id}`} style={{ color: 'var(--brand-coral)' }}>
+                    {language === 'zh' ? '查看公开主页' : 'Open public profile'}
+                  </Link>
+                </div>
               </div>
               <Button variant="ghost" onClick={() => setUserDetailOpen(false)} style={{ cursor: 'pointer' }}>
                 {language === 'zh' ? '关闭' : 'Close'}
@@ -1507,7 +1542,13 @@ export default function AdminDashboard() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
                   {(selectedUserDetail.hackathonRecords || []).slice(0, 8).map((record: HackathonRecord) => (
                     <div key={record.id} style={{ paddingBottom: 'var(--sp-3)', borderBottom: '1px solid var(--bg-elevated)' }}>
-                      <div style={{ fontWeight: 700 }}>{record.hackathon_title}</div>
+                      <div style={{ fontWeight: 700 }}>
+                        {record.hackathon_id ? (
+                          <Link href={`/hackathons/${record.hackathon_id}`} style={{ color: 'var(--text-main)', textDecoration: 'none' }}>
+                            {record.hackathon_title}
+                          </Link>
+                        ) : record.hackathon_title}
+                      </div>
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
                         <span>{record.status}</span>
                         {record.role && <span>{language === 'zh' ? '角色' : 'Role'}: {record.role}</span>}
@@ -1531,7 +1572,11 @@ export default function AdminDashboard() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
                   {(selectedUserDetail.projects || []).slice(0, 8).map((project: any) => (
                     <div key={project.id} style={{ paddingBottom: 'var(--sp-3)', borderBottom: '1px solid var(--bg-elevated)' }}>
-                      <div style={{ fontWeight: 700 }}>{project.title}</div>
+                      <div style={{ fontWeight: 700 }}>
+                        <Link href={`/goat-hunt/${project.id}`} style={{ color: 'var(--text-main)', textDecoration: 'none' }}>
+                          {project.title}
+                        </Link>
+                      </div>
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
                         {project.status} | {language === 'zh' ? '点赞' : 'Likes'}: {project.like_count || 0}
                       </div>
