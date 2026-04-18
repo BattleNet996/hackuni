@@ -193,7 +193,7 @@ export default function AdminDashboard() {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch('/api/admin/projects');
+      const response = await fetch('/api/admin/projects?include_hidden=true');
       const data = await response.json();
       if (response.ok) {
         setProjects(data.data || []);

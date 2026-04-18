@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { projectDAO, userDAO } from '@/lib/dao';
 import { adminAuthService } from '@/lib/services';
 import { withProjectLikeCounts } from '@/lib/server/like-counts';
+import { sortProjectsByGoatOrder } from '@/lib/server/project-ordering';
 
 async function enrichProjects(projects: any[]) {
   if (projects.length === 0) {
@@ -44,20 +45,27 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '100');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.max(1, parseInt(searchParams.get('limit') || '100', 10));
     const status = searchParams.get('status');
+    const includeHidden = searchParams.get('include_hidden') === 'true';
 
-    const result = await projectDAO.getPaginated(page, limit);
-    let projects = result.data;
+    let projects = await projectDAO.findAll(status ? { status } : undefined);
 
-    if (status) {
-      projects = projects.filter((project: any) => project.status === status);
+    if (!includeHidden) {
+      projects = projects.filter((project: any) => !project.hidden);
     }
 
-    const enrichedProjects = await enrichProjects(projects);
+    const enrichedProjects = sortProjectsByGoatOrder(await enrichProjects(projects));
+    const paginatedProjects = enrichedProjects.slice((page - 1) * limit, page * limit);
 
-    return NextResponse.json({ data: enrichedProjects });
+    return NextResponse.json({
+      data: paginatedProjects,
+      total: enrichedProjects.length,
+      page,
+      limit,
+      hasMore: page * limit < enrichedProjects.length,
+    });
   } catch (error: any) {
     console.error('Get projects error:', error);
     return NextResponse.json(

@@ -6,11 +6,11 @@ export async function POST(request: NextRequest) {
   try {
     const { email, code } = await request.json();
     const normalizedEmail = String(email || '').trim().toLowerCase();
-    const normalizedCode = String(code || '').trim();
+    const normalizedCode = String(code || '').trim().replace(/\D/g, '');
 
-    if (!isValidEmail(normalizedEmail) || !normalizedCode) {
+    if (!isValidEmail(normalizedEmail) || normalizedCode.length !== 6) {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'Email and verification code are required' } },
+        { error: { code: 'VALIDATION_ERROR', message: 'Email and a 6-digit verification code are required' } },
         { status: 400 }
       );
     }

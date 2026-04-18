@@ -1,58 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { likeDAO, projectDAO } from '@/lib/dao';
 import { authService } from '@/lib/services';
-
-function toTimestamp(value: string | undefined | null): number {
-  if (!value) return 0;
-  const timestamp = new Date(value).getTime();
-  return Number.isFinite(timestamp) ? timestamp : 0;
-}
-
-function sortProjects(projects: any[], sort: string): any[] {
-  const normalizedSort = sort === 'recent' ? 'created_at' : sort;
-  const next = [...projects];
-
-  if (normalizedSort === 'goat') {
-    next.sort((left, right) => {
-      const likeDelta = (right.like_count || 0) - (left.like_count || 0);
-      if (likeDelta !== 0) return likeDelta;
-
-      return toTimestamp(right.created_at) - toTimestamp(left.created_at);
-    });
-    return next;
-  }
-
-  if (normalizedSort === 'rank_score') {
-    next.sort((left, right) => {
-      const leftRank = typeof left.rank_score === 'number' ? left.rank_score : Number.POSITIVE_INFINITY;
-      const rightRank = typeof right.rank_score === 'number' ? right.rank_score : Number.POSITIVE_INFINITY;
-      if (leftRank !== rightRank) return leftRank - rightRank;
-
-      const likeDelta = (right.like_count || 0) - (left.like_count || 0);
-      if (likeDelta !== 0) return likeDelta;
-
-      return toTimestamp(right.created_at) - toTimestamp(left.created_at);
-    });
-    return next;
-  }
-
-  if (normalizedSort === 'like_count') {
-    next.sort((left, right) => {
-      const likeDelta = (right.like_count || 0) - (left.like_count || 0);
-      if (likeDelta !== 0) return likeDelta;
-
-      return toTimestamp(right.created_at) - toTimestamp(left.created_at);
-    });
-    return next;
-  }
-
-  next.sort((left, right) => {
-    const createdDelta = toTimestamp(right.created_at) - toTimestamp(left.created_at);
-    if (createdDelta !== 0) return createdDelta;
-    return (right.like_count || 0) - (left.like_count || 0);
-  });
-  return next;
-}
+import { sortProjects } from '@/lib/server/project-ordering';
 
 async function withProjectLikeCounts(projects: any[]) {
   if (projects.length === 0) {

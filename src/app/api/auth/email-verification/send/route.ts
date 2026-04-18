@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ data: { sent: true } });
+    return NextResponse.json({ data: { sent: true, method: 'otp' } });
   } catch (error: any) {
     console.error('Send verification email error:', error);
     return NextResponse.json(

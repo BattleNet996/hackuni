@@ -21,6 +21,7 @@ export default function RegisterPage() {
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [emailNotice, setEmailNotice] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
@@ -33,6 +34,22 @@ export default function RegisterPage() {
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isEmailVerified = Boolean(emailVerificationToken);
+
+  React.useEffect(() => {
+    if (resendCooldown <= 0) return;
+
+    const timer = window.setInterval(() => {
+      setResendCooldown((value) => {
+        if (value <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+        return value - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
 
   const handleEmailChange = (value: string) => {
     setEmail(value);
@@ -63,7 +80,8 @@ export default function RegisterPage() {
         throw new Error(data.error?.message || 'Failed to send verification code');
       }
 
-      setEmailNotice(language === 'zh' ? '验证码已发送，请检查邮箱。' : 'Verification code sent. Please check your inbox.');
+      setResendCooldown(60);
+      setEmailNotice(language === 'zh' ? '6 位验证码已发送，请检查邮箱。' : 'A 6-digit verification code has been sent to your inbox.');
     } catch (err: any) {
       const message = String(err?.message || '');
       if (message.toLowerCase().includes('already registered')) {
@@ -256,7 +274,7 @@ export default function RegisterPage() {
               <Button
                 variant="ghost"
                 type="button"
-                disabled={isLoading || isSendingCode || isEmailVerified || !emailRegex.test(email)}
+                disabled={isLoading || isSendingCode || isEmailVerified || resendCooldown > 0 || !emailRegex.test(email)}
                 onClick={sendVerificationCode}
                 style={{ padding: '6px 10px', fontSize: '12px' }}
               >
@@ -264,7 +282,9 @@ export default function RegisterPage() {
                   ? (language === 'zh' ? '发送中...' : 'Sending...')
                   : isEmailVerified
                     ? (language === 'zh' ? '已验证' : 'Verified')
-                    : (language === 'zh' ? '发送验证码' : 'Send code')}
+                    : resendCooldown > 0
+                      ? (language === 'zh' ? `${resendCooldown}s 后重发` : `Resend in ${resendCooldown}s`)
+                      : (language === 'zh' ? '发送验证码' : 'Send code')}
               </Button>
             </div>
 
@@ -274,10 +294,12 @@ export default function RegisterPage() {
                 type="text"
                 value={verificationCode}
                 onChange={(e) => {
-                  setVerificationCode(e.target.value);
+                  setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6));
                   setEmailVerificationToken('');
                 }}
                 placeholder={language === 'zh' ? '输入邮箱收到的 6 位验证码' : 'Enter the code from your email'}
+                inputMode="numeric"
+                maxLength={6}
                 disabled={isLoading || isEmailVerified}
                 style={{
                   flex: 1,
@@ -305,6 +327,13 @@ export default function RegisterPage() {
             {emailNotice && (
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: isEmailVerified ? 'var(--brand-green)' : 'var(--text-muted)' }}>
                 {emailNotice}
+              </div>
+            )}
+            {!isEmailVerified && (
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                {language === 'zh'
+                  ? '邮箱里应该收到 6 位数字验证码，而不是可点击链接。若仍收到空白 magic link，说明 Supabase 邮件模板仍未切到 OTP 文案。'
+                  : 'You should receive a 6-digit numeric code instead of a clickable link. If you still get a blank magic link, the Supabase email template is still using magic-link content.'}
               </div>
             )}
           </div>
