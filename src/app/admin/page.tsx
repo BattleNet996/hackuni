@@ -20,6 +20,10 @@ interface User {
   school?: string;
   company?: string;
   is_banned?: number;
+  total_projects?: number;
+  pending_projects?: number;
+  verified_badges?: number;
+  is_seed?: boolean;
   created_at: string;
 }
 
@@ -53,6 +57,7 @@ interface Project {
   related_hackathon_id?: string | null;
   status: string;
   author_id: string;
+  author_name?: string | null;
   hidden?: number;
   created_at: string;
 }
@@ -126,6 +131,8 @@ export default function AdminDashboard() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
+  const [selectedUserDetail, setSelectedUserDetail] = useState<any>(null);
+  const [userDetailOpen, setUserDetailOpen] = useState(false);
 
   // Loading states
   const [loading, setLoading] = useState(false);
@@ -431,6 +438,21 @@ export default function AdminDashboard() {
     setEditBadgeOpen(true);
   };
 
+  const handleViewUserDetail = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`);
+      const data = await response.json();
+      if (response.ok) {
+        setSelectedUserDetail(data.data);
+        setUserDetailOpen(true);
+      } else {
+        setMessage(data.error?.message || (language === 'zh' ? '加载用户详情失败' : 'Failed to load user detail'));
+      }
+    } catch (error) {
+      setMessage(language === 'zh' ? '加载用户详情失败' : 'Failed to load user detail');
+    }
+  };
+
   const handleDeleteBadge = async (badgeId: string) => {
     setConfirmAction(async () => {
       try {
@@ -508,6 +530,26 @@ export default function AdminDashboard() {
     } catch (error) {
       setMessage(language === 'zh' ? '操作失败' : 'Operation failed');
     }
+  };
+
+  const pillStyle = (tone: 'green' | 'coral' | 'amber' | 'muted'): React.CSSProperties => {
+    const tones = {
+      green: { color: 'var(--brand-green)', border: '1px solid rgba(0,255,65,0.35)', background: 'rgba(0,255,65,0.08)' },
+      coral: { color: 'var(--brand-coral)', border: '1px solid rgba(245,107,82,0.35)', background: 'rgba(245,107,82,0.08)' },
+      amber: { color: 'var(--brand-amber)', border: '1px solid rgba(255,191,71,0.35)', background: 'rgba(255,191,71,0.08)' },
+      muted: { color: 'var(--text-muted)', border: '1px solid var(--border-base)', background: 'transparent' },
+    };
+
+    return {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px',
+      padding: '4px 8px',
+      borderRadius: '999px',
+      fontFamily: 'var(--font-mono)',
+      fontSize: '11px',
+      ...tones[tone],
+    };
   };
 
   return (
@@ -721,49 +763,63 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-4)' }}>
-                <table style={{ width: '100%', textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: '13px', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-base)' }}>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '项目' : 'PROJECT'}</th>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '作者' : 'AUTHOR'}</th>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{t('common.like').toUpperCase()}</th>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '状态' : 'STATUS'}</th>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '操作' : 'ACTIONS'}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {projects.map(proj => (
-                      <tr key={proj.id} style={{ borderBottom: '1px solid var(--bg-elevated)', transition: 'background 0.2s ease', opacity: proj.hidden ? 0.5 : 1 }} className="hover-color">
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <Link href={`/goat-hunt/${proj.id}`} style={{ textDecoration: 'none', color: 'var(--text-main)' }}>
-                            {proj.title}
-                          </Link>
-                        </td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>{proj.author_id}</td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>{proj.like_count}</td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <span style={{ color: proj.hidden ? 'var(--text-muted)' : 'var(--brand-green)' }}>
-                            {proj.hidden ? (language === 'zh' ? '已隐藏' : 'Hidden') : (language === 'zh' ? '可见' : 'Visible')}
-                          </span>
-                        </td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
-                            <Button variant="ghost" onClick={() => handleEditProject(proj)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>
-                              {t('common.edit')}
-                            </Button>
-                            <Button variant="ghost" onClick={() => handleHideProject(proj.id, proj.hidden || 0)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>
-                              {proj.hidden ? (language === 'zh' ? '显示' : 'Show') : (language === 'zh' ? '隐藏' : 'Hide')}
-                            </Button>
-                            <Button variant="ghost" onClick={() => handleDeleteProject(proj.id)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer', color: 'var(--brand-coral)' }}>
-                              {language === 'zh' ? '删除' : 'Delete'}
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 'var(--sp-4)' }}>
+                {projects.map((proj) => (
+                  <div key={proj.id} style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-base)',
+                    padding: 'var(--sp-4)',
+                    opacity: proj.hidden ? 0.58 : 1,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--sp-3)', alignItems: 'flex-start', marginBottom: 'var(--sp-3)' }}>
+                      <Link href={`/goat-hunt/${proj.id}`} style={{ textDecoration: 'none', color: 'var(--text-main)', flex: 1 }}>
+                        <div style={{ fontWeight: 700, lineHeight: 1.4 }}>{proj.title}</div>
+                      </Link>
+                      <span style={pillStyle(proj.status === 'pending' ? 'amber' : proj.hidden ? 'muted' : 'green')}>
+                        {proj.status === 'pending'
+                          ? (language === 'zh' ? '待审核' : 'Pending')
+                          : proj.hidden
+                            ? (language === 'zh' ? '已隐藏' : 'Hidden')
+                            : (language === 'zh' ? '已发布' : 'Published')}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 'var(--sp-3)' }}>
+                      {proj.short_desc}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '11px', marginBottom: 'var(--sp-4)' }}>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {language === 'zh' ? '作者' : 'Author'}:
+                        <div style={{ color: 'var(--text-main)', marginTop: '4px' }}>{proj.author_name || proj.author_id || '-'}</div>
+                      </div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {language === 'zh' ? '点赞' : 'Likes'}:
+                        <div style={{ color: 'var(--brand-green)', marginTop: '4px' }}>{proj.like_count}</div>
+                      </div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {language === 'zh' ? '创建时间' : 'Created'}:
+                        <div style={{ color: 'var(--text-main)', marginTop: '4px' }}>{new Date(proj.created_at).toLocaleDateString()}</div>
+                      </div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        ID:
+                        <div style={{ color: 'var(--text-main)', marginTop: '4px', wordBreak: 'break-all' }}>{proj.id}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+                      <Button variant="ghost" onClick={() => handleEditProject(proj)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>
+                        {t('common.edit')}
+                      </Button>
+                      <Button variant="ghost" onClick={() => handleHideProject(proj.id, proj.hidden || 0)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>
+                        {proj.hidden ? (language === 'zh' ? '显示' : 'Show') : (language === 'zh' ? '隐藏' : 'Hide')}
+                      </Button>
+                      <Button variant="ghost" onClick={() => handleDeleteProject(proj.id)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer', color: 'var(--brand-coral)' }}>
+                        {language === 'zh' ? '删除' : 'Delete'}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -779,51 +835,59 @@ export default function AdminDashboard() {
                 </Button>
               </div>
 
-              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-4)' }}>
-                <table style={{ width: '100%', textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: '13px', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-base)' }}>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '标题' : 'TITLE'}</th>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '作者' : 'AUTHOR'}</th>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '来源' : 'SOURCE'}</th>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{t('common.like').toUpperCase()}</th>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '状态' : 'VISIBILITY'}</th>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '操作' : 'ACTIONS'}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stories.map(story => (
-                      <tr key={story.id} style={{ borderBottom: '1px solid var(--bg-elevated)', transition: 'background 0.2s ease', opacity: story.hidden ? 0.5 : 1 }} className="hover-color">
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <Link href={`/stories/${story.slug}`} style={{ textDecoration: 'none', color: 'var(--text-main)' }}>
-                            {story.title}
-                          </Link>
-                        </td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>{story.author_name}</td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>{story.source || '-'}</td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>{story.like_count}</td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <span style={{ color: story.hidden ? 'var(--text-muted)' : 'var(--brand-green)', fontSize: '11px' }}>
-                            {story.hidden ? (language === 'zh' ? '已隐藏' : 'Hidden') : (language === 'zh' ? '可见' : 'Visible')}
-                          </span>
-                        </td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
-                            <Button variant="ghost" onClick={() => handleEditStory(story)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>
-                              {t('common.edit')}
-                            </Button>
-                            <Button variant="ghost" onClick={() => handleToggleHideStory(story.id, story.hidden || 0)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>
-                              {story.hidden ? (language === 'zh' ? '显示' : 'Show') : (language === 'zh' ? '隐藏' : 'Hide')}
-                            </Button>
-                            <Button variant="ghost" onClick={() => handleDeleteStory(story.id)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer', color: 'var(--brand-coral)' }}>
-                              {language === 'zh' ? '删除' : 'Delete'}
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 'var(--sp-4)' }}>
+                {stories.map((story) => (
+                  <div key={story.id} style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-base)',
+                    padding: 'var(--sp-4)',
+                    opacity: story.hidden ? 0.58 : 1,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--sp-3)', alignItems: 'flex-start', marginBottom: 'var(--sp-3)' }}>
+                      <Link href={`/stories/${story.slug}`} style={{ textDecoration: 'none', color: 'var(--text-main)', flex: 1 }}>
+                        <div style={{ fontWeight: 700, lineHeight: 1.45 }}>{story.title}</div>
+                      </Link>
+                      <span style={pillStyle(story.hidden ? 'muted' : 'green')}>
+                        {story.hidden ? (language === 'zh' ? '已隐藏' : 'Hidden') : (language === 'zh' ? '可见' : 'Visible')}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 'var(--sp-3)' }}>
+                      {story.summary}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '11px', marginBottom: 'var(--sp-4)' }}>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {language === 'zh' ? '作者' : 'Author'}:
+                        <div style={{ color: 'var(--text-main)', marginTop: '4px' }}>{story.author_name || '-'}</div>
+                      </div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {language === 'zh' ? '点赞' : 'Likes'}:
+                        <div style={{ color: 'var(--brand-green)', marginTop: '4px' }}>{story.like_count}</div>
+                      </div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {language === 'zh' ? '来源' : 'Source'}:
+                        <div style={{ color: 'var(--text-main)', marginTop: '4px', wordBreak: 'break-word' }}>{story.source || '-'}</div>
+                      </div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {language === 'zh' ? '发布时间' : 'Published'}:
+                        <div style={{ color: 'var(--text-main)', marginTop: '4px' }}>{new Date(story.published_at).toLocaleDateString()}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+                      <Button variant="ghost" onClick={() => handleEditStory(story)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>
+                        {t('common.edit')}
+                      </Button>
+                      <Button variant="ghost" onClick={() => handleToggleHideStory(story.id, story.hidden || 0)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>
+                        {story.hidden ? (language === 'zh' ? '显示' : 'Show') : (language === 'zh' ? '隐藏' : 'Hide')}
+                      </Button>
+                      <Button variant="ghost" onClick={() => handleDeleteStory(story.id)} style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer', color: 'var(--brand-coral)' }}>
+                        {language === 'zh' ? '删除' : 'Delete'}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -895,78 +959,88 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-4)' }}>
-                <table style={{ width: '100%', textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: '13px', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-base)' }}>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '用户' : 'USER'}</th>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '邮箱' : 'EMAIL'}</th>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '学校/公司' : 'SCHOOL/COMPANY'}</th>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '状态' : 'STATUS'}</th>
-                      <th style={{ padding: 'var(--sp-3) 0' }}>{language === 'zh' ? '操作' : 'ACTIONS'}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map(u => (
-                      <tr key={u.id} style={{
-                        borderBottom: '1px solid var(--bg-elevated)',
-                        transition: 'background 0.2s ease',
-                        opacity: u.is_banned ? 0.5 : 1
-                      }} className="hover-color">
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
-                            <div style={{
-                              width: '32px', height: '32px',
-                              background: 'var(--brand-coral)',
-                              borderRadius: '50%',
-                              clipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: '12px'
-                            }}>
-                              {u.display_name?.[0]?.toUpperCase() || u.email[0].toUpperCase()}
-                            </div>
-                            {u.display_name || (language === 'zh' ? '未设置' : 'Not set')}
-                          </div>
-                        </td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>{u.email}</td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          {u.school || u.company || '-'}
-                        </td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <span style={{
-                            color: u.is_banned ? 'var(--brand-coral)' : 'var(--brand-green)',
-                            fontSize: '11px'
-                          }}>
-                            {u.is_banned ? (language === 'zh' ? '已封禁' : 'Banned') : (language === 'zh' ? '正常' : 'Active')}
-                          </span>
-                        </td>
-                        <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
-                            <Button
-                              variant="ghost"
-                              onClick={() => handleToggleBanUser(u.id, u.is_banned || 0)}
-                              style={{
-                                padding: '4px 8px',
-                                fontSize: '11px',
-                                cursor: 'pointer',
-                                color: u.is_banned ? 'var(--brand-green)' : 'var(--brand-coral)'
-                              }}
-                            >
-                              {u.is_banned ? (language === 'zh' ? '解封' : 'Unban') : (language === 'zh' ? '封禁' : 'Ban')}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              onClick={() => handleDeleteUser(u.id)}
-                              style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer', color: 'var(--brand-coral)' }}
-                            >
-                              {language === 'zh' ? '删除' : 'Delete'}
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 'var(--sp-4)' }}>
+                {users.map((u) => (
+                  <div key={u.id} style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-base)',
+                    padding: 'var(--sp-4)',
+                    opacity: u.is_banned ? 0.55 : 1,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--sp-3)', alignItems: 'flex-start', marginBottom: 'var(--sp-3)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+                        <div style={{
+                          width: '36px', height: '36px',
+                          background: 'var(--brand-coral)',
+                          borderRadius: '50%',
+                          clipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '12px'
+                        }}>
+                          {u.display_name?.[0]?.toUpperCase() || u.email[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700 }}>{u.display_name || (language === 'zh' ? '未设置' : 'Not set')}</div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)' }}>{u.email}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        {u.is_seed && <span style={pillStyle('muted')}>{language === 'zh' ? '种子数据' : 'Seed'}</span>}
+                        <span style={pillStyle(u.is_banned ? 'coral' : 'green')}>
+                          {u.is_banned ? (language === 'zh' ? '已封禁' : 'Banned') : (language === 'zh' ? '正常' : 'Active')}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-2)', fontFamily: 'var(--font-mono)', fontSize: '11px', marginBottom: 'var(--sp-4)' }}>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {language === 'zh' ? '学校/公司' : 'School/Company'}:
+                        <div style={{ color: 'var(--text-main)', marginTop: '4px' }}>{u.school || u.company || '-'}</div>
+                      </div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {language === 'zh' ? '注册时间' : 'Joined'}:
+                        <div style={{ color: 'var(--text-main)', marginTop: '4px' }}>{new Date(u.created_at).toLocaleDateString()}</div>
+                      </div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {language === 'zh' ? '公开作品' : 'Projects'}:
+                        <div style={{ color: 'var(--brand-green)', marginTop: '4px' }}>{u.total_projects || 0}</div>
+                      </div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {language === 'zh' ? '待审核作品' : 'Pending'}:
+                        <div style={{ color: 'var(--brand-amber)', marginTop: '4px' }}>{u.pending_projects || 0}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleViewUserDetail(u.id)}
+                        style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}
+                      >
+                        {language === 'zh' ? '查看详情' : 'View'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleToggleBanUser(u.id, u.is_banned || 0)}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                          color: u.is_banned ? 'var(--brand-green)' : 'var(--brand-coral)'
+                        }}
+                      >
+                        {u.is_banned ? (language === 'zh' ? '解封' : 'Unban') : (language === 'zh' ? '封禁' : 'Ban')}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleDeleteUser(u.id)}
+                        style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer', color: 'var(--brand-coral)' }}
+                      >
+                        {language === 'zh' ? '删除' : 'Delete'}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -1055,7 +1129,8 @@ export default function AdminDashboard() {
                             borderBottom: '1px solid var(--bg-elevated)',
                             display: 'flex',
                             justifyContent: 'space-between',
-                            alignItems: 'center',
+                            alignItems: 'flex-start',
+                            gap: 'var(--sp-4)',
                           }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{project.title}</div>
@@ -1063,7 +1138,7 @@ export default function AdminDashboard() {
                                 {project.short_desc || (language === 'zh' ? '无描述' : 'No description')}
                               </div>
                               <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                                {language === 'zh' ? '作者' : 'Author'}: {project.author_id} | {new Date(project.created_at).toLocaleString()}
+                                {language === 'zh' ? '作者' : 'Author'}: {project.author_id} | {language === 'zh' ? '点赞' : 'Likes'}: {project.like_count || 0} | {new Date(project.created_at).toLocaleString()}
                               </div>
                             </div>
                             <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
@@ -1168,7 +1243,8 @@ export default function AdminDashboard() {
                             borderBottom: '1px solid var(--bg-elevated)',
                             display: 'flex',
                             justifyContent: 'space-between',
-                            alignItems: 'center',
+                            alignItems: 'flex-start',
+                            gap: 'var(--sp-4)',
                           }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{story.title}</div>
@@ -1176,7 +1252,7 @@ export default function AdminDashboard() {
                                 {story.summary || (language === 'zh' ? '无摘要' : 'No summary')}
                               </div>
                               <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                                {language === 'zh' ? '作者' : 'Author'}: {story.author_name} | {new Date(story.created_at).toLocaleString()}
+                                {language === 'zh' ? '作者' : 'Author'}: {story.author_name} | {language === 'zh' ? '点赞' : 'Likes'}: {story.like_count || 0} | {new Date(story.created_at).toLocaleString()}
                               </div>
                             </div>
                             <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
@@ -1303,6 +1379,117 @@ export default function AdminDashboard() {
         isOpen={logsViewerOpen}
         onClose={() => setLogsViewerOpen(false)}
       />
+
+      {userDetailOpen && selectedUserDetail && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.82)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1100,
+          padding: 'var(--sp-4)',
+        }}>
+          <div style={{
+            width: 'min(920px, 100%)',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-base)',
+            borderRadius: '8px',
+            padding: 'var(--sp-5)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--sp-4)', alignItems: 'flex-start', marginBottom: 'var(--sp-4)' }}>
+              <div>
+                <h3 style={{ fontFamily: 'var(--font-hero)', margin: 0, fontSize: '18px' }}>
+                  {selectedUserDetail.display_name || selectedUserDetail.email}
+                </h3>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  {selectedUserDetail.email}
+                </div>
+              </div>
+              <Button variant="ghost" onClick={() => setUserDetailOpen(false)} style={{ cursor: 'pointer' }}>
+                {language === 'zh' ? '关闭' : 'Close'}
+              </Button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 'var(--sp-3)', marginBottom: 'var(--sp-5)' }}>
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-3)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)' }}>{language === 'zh' ? '公开项目' : 'Published Projects'}</div>
+                <div style={{ fontFamily: 'var(--font-hero)', fontSize: '26px', marginTop: '4px' }}>{(selectedUserDetail.projects || []).filter((project: any) => project.status === 'published').length}</div>
+              </div>
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-3)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)' }}>{language === 'zh' ? '待审核项目' : 'Pending Projects'}</div>
+                <div style={{ fontFamily: 'var(--font-hero)', fontSize: '26px', marginTop: '4px', color: 'var(--brand-amber)' }}>{(selectedUserDetail.projects || []).filter((project: any) => project.status === 'pending').length}</div>
+              </div>
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-3)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)' }}>{language === 'zh' ? '认证徽章' : 'Verified Badges'}</div>
+                <div style={{ fontFamily: 'var(--font-hero)', fontSize: '26px', marginTop: '4px', color: 'var(--brand-green)' }}>{(selectedUserDetail.badges || []).filter((badge: any) => badge.status === 'verified').length}</div>
+              </div>
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-3)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)' }}>{language === 'zh' ? '活跃会话' : 'Active Sessions'}</div>
+                <div style={{ fontFamily: 'var(--font-hero)', fontSize: '26px', marginTop: '4px' }}>{(selectedUserDetail.sessions || []).length}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 'var(--sp-4)' }}>
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-4)' }}>
+                <h4 style={{ margin: '0 0 var(--sp-3) 0', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {language === 'zh' ? '最近项目' : 'Recent Projects'}
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+                  {(selectedUserDetail.projects || []).slice(0, 8).map((project: any) => (
+                    <div key={project.id} style={{ paddingBottom: 'var(--sp-3)', borderBottom: '1px solid var(--bg-elevated)' }}>
+                      <div style={{ fontWeight: 700 }}>{project.title}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        {project.status} | {language === 'zh' ? '点赞' : 'Likes'}: {project.like_count || 0}
+                      </div>
+                    </div>
+                  ))}
+                  {(selectedUserDetail.projects || []).length === 0 && (
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{language === 'zh' ? '暂无项目' : 'No projects'}</div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-4)' }}>
+                  <h4 style={{ margin: '0 0 var(--sp-3) 0', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    {language === 'zh' ? '最近点赞' : 'Recent Likes'}
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
+                    {(selectedUserDetail.likes || []).slice(0, 8).map((like: any) => (
+                      <div key={like.id} style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-main)' }}>
+                        {like.target_type} / {like.target_id}
+                      </div>
+                    ))}
+                    {(selectedUserDetail.likes || []).length === 0 && (
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{language === 'zh' ? '暂无点赞记录' : 'No likes yet'}</div>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', padding: 'var(--sp-4)' }}>
+                  <h4 style={{ margin: '0 0 var(--sp-3) 0', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    {language === 'zh' ? '最近评论' : 'Recent Comments'}
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
+                    {(selectedUserDetail.comments || []).slice(0, 6).map((comment: any) => (
+                      <div key={comment.id} style={{ fontSize: '12px', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                        {comment.content}
+                      </div>
+                    ))}
+                    {(selectedUserDetail.comments || []).length === 0 && (
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{language === 'zh' ? '暂无评论' : 'No comments yet'}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Dialog */}
       {confirmDialogOpen && (
