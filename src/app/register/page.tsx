@@ -86,6 +86,8 @@ export default function RegisterPage() {
       const message = String(err?.message || '');
       if (message.toLowerCase().includes('already registered')) {
         setError(language === 'zh' ? '该邮箱已被注册，请直接登录' : 'Email already registered, please login');
+      } else if (message.toLowerCase().includes('provider is not configured')) {
+        setError(language === 'zh' ? '邮件服务尚未配置，请联系管理员补充发信密钥' : 'Email provider is not configured yet. Please ask the admin to add the mail key.');
       } else {
         setError(language === 'zh' ? '验证码发送失败，请稍后重试' : 'Failed to send verification code, please try again');
       }

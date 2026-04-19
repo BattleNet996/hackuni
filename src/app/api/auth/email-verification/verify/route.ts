@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/lib/db/supabase-client';
-import { createEmailVerificationToken, isValidEmail } from '@/lib/auth/email-verification';
+import {
+  createEmailVerificationToken,
+  getEmailVerificationCookieName,
+  isValidEmail,
+  verifyVerificationStateCookieValue,
+} from '@/lib/auth/email-verification';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,27 +19,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = getSupabaseClient();
-    const { error } = await supabase.auth.verifyOtp({
-      email: normalizedEmail,
-      token: normalizedCode,
-      type: 'email',
-    });
+    const verificationCookie = request.cookies.get(getEmailVerificationCookieName())?.value;
 
-    if (error) {
-      console.error('Verify email code error:', error);
+    if (!verificationCookie || !verifyVerificationStateCookieValue(verificationCookie, normalizedEmail, normalizedCode)) {
       return NextResponse.json(
         { error: { code: 'INVALID_CODE', message: 'Invalid or expired verification code' } },
         { status: 400 }
       );
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       data: {
         verified: true,
         email_verification_token: createEmailVerificationToken(normalizedEmail),
       },
     });
+    response.cookies.delete(getEmailVerificationCookieName());
+    return response;
   } catch (error: any) {
     console.error('Verify email code error:', error);
     return NextResponse.json(
