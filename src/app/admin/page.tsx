@@ -11,6 +11,7 @@ import { EditStoryDialog } from '@/components/ui/admin/EditStoryDialog';
 import { EditBadgeDialog } from '@/components/ui/admin/EditBadgeDialog';
 import { ManageAdminsDialog } from '@/components/ui/admin/ManageAdminsDialog';
 import { LogsViewerDialog } from '@/components/ui/admin/LogsViewerDialog';
+import { canonicalizeHackathonStatus, localizeHackathonStatus } from '@/lib/hackathon-status';
 
 interface User {
   id: string;
@@ -738,8 +739,8 @@ export default function AdminDashboard() {
                         <td style={{ padding: 'var(--sp-3) 0' }}>{hack.city}, {hack.country}</td>
                         <td style={{ padding: 'var(--sp-3) 0' }}>{new Date(hack.start_time).toLocaleDateString()}</td>
                         <td style={{ padding: 'var(--sp-3) 0' }}>
-                          <span style={{ color: hack.registration_status === '报名中' ? 'var(--brand-green)' : 'var(--text-muted)' }}>
-                            {hack.registration_status}
+                          <span style={{ color: canonicalizeHackathonStatus(hack.registration_status) === 'open' ? 'var(--brand-green)' : canonicalizeHackathonStatus(hack.registration_status) === 'live' ? 'var(--brand-coral)' : 'var(--text-muted)' }}>
+                            {localizeHackathonStatus(hack.registration_status, language)}
                           </span>
                         </td>
                         <td style={{ padding: 'var(--sp-3) 0' }}>

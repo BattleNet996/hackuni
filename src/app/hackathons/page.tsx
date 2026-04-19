@@ -6,6 +6,7 @@ import { Tag } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { fetchJsonWithCache, getCachedJson, prefetchJsonWithCache } from '@/lib/client-cache';
+import { getHackathonStatusTone, localizeHackathonStatus } from '@/lib/hackathon-status';
 import { getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
 
 interface Hackathon {
@@ -29,7 +30,7 @@ interface HackathonListResponse {
 }
 
 export default function HackathonsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const cacheKey = '/api/hackathons';
   const cachedResponse = React.useMemo(() => getCachedJson<HackathonListResponse>(cacheKey), [cacheKey]);
   const [hackathons, setHackathons] = useState<Hackathon[]>(cachedResponse?.data || []);
@@ -215,9 +216,6 @@ export default function HackathonsPage() {
                 {hack.level_score && (
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '24px', color: 'var(--brand-coral)' }}>{hack.level_score}</div>
-                    {hack.level_code && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>Class: {hack.level_code}</div>
-                    )}
                   </div>
                 )}
               </div>
@@ -240,9 +238,9 @@ export default function HackathonsPage() {
                     fontFamily: 'var(--font-mono)',
                     fontSize: '13px',
                     marginRight: 'var(--sp-4)',
-                    color: hack.registration_status === '报名中' ? 'var(--brand-coral)' : 'var(--text-disabled)'
+                    color: getHackathonStatusTone(hack.registration_status)
                   }}>
-                    {hack.registration_status || 'Closed'}
+                    {localizeHackathonStatus(hack.registration_status, language)}
                   </span>
                   <Button
                     variant="primary"

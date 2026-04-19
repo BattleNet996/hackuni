@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hackathonDAO } from '@/lib/dao';
 import { adminAuthService } from '@/lib/services';
+import { canonicalizeHackathonStatus } from '@/lib/hackathon-status';
 
 function normalizeOptionalString(value: unknown): string | null {
   if (typeof value !== 'string') return null;
@@ -122,6 +123,10 @@ export async function PATCH(
         );
       }
       normalizedUpdateData.level_code = levelCode;
+    }
+
+    if ('registration_status' in normalizedUpdateData) {
+      normalizedUpdateData.registration_status = canonicalizeHackathonStatus(normalizedUpdateData.registration_status);
     }
 
     // Update hackathon

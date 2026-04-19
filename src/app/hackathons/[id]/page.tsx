@@ -5,6 +5,7 @@ import { Tag } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { fetchJsonWithCache, getCachedJson } from '@/lib/client-cache';
+import { getHackathonStatusTone, localizeHackathonStatus } from '@/lib/hackathon-status';
 import { getAvatarFallbackStyle, getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
 
 interface HackathonProject {
@@ -132,9 +133,6 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
           {hackathon.level_score && (
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '48px', color: 'var(--brand-coral)', lineHeight: 1 }}>{hackathon.level_score}</div>
-              {hackathon.level_code && (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '16px', color: 'var(--text-muted)', marginTop: 'var(--sp-2)' }}>{hackathon.level_code} TIER</div>
-              )}
             </div>
           )}
         </div>
@@ -214,7 +212,9 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
               <div style={{ marginBottom: 'var(--sp-3)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '13px', marginBottom: 'var(--sp-2)' }}>
                   <span style={{ color: 'var(--text-muted)' }}>{t('hackathon.status')}:</span>
-                  <span style={{ color: hackathon.registration_status === 'open' ? 'var(--brand-green)' : 'var(--brand-amber)' }}>{hackathon.registration_status}</span>
+                  <span style={{ color: getHackathonStatusTone(hackathon.registration_status) }}>
+                    {localizeHackathonStatus(hackathon.registration_status, language)}
+                  </span>
                 </div>
               </div>
 
@@ -224,7 +224,7 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
                 onClick={() => hackathon.registration_url && window.open(hackathon.registration_url, '_blank')}
                 disabled={!hackathon.registration_url}
               >
-                {hackathon.registration_status === 'open'
+                {localizeHackathonStatus(hackathon.registration_status, 'en') === 'Open'
                   ? (language === 'zh' ? '立即报名' : 'REGISTER NOW')
                   : (language === 'zh' ? '查看详情' : 'VIEW DETAILS')}
               </Button>

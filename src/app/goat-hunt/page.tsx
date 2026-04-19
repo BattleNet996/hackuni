@@ -107,56 +107,59 @@ export default function GoatHuntPage() {
           const projectLikes = getProjectLikes(proj.id) ?? proj.like_count ?? 0;
 
           return (
-          <HackerCard key={proj.id} className="responsive-flex-col desktop-row" style={{ alignItems: 'center', gap: 'var(--sp-5)' }}>
-            <div style={{ fontFamily: 'var(--font-hero)', fontSize: 'clamp(34px, 4vw, 48px)', color: 'var(--text-disabled)', width: '96px', minWidth: '96px', textAlign: 'center', whiteSpace: 'nowrap', lineHeight: 1 }}>
-              #{index + 1}
-            </div>
-
-            <div style={{
-              ...getPosterSurfaceStyle(proj.id, { width: '80px', height: '80px' }),
-              flexShrink: 0,
-              filter: 'grayscale(80%)'
-            }}>
-            </div>
-
-            <div style={{ flex: 1 }}>
-              <Link href={`/goat-hunt/${proj.id}`} onMouseEnter={() => prefetchJsonWithCache(`/api/projects/${proj.id}`)}>
-                <h3 style={{ margin: '0 0 4px 0', fontFamily: 'var(--font-hero)', fontSize: '24px', display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
-                  {proj.title}
-                  {proj.is_awarded && <Badge type="award" label={proj.award_text || 'Awarded'} />}
-                </h3>
-              </Link>
-              <p style={{ margin: '0 0 var(--sp-2) 0', color: 'var(--text-muted)' }}>{proj.short_desc}</p>
-
-              <div style={{ display: 'flex', gap: 'var(--sp-3)', fontFamily: 'var(--font-mono)', fontSize: '13px', flexWrap: 'wrap' }}>
-                <span style={{ color: 'var(--brand-coral)' }}>
-                  ♥ {projectLikes} likes
-                </span>
-                <span style={{ color: 'var(--text-muted)' }}>
-                  Team: {proj.team_member_text || 'N/A'}
-                </span>
-                {proj.created_at && (
-                  <span style={{ color: 'var(--text-muted)' }}>
-                    {new Date(proj.created_at).toLocaleDateString()}
-                  </span>
-                )}
+          <HackerCard key={proj.id} style={{ padding: 'var(--sp-5)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-4)', flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: 'var(--font-hero)', fontSize: 'clamp(34px, 4vw, 48px)', color: 'var(--text-disabled)', width: '96px', minWidth: '96px', textAlign: 'center', whiteSpace: 'nowrap', lineHeight: 1 }}>
+                  #{index + 1}
+                </div>
+                <div style={{
+                  ...getPosterSurfaceStyle(proj.id, { width: '80px', height: '80px' }),
+                  flexShrink: 0,
+                  filter: 'grayscale(80%)'
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <Link href={`/goat-hunt/${proj.id}`} onMouseEnter={() => prefetchJsonWithCache(`/api/projects/${proj.id}`)}>
+                    <h3 style={{ margin: '0 0 4px 0', fontFamily: 'var(--font-hero)', fontSize: '24px', display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
+                      {proj.title}
+                      {proj.is_awarded && <Badge type="award" label={proj.award_text || 'Awarded'} />}
+                    </h3>
+                  </Link>
+                </div>
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+                <Button
+                  variant="ghost"
+                  onClick={() => toggleLikeProject(proj.id)}
+                  style={{
+                    color: isProjectLiked(proj.id) ? 'var(--brand-coral)' : 'var(--text-muted)',
+                    padding: 'var(--sp-1) var(--sp-2)'
+                  }}
+                >
+                  {isProjectLiked(proj.id) ? '♥' : '♡'} {projectLikes}
+                </Button>
+              </div>
+            </div>
 
-              <div style={{ marginTop: 'var(--sp-3)', display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+            <p style={{ margin: '0 0 var(--sp-3) 0', color: 'var(--text-muted)', lineHeight: 1.6 }}>{proj.short_desc}</p>
+
+            <div style={{ display: 'flex', gap: 'var(--sp-3)', fontFamily: 'var(--font-mono)', fontSize: '13px', flexWrap: 'wrap', marginBottom: 'var(--sp-3)' }}>
+              <span style={{ color: 'var(--text-muted)' }}>
+                Team: {proj.team_member_text || 'N/A'}
+              </span>
+              {proj.created_at && (
+                <span style={{ color: 'var(--text-muted)' }}>
+                  {new Date(proj.created_at).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--border-base)', paddingTop: 'var(--sp-3)', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
                 {ensureTagsArray(proj.tags_json).slice(0, 3).map(tag => (
                   <Tag key={tag} label={tag} />
                 ))}
               </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
-              <Button
-                variant="ghost"
-                onClick={() => toggleLikeProject(proj.id)}
-                style={{ color: isProjectLiked(proj.id) ? 'var(--brand-coral)' : 'var(--text-muted)' }}
-              >
-                {isProjectLiked(proj.id) ? '♥ Liked' : '♡ Like'}
-              </Button>
               <Link href={`/goat-hunt/${proj.id}`} onMouseEnter={() => prefetchJsonWithCache(`/api/projects/${proj.id}`)}>
                 <Button variant="primary">
                   View Details →

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hackathonDAO } from '@/lib/dao';
 import { adminAuthService } from '@/lib/services';
+import { canonicalizeHackathonStatus } from '@/lib/hackathon-status';
 
 function parseDate(dateValue: unknown): string | null {
   if (!dateValue) return null;
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
       tags_json: normalizeTags(data.tags_json),
       level_score: levelScore,
       level_code: levelCode,
-      registration_status: data.registration_status || 'upcoming',
+      registration_status: canonicalizeHackathonStatus(data.registration_status || 'open'),
       poster_url: data.poster_url || '',
       organizer: data.organizer || '',
       organizer_url: normalizeOptionalString(data.organizer_url),

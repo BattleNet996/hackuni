@@ -1,4 +1,5 @@
 import type { Hackathon } from '@/lib/models/hackathon';
+import { canonicalizeHackathonStatus } from '@/lib/hackathon-status';
 
 const TSINGHUA_OPENCLAW_HACKATHON_ID = 'tsinghua-openclaw-hackathon-2026';
 const SPRING_HACKATHON_ID = 'h0';
@@ -53,24 +54,13 @@ function getHackathonPriority(hackathon: Hackathon): number {
 }
 
 function getRegistrationStatusRank(hackathon: Hackathon): number {
-  const status = normalizeHackathonText(hackathon.registration_status);
+  const status = canonicalizeHackathonStatus(hackathon.registration_status);
 
-  if (
-    status.includes('报名中') ||
-    status.includes('进行中') ||
-    status.includes('open') ||
-    status.includes('upcoming') ||
-    status.includes('registering')
-  ) {
+  if (status === 'open' || status === 'live') {
     return 0;
   }
 
-  if (
-    status.includes('已结束') ||
-    status.includes('结束') ||
-    status.includes('closed') ||
-    status.includes('ended')
-  ) {
+  if (status === 'ended') {
     return 1;
   }
 
@@ -109,7 +99,7 @@ export const TSINGHUA_OPENCLAW_HACKATHON: Hackathon = {
   tags_json: ['#OpenClaw', '#Outlier', '#Entertainment', '#SoloCompany', '#Hardware'],
   level_score: '',
   level_code: '',
-  registration_status: '已结束',
+  registration_status: 'ended',
   poster_url: '',
   organizer: 'AttraX × 清华大学创客空间 × 清华MBA人工智能俱乐部',
   organizer_url: null,
@@ -140,7 +130,7 @@ export const SPRING_HACKATHON: Hackathon = {
   tags_json: ['#AI', '#Hardware', '#Outlier', '#Spring', '#Shenzhen'],
   level_score: '',
   level_code: '',
-  registration_status: '报名中',
+  registration_status: 'open',
   poster_url: 'https://brewtown.cn/',
   organizer: 'AttraX｜BREWTOWN',
   organizer_url: 'https://brewtown.cn/',

@@ -8,6 +8,7 @@ import { Tag, Badge } from '@/components/ui/Badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLike } from '@/contexts/LikeContext';
 import { prefetchJsonWithCache } from '@/lib/client-cache';
+import { getHackathonStatusTone, localizeHackathonStatus } from '@/lib/hackathon-status';
 import { getAvatarFallbackStyle, getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
 
 export interface Hackathon {
@@ -75,7 +76,7 @@ export function HomePageClient({
   initialProjects,
   initialBuilders,
 }: HomePageClientProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { isProjectLiked, toggleLikeProject, getProjectLikes } = useLike();
 
   return (
@@ -200,8 +201,8 @@ export function HomePageClient({
 
                       <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '11px', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
                         <span>{t('hackathon.location')}: {hackathon.city}, {hackathon.country}</span>
-                        <span style={{ color: hackathon.registration_status === t('status.registration_open') ? 'var(--brand-coral)' : 'var(--text-disabled)' }}>
-                          {t('hackathon.status')}: {hackathon.registration_status}
+                        <span style={{ color: getHackathonStatusTone(hackathon.registration_status) }}>
+                          {t('hackathon.status')}: {localizeHackathonStatus(hackathon.registration_status, language)}
                         </span>
                       </div>
                     </div>

@@ -32,6 +32,12 @@ export function Footer() {
         <Link href="/about" style={{ color: 'inherit', textDecoration: 'none' }}>
           <span style={{ cursor: 'pointer' }}>{language === 'zh' ? '关于' : 'ABOUT'}</span>
         </Link>
+        <Link href="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>
+          <span style={{ cursor: 'pointer' }}>{language === 'zh' ? '用户协议' : 'TERMS'}</span>
+        </Link>
+        <Link href="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>
+          <span style={{ cursor: 'pointer' }}>{language === 'zh' ? '隐私协议' : 'PRIVACY'}</span>
+        </Link>
       </div>
     </footer>
   );

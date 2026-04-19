@@ -1,4 +1,5 @@
 import { ensureTagsArray } from '@/lib/utils/data';
+import { canonicalizeHackathonStatus } from '@/lib/hackathon-status';
 
 export interface Hackathon {
   id: string;
@@ -53,6 +54,7 @@ export function mapRowToHackathon(row: any): Hackathon {
   return {
     ...row,
     tags_json: ensureTagsArray(row.tags_json),
+    registration_status: canonicalizeHackathonStatus(row.registration_status),
     ...normalizedLevel,
   };
 }

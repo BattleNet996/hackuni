@@ -510,7 +510,14 @@ export default function RegisterPage() {
             fontSize: '12px',
             color: 'var(--text-muted)'
           }}>
-            {t('auth.register.terms_notice')}
+            {t('auth.register.terms_notice')}{' '}
+            <Link href="/terms" style={{ color: 'var(--brand-coral)', textDecoration: 'none' }}>
+              {language === 'zh' ? '用户协议' : 'Terms of Service'}
+            </Link>
+            {' / '}
+            <Link href="/privacy" style={{ color: 'var(--brand-coral)', textDecoration: 'none' }}>
+              {language === 'zh' ? '隐私协议' : 'Privacy Policy'}
+            </Link>
           </div>
 
           {/* Submit Button */}
