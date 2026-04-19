@@ -331,13 +331,6 @@ export default function RegisterPage() {
                 {emailNotice}
               </div>
             )}
-            {!isEmailVerified && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                {language === 'zh'
-                  ? '邮箱里应该收到 6 位数字验证码，而不是可点击链接。若仍收到空白 magic link，说明 Supabase 邮件模板仍未切到 OTP 文案。'
-                  : 'You should receive a 6-digit numeric code instead of a clickable link. If you still get a blank magic link, the Supabase email template is still using magic-link content.'}
-              </div>
-            )}
           </div>
 
           {/* Display Name Field (Optional) */}

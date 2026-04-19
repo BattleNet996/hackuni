@@ -94,7 +94,7 @@ export function getEmailVerificationTtlSeconds(): number {
 }
 
 export function getEmailSenderAddress(): string {
-  return process.env.EMAIL_FROM || 'AttraX <noreply@attrax.world>';
+  return process.env.EMAIL_FROM || 'AttraX <noreply@attrax.ai>';
 }
 
 export function getEmailReplyTo(): string | undefined {
