@@ -17,6 +17,21 @@ function toBackgroundImage(value: string | undefined, fallback: string) {
   return value.startsWith('url(') ? value : `url(${value})`;
 }
 
+function localizeHackathonRole(value: string | null | undefined, language: string) {
+  if (value === 'captain') return language === 'zh' ? '队长' : 'Captain';
+  if (value === 'member') return language === 'zh' ? '队员' : 'Member';
+  return value || '';
+}
+
+function localizeContributionArea(value: string, language: string) {
+  if (value === 'software') return language === 'zh' ? '软件开发' : 'Software';
+  if (value === 'hardware') return language === 'zh' ? '硬件开发' : 'Hardware';
+  if (value === 'design') return language === 'zh' ? '设计' : 'Design';
+  if (value === 'business') return language === 'zh' ? '商业' : 'Business';
+  if (value === 'other') return language === 'zh' ? '其他' : 'Other';
+  return value;
+}
+
 interface BuilderUser {
   id: string;
   email?: string;
@@ -67,14 +82,30 @@ interface BuilderProfileResponse {
     hackathon_id?: string | null;
     hackathon_title: string;
     role?: string | null;
+    contribution_areas?: string[];
+    contribution_other?: string | null;
     project_name?: string | null;
     project_url?: string | null;
     award_text?: string | null;
+    proof_url?: string | null;
+    proof_image_url?: string | null;
+    notes?: string | null;
     status: string;
     verified_at?: string | null;
     created_at: string;
   }>;
-  pendingHackathonRecords?: Array<{ id: string; hackathon_title: string; status: string; created_at: string }>;
+  pendingHackathonRecords?: Array<{
+    id: string;
+    hackathon_title: string;
+    role?: string | null;
+    contribution_areas?: string[];
+    contribution_other?: string | null;
+    project_name?: string | null;
+    award_text?: string | null;
+    proof_image_url?: string | null;
+    status: string;
+    created_at: string;
+  }>;
   badges: BuilderBadge[];
   footprintCities: Array<{ city: string; country: string; date: string }>;
   heatmapActivities: Array<{ date: string; type: string }>;
@@ -187,7 +218,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
   }
 
   const isOwnProfile = user?.id === profileData.user.id;
-  const displayUser = isOwnProfile && user ? { ...profileData.user, ...user } : profileData.user;
+  const displayUser = profileData.user;
   const footprintCities = profileData.footprintCities || [];
   const heatmapActivities = profileData.heatmapActivities || [];
   const projects = profileData.projects || [];
@@ -377,6 +408,34 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                     {language === 'zh' ? `你有 ${pendingHackathonRecords.length} 条记录待管理员审核。` : `${pendingHackathonRecords.length} records are pending admin review.`}
                   </div>
                 )}
+                {pendingHackathonRecords.length > 0 && isOwnProfile && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)', marginBottom: 'var(--sp-4)' }}>
+                    {pendingHackathonRecords.map((record) => (
+                      <div key={record.id} style={{ background: 'rgba(255, 184, 77, 0.08)', border: '1px solid rgba(255, 184, 77, 0.35)', padding: 'var(--sp-3)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--sp-3)', alignItems: 'flex-start' }}>
+                          <div>
+                            <h4 style={{ margin: '0 0 4px 0', color: 'var(--text-main)' }}>{record.hackathon_title}</h4>
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                              {[
+                                localizeHackathonRole(record.role, language),
+                                ...(record.contribution_areas || []).map((value) => localizeContributionArea(value, language)),
+                                ...(record.contribution_other ? [record.contribution_other] : []),
+                                record.project_name,
+                                record.award_text,
+                              ].filter(Boolean).join(' / ') || (language === 'zh' ? '待审核' : 'Pending review')}
+                            </div>
+                          </div>
+                          <BadgePill type="pending" label={language === 'zh' ? '待审核' : 'Pending'} />
+                        </div>
+                        {record.proof_image_url && (
+                          <a href={record.proof_image_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 'var(--sp-2)', fontSize: '12px', color: 'var(--brand-coral)' }}>
+                            {language === 'zh' ? '查看图片证明' : 'View proof image'}
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {hackathons.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
                     {hackathons.map((record) => (
@@ -385,16 +444,39 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                           <div>
                             <h4 style={{ margin: '0 0 4px 0', color: 'var(--text-main)' }}>{record.hackathon_title}</h4>
                             <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                              {[record.role, record.project_name, record.award_text].filter(Boolean).join(' / ') || (language === 'zh' ? '已认证参与' : 'Verified participation')}
+                              {[
+                                localizeHackathonRole(record.role, language),
+                                ...(record.contribution_areas || []).map((value) => localizeContributionArea(value, language)),
+                                ...(record.contribution_other ? [record.contribution_other] : []),
+                                record.project_name,
+                                record.award_text,
+                              ].filter(Boolean).join(' / ') || (language === 'zh' ? '已认证参与' : 'Verified participation')}
                             </div>
+                            {record.notes && (
+                              <div style={{ fontSize: '12px', color: 'var(--text-main)', marginTop: '6px', lineHeight: 1.5 }}>
+                                {record.notes}
+                              </div>
+                            )}
                           </div>
                           <BadgePill type="verified" label={language === 'zh' ? '已认证' : 'Verified'} />
                         </div>
-                        {record.project_url && (
-                          <a href={record.project_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 'var(--sp-2)', fontSize: '12px', color: 'var(--brand-coral)' }}>
-                            {language === 'zh' ? '查看项目' : 'View project'}
-                          </a>
-                        )}
+                        <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap', marginTop: 'var(--sp-2)' }}>
+                          {record.project_url && (
+                            <a href={record.project_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'var(--brand-coral)' }}>
+                              {language === 'zh' ? '查看项目' : 'View project'}
+                            </a>
+                          )}
+                          {record.proof_url && (
+                            <a href={record.proof_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'var(--brand-coral)' }}>
+                              {language === 'zh' ? '查看证明链接' : 'View proof link'}
+                            </a>
+                          )}
+                          {record.proof_image_url && (
+                            <a href={record.proof_image_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'var(--brand-coral)' }}>
+                              {language === 'zh' ? '查看图片证明' : 'View proof image'}
+                            </a>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -573,6 +655,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         <ProfileEditDialog
           isOpen={editDialogOpen}
           onClose={() => setEditDialogOpen(false)}
+          onSaved={refreshProfile}
         />
       )}
       {isOwnProfile && (

@@ -38,7 +38,7 @@ export async function PATCH(request: NextRequest) {
     const data = await request.json();
     const updatePayload: Record<string, any> = {
       display_name: normalizeOptionalString(data.display_name, 80),
-      avatar: normalizeOptionalString(data.avatar, 500_000),
+      avatar: normalizeOptionalString(data.avatar, 2_048),
       bio: normalizeOptionalString(data.bio, 600),
       school: normalizeOptionalString(data.school, 120),
       major: normalizeOptionalString(data.major, 120),

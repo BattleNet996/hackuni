@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuthService } from '@/lib/services';
 import { AdminLogsService } from '@/lib/services/admin-logs.service';
 import { supabase } from '@/lib/db/supabase-client';
+import { decodeHackathonRecordNotes } from '@/lib/server/hackathon-records';
 
 function getRequestMetadata(request: NextRequest) {
   return {
@@ -246,7 +247,7 @@ export async function PATCH(
     } else if (type === 'hackathon_record') {
       const { data: recordRows, error: recordError } = await supabase
         .from('user_hackathon_records')
-        .select('id, user_id, hackathon_title, role, project_name')
+        .select('id, user_id, hackathon_title, role, project_name, notes')
         .eq('id', itemId)
         .limit(1);
 
@@ -255,6 +256,7 @@ export async function PATCH(
       }
 
       const record = recordRows?.[0];
+      const decoded = decodeHackathonRecordNotes(record?.notes);
 
       if (!record) {
         return NextResponse.json(
@@ -283,7 +285,12 @@ export async function PATCH(
         entity_type: 'hackathon_record',
         entity_id: itemId,
         entity_name: `${record.hackathon_title}${record.project_name ? ` - ${record.project_name}` : ''}`,
-        details: { status: newStatus, role: record.role },
+        details: {
+          status: newStatus,
+          role: record.role,
+          contribution_areas: decoded.contribution_areas,
+          contribution_other: decoded.contribution_other,
+        },
         ...requestMetadata,
       });
     } else {

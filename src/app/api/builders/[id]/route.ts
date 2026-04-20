@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { badgeDAO, projectDAO, userDAO } from '@/lib/dao';
 import { supabase } from '@/lib/db/supabase-client';
 import { authService } from '@/lib/services';
+import { decodeHackathonRecordNotes } from '@/lib/server/hackathon-records';
 
 const earnedStatuses = new Set(['verified', 'approved', 'earned']);
 
@@ -63,21 +64,21 @@ export async function GET(
 
     const { data: recordRows, error: recordError } = await supabase
       .from('user_hackathon_records')
-      .select(`
-        id,
-        user_id,
-        hackathon_id,
-        hackathon_title,
-        role,
-        project_name,
-        project_url,
-        award_text,
-        proof_url,
-        notes,
-        status,
-        verified_at,
-        created_at,
-        hackathon:hackathons(city, country, start_time)
+        .select(`
+          id,
+          user_id,
+          hackathon_id,
+          hackathon_title,
+          role,
+          project_name,
+          project_url,
+          award_text,
+          proof_url,
+          notes,
+          status,
+          verified_at,
+          created_at,
+          hackathon:hackathons(city, country, start_time)
       `)
       .eq('user_id', id)
       .order('created_at', { ascending: false });
@@ -87,7 +88,18 @@ export async function GET(
     }
 
     const hackathonRecords = recordError && isMissingHackathonRecordRelation(recordError) ? [] : (recordRows || []);
-    const publicHackathonRecords = hackathonRecords.filter((record: any) => ['approved', 'verified'].includes(record.status));
+    const normalizedHackathonRecords = hackathonRecords.map((record: any) => {
+      const decoded = decodeHackathonRecordNotes(record.notes);
+      return {
+        ...record,
+        notes: decoded.notes,
+        contribution_areas: decoded.contribution_areas,
+        contribution_other: decoded.contribution_other,
+        proof_image_url: decoded.proof_image_url,
+      };
+    });
+
+    const publicHackathonRecords = normalizedHackathonRecords.filter((record: any) => ['approved', 'verified'].includes(record.status));
 
     const footprintCities = publicHackathonRecords
       .map((record: any) => ({
@@ -123,7 +135,7 @@ export async function GET(
         user: sanitizeUser(user),
         projects,
         hackathons: publicHackathonRecords,
-        pendingHackathonRecords: hackathonRecords.filter((record: any) => record.status === 'pending'),
+        pendingHackathonRecords: normalizedHackathonRecords.filter((record: any) => record.status === 'pending'),
         badges,
         footprintCities,
         heatmapActivities,

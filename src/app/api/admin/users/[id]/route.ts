@@ -3,6 +3,7 @@ import { userDAO } from '@/lib/dao';
 import { adminAuthService } from '@/lib/services';
 import { supabase } from '@/lib/db/supabase-client';
 import { withProjectLikeCounts } from '@/lib/server/like-counts';
+import { decodeHackathonRecordNotes } from '@/lib/server/hackathon-records';
 
 function isMissingRelation(error: any) {
   return error?.code === '42P01' || error?.code === 'PGRST205' || /does not exist|user_hackathon_records/i.test(error?.message || '');
@@ -82,7 +83,7 @@ export async function GET(
         .limit(5),
       supabase
         .from('user_hackathon_records')
-        .select('id, hackathon_id, hackathon_title, role, project_name, award_text, status, verified_at, created_at')
+        .select('id, hackathon_id, hackathon_title, role, project_name, award_text, notes, status, verified_at, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(12),
@@ -107,7 +108,18 @@ export async function GET(
         likes: likes || [],
         comments: comments || [],
         sessions: sessions || [],
-        hackathonRecords: hackathonRecordsError && isMissingRelation(hackathonRecordsError) ? [] : (hackathonRecords || []),
+        hackathonRecords: hackathonRecordsError && isMissingRelation(hackathonRecordsError)
+          ? []
+          : (hackathonRecords || []).map((record: any) => {
+              const decoded = decodeHackathonRecordNotes(record.notes);
+              return {
+                ...record,
+                notes: decoded.notes,
+                contribution_areas: decoded.contribution_areas,
+                contribution_other: decoded.contribution_other,
+                proof_image_url: decoded.proof_image_url,
+              };
+            }),
       }
     });
   } catch (error: any) {

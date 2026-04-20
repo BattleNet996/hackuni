@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuthService } from '@/lib/services';
 import { supabase } from '@/lib/db/supabase-client';
 import { withProjectLikeCounts, withStoryLikeCounts } from '@/lib/server/like-counts';
+import { decodeHackathonRecordNotes } from '@/lib/server/hackathon-records';
 
 function isMissingRelation(error: any) {
   return error?.code === '42P01' || /does not exist|user_hackathon_records/i.test(error?.message || '');
@@ -122,7 +123,9 @@ export async function GET(request: NextRequest) {
       type: 'badge',
     }));
 
-    const pendingHackathonRecords = (recordError && isMissingRelation(recordError) ? [] : (recordRows || [])).map((record: any) => ({
+    const pendingHackathonRecords = (recordError && isMissingRelation(recordError) ? [] : (recordRows || [])).map((record: any) => {
+      const decoded = decodeHackathonRecordNotes(record.notes);
+      return {
       id: record.id,
       user_id: record.user_id,
       user_name: record.user?.display_name || record.user?.email || '',
@@ -133,11 +136,15 @@ export async function GET(request: NextRequest) {
       project_url: record.project_url,
       award_text: record.award_text,
       proof_url: record.proof_url,
-      notes: record.notes,
+      notes: decoded.notes,
+      contribution_areas: decoded.contribution_areas,
+      contribution_other: decoded.contribution_other,
+      proof_image_url: decoded.proof_image_url,
       status: record.status,
       created_at: record.created_at,
       type: 'hackathon_record',
-    }));
+      };
+    });
 
     return NextResponse.json({
       data: {

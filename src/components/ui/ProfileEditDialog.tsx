@@ -10,15 +10,17 @@ import { getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
 interface ProfileEditDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onSaved?: () => Promise<void> | void;
 }
 
-export function ProfileEditDialog({ isOpen, onClose }: ProfileEditDialogProps) {
+export function ProfileEditDialog({ isOpen, onClose, onSaved }: ProfileEditDialogProps) {
   const { t, language } = useLanguage();
   const { user, updateProfile } = useAuth();
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
   const [avatarPreview, setAvatarPreview] = useState<string>('');
   const [message, setMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -32,21 +34,49 @@ export function ProfileEditDialog({ isOpen, onClose }: ProfileEditDialogProps) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      if (file.size > 450 * 1024) {
-        setMessage(language === 'zh' ? '头像图片请控制在 450KB 以内' : 'Avatar image must be under 450KB');
-        return;
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setMessage(language === 'zh' ? '请选择图片文件' : 'Please choose an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage(language === 'zh' ? '头像图片请控制在 5MB 以内' : 'Avatar image must be under 5MB');
+      return;
+    }
+
+    const tempPreviewUrl = URL.createObjectURL(file);
+    setAvatarPreview(tempPreviewUrl);
+    setMessage('');
+    setIsUploadingAvatar(true);
+
+    try {
+      const body = new FormData();
+      body.append('file', file);
+
+      const response = await apiFetch('/api/profile/avatar', {
+        method: 'POST',
+        body,
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || (language === 'zh' ? '头像上传失败' : 'Failed to upload avatar'));
       }
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setAvatarPreview(result);
-        setFormData(prev => ({ ...prev, avatar: result }));
-      };
-      reader.readAsDataURL(file);
+      const uploadedUrl = data.data?.url || '';
+      setAvatarPreview(uploadedUrl);
+      setFormData((prev) => ({ ...prev, avatar: uploadedUrl }));
+    } catch (error: any) {
+      setAvatarPreview(user?.avatar || '');
+      setMessage(String(error?.message || (language === 'zh' ? '头像上传失败' : 'Failed to upload avatar')));
+    } finally {
+      URL.revokeObjectURL(tempPreviewUrl);
+      setIsUploadingAvatar(false);
+      e.target.value = '';
     }
   };
 
@@ -76,6 +106,7 @@ export function ProfileEditDialog({ isOpen, onClose }: ProfileEditDialogProps) {
 
       updateProfile(data.data);
       clearJsonCacheByPrefix('/api/builders');
+      await onSaved?.();
       onClose();
     } catch (error: any) {
       const messageText = String(error?.message || '');
@@ -177,6 +208,7 @@ export function ProfileEditDialog({ isOpen, onClose }: ProfileEditDialogProps) {
                   type="file"
                   accept="image/*"
                   onChange={handleAvatarUpload}
+                  disabled={isUploadingAvatar}
                   style={{ display: 'none' }}
                   id="avatar-upload"
                 />
@@ -194,8 +226,13 @@ export function ProfileEditDialog({ isOpen, onClose }: ProfileEditDialogProps) {
                     fontFamily: 'var(--font-mono)',
                   }}
                 >
-                  {language === 'zh' ? '上传头像' : 'Upload Avatar'}
+                  {isUploadingAvatar
+                    ? (language === 'zh' ? '上传中...' : 'Uploading...')
+                    : (language === 'zh' ? '上传头像' : 'Upload Avatar')}
                 </label>
+                <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  {language === 'zh' ? '支持 JPG / PNG / WEBP / GIF，最大 5MB' : 'JPG / PNG / WEBP / GIF up to 5MB'}
+                </div>
               </div>
             </div>
           </div>

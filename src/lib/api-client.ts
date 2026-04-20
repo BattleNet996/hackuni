@@ -33,11 +33,15 @@ export async function apiFetch(
   options: RequestInit = {}
 ): Promise<Response> {
   const token = getAuthToken();
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
 
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
     ...options.headers,
   };
+
+  if (!isFormData && !(headers as Record<string, string>)['Content-Type']) {
+    (headers as Record<string, string>)['Content-Type'] = 'application/json';
+  }
 
   // Add authentication token if available
   if (token) {

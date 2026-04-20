@@ -67,8 +67,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .then(res => res.json())
           .then(data => {
             if (data.data) {
-              console.log('[AuthContext] Session valid, user:', parsedUser.id);
-              setUser(parsedUser);
+              console.log('[AuthContext] Session valid, user:', data.data.id);
+              setUser(data.data);
+              localStorage.setItem('user', JSON.stringify(data.data));
             } else {
               // Session is invalid, clear local storage
               console.log('[AuthContext] Session invalid, clearing local storage');

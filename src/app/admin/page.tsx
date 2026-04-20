@@ -72,8 +72,13 @@ interface HackathonRecord {
   hackathon_id?: string | null;
   hackathon_title: string;
   role?: string | null;
+  contribution_areas?: string[];
+  contribution_other?: string | null;
   project_name?: string | null;
   award_text?: string | null;
+  proof_url?: string | null;
+  proof_image_url?: string | null;
+  notes?: string | null;
   status: string;
   verified_at?: string | null;
   created_at: string;
@@ -150,6 +155,15 @@ export default function AdminDashboard() {
   const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
   const [selectedUserDetail, setSelectedUserDetail] = useState<any>(null);
   const [userDetailOpen, setUserDetailOpen] = useState(false);
+
+  const localizeContributionValue = (value: string) => {
+    if (value === 'software') return language === 'zh' ? '软件开发' : 'Software';
+    if (value === 'hardware') return language === 'zh' ? '硬件开发' : 'Hardware';
+    if (value === 'design') return language === 'zh' ? '设计' : 'Design';
+    if (value === 'business') return language === 'zh' ? '商业' : 'Business';
+    if (value === 'other') return language === 'zh' ? '其他' : 'Other';
+    return value;
+  };
 
   // Loading states
   const [loading, setLoading] = useState(false);
@@ -1219,10 +1233,22 @@ export default function AdminDashboard() {
                               </div>
                               <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                                 {language === 'zh' ? '提交人' : 'User'}: {record.user_name || record.user_id}
-                                {record.role ? ` | ${language === 'zh' ? '角色' : 'Role'}: ${record.role}` : ''}
+                                {record.role ? ` | ${language === 'zh' ? '角色' : 'Role'}: ${record.role === 'captain' ? (language === 'zh' ? '队长' : 'Captain') : (language === 'zh' ? '队员' : 'Member')}` : ''}
                                 {record.project_name ? ` | ${language === 'zh' ? '项目' : 'Project'}: ${record.project_name}` : ''}
                                 {record.award_text ? ` | ${language === 'zh' ? '奖项' : 'Award'}: ${record.award_text}` : ''}
                               </div>
+                              {(record.contribution_areas?.length || record.contribution_other) && (
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', lineHeight: 1.5 }}>
+                                  {language === 'zh' ? '职能' : 'Contribution'}:
+                                  {' '}
+                                  {[
+                                    ...(record.contribution_areas || []).map((value: string) => {
+                                      return localizeContributionValue(value);
+                                    }),
+                                    ...(record.contribution_other ? [record.contribution_other] : []),
+                                  ].join(' / ')}
+                                </div>
+                              )}
                               {record.notes && (
                                 <div style={{ fontSize: '12px', color: 'var(--text-main)', marginTop: '6px', lineHeight: 1.5 }}>
                                   {record.notes}
@@ -1247,6 +1273,11 @@ export default function AdminDashboard() {
                                 {record.proof_url && (
                                   <a href={record.proof_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-coral)' }}>
                                     {language === 'zh' ? '证明链接' : 'Proof link'}
+                                  </a>
+                                )}
+                                {record.proof_image_url && (
+                                  <a href={record.proof_image_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-coral)' }}>
+                                    {language === 'zh' ? '图片证明' : 'Proof image'}
                                   </a>
                                 )}
                                 <span style={{ color: 'var(--text-muted)' }}>{new Date(record.created_at).toLocaleString()}</span>
@@ -1552,7 +1583,19 @@ export default function AdminDashboard() {
                       </div>
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
                         <span>{record.status}</span>
-                        {record.role && <span>{language === 'zh' ? '角色' : 'Role'}: {record.role}</span>}
+                        {record.role && (
+                          <span>
+                            {language === 'zh' ? '角色' : 'Role'}: {record.role === 'captain' ? (language === 'zh' ? '队长' : 'Captain') : (language === 'zh' ? '队员' : 'Member')}
+                          </span>
+                        )}
+                        {(record.contribution_areas?.length || record.contribution_other) && (
+                          <span>
+                            {language === 'zh' ? '职能' : 'Contribution'}: {[
+                              ...(record.contribution_areas || []).map((value: string) => localizeContributionValue(value)),
+                              ...(record.contribution_other ? [record.contribution_other] : []),
+                            ].join(' / ')}
+                          </span>
+                        )}
                         {record.project_name && <span>{language === 'zh' ? '项目' : 'Project'}: {record.project_name}</span>}
                         {record.award_text && <span>{language === 'zh' ? '奖项' : 'Award'}: {record.award_text}</span>}
                       </div>
