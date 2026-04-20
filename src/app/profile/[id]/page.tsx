@@ -10,7 +10,7 @@ import { Heatmap } from '@/components/Heatmap';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchJsonWithCache, getCachedJson } from '@/lib/client-cache';
-import { getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
+import { getAvatarFallbackStyle } from '@/lib/ui/fallback-visuals';
 
 function toBackgroundImage(value: string | undefined, fallback: string) {
   if (!value) return fallback;
@@ -84,6 +84,9 @@ interface BuilderProfileResponse {
     role?: string | null;
     contribution_areas?: string[];
     contribution_other?: string | null;
+    linked_project_id?: string | null;
+    linked_project_title?: string | null;
+    team_members?: Array<{ name: string; user_id?: string; invite_url?: string; source?: string }>;
     project_name?: string | null;
     project_url?: string | null;
     award_text?: string | null;
@@ -100,6 +103,9 @@ interface BuilderProfileResponse {
     role?: string | null;
     contribution_areas?: string[];
     contribution_other?: string | null;
+    linked_project_id?: string | null;
+    linked_project_title?: string | null;
+    team_members?: Array<{ name: string; user_id?: string; invite_url?: string; source?: string }>;
     project_name?: string | null;
     award_text?: string | null;
     proof_image_url?: string | null;
@@ -230,11 +236,9 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     <main style={{ padding: 'var(--sp-8) var(--sp-6)', maxWidth: '1200px', margin: '0 auto' }}>
       <div className="responsive-flex-col desktop-row" style={{ gap: 'var(--sp-6)', alignItems: 'center', marginBottom: 'var(--sp-8)' }}>
         <div style={{
-          width: '180px',
-          height: '180px',
           ...(displayUser.avatar
             ? { backgroundImage: toBackgroundImage(displayUser.avatar, 'none') }
-            : { background: getPosterSurfaceStyle(displayUser.id, { width: '180px', height: '180px' }).background }),
+            : getAvatarFallbackStyle(displayUser.id, '180px')),
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundSize: 'cover',
@@ -420,6 +424,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                                 localizeHackathonRole(record.role, language),
                                 ...(record.contribution_areas || []).map((value) => localizeContributionArea(value, language)),
                                 ...(record.contribution_other ? [record.contribution_other] : []),
+                                record.linked_project_title,
                                 record.project_name,
                                 record.award_text,
                               ].filter(Boolean).join(' / ') || (language === 'zh' ? '待审核' : 'Pending review')}
@@ -431,6 +436,11 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                           <a href={record.proof_image_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 'var(--sp-2)', fontSize: '12px', color: 'var(--brand-coral)' }}>
                             {language === 'zh' ? '查看图片证明' : 'View proof image'}
                           </a>
+                        )}
+                        {record.team_members && record.team_members.length > 0 && (
+                          <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                            {language === 'zh' ? '团队成员' : 'Team'}: {record.team_members.map((member) => member.name).join(' / ')}
+                          </div>
                         )}
                       </div>
                     ))}
@@ -448,6 +458,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                                 localizeHackathonRole(record.role, language),
                                 ...(record.contribution_areas || []).map((value) => localizeContributionArea(value, language)),
                                 ...(record.contribution_other ? [record.contribution_other] : []),
+                                record.linked_project_title,
                                 record.project_name,
                                 record.award_text,
                               ].filter(Boolean).join(' / ') || (language === 'zh' ? '已认证参与' : 'Verified participation')}
@@ -471,12 +482,17 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                               {language === 'zh' ? '查看证明链接' : 'View proof link'}
                             </a>
                           )}
-                          {record.proof_image_url && (
-                            <a href={record.proof_image_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'var(--brand-coral)' }}>
-                              {language === 'zh' ? '查看图片证明' : 'View proof image'}
-                            </a>
-                          )}
-                        </div>
+                            {record.proof_image_url && (
+                              <a href={record.proof_image_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'var(--brand-coral)' }}>
+                                {language === 'zh' ? '查看图片证明' : 'View proof image'}
+                              </a>
+                            )}
+                          </div>
+                        {record.team_members && record.team_members.length > 0 && (
+                          <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                            {language === 'zh' ? '团队成员' : 'Team'}: {record.team_members.map((member) => member.name).join(' / ')}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

@@ -78,7 +78,40 @@ type HackathonRecordMetadata = {
   contribution_areas?: string[];
   contribution_other?: string;
   proof_image_url?: string;
+  linked_project_id?: string;
+  linked_project_title?: string;
+  team_members?: Array<{
+    name: string;
+    user_id?: string;
+    invite_url?: string;
+    source?: 'manual' | 'platform' | 'invite';
+  }>;
 };
+
+function normalizeTeamMembers(value: unknown) {
+  if (!Array.isArray(value)) return [] as HackathonRecordMetadata['team_members'];
+
+  return value
+    .map((member) => {
+      const candidate = member as Record<string, unknown>;
+      const name = String(candidate?.name || '').trim().slice(0, 80);
+      if (!name) return null;
+
+      const userId = String(candidate?.user_id || '').trim().slice(0, 120);
+      const inviteUrl = String(candidate?.invite_url || '').trim().slice(0, 500);
+      const sourceRaw = String(candidate?.source || '').trim();
+      const source = sourceRaw === 'platform' || sourceRaw === 'invite' ? sourceRaw : 'manual';
+
+      return {
+        name,
+        ...(userId ? { user_id: userId } : {}),
+        ...(inviteUrl ? { invite_url: inviteUrl } : {}),
+        source,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 12) as HackathonRecordMetadata['team_members'];
+}
 
 export function encodeHackathonRecordNotes(notes: string | null | undefined, metadata: HackathonRecordMetadata) {
   const cleanNotes = String(notes || '').trim();
@@ -92,6 +125,16 @@ export function encodeHackathonRecordNotes(notes: string | null | undefined, met
   }
   if (metadata.proof_image_url) {
     payload.proof_image_url = metadata.proof_image_url;
+  }
+  if (metadata.linked_project_id) {
+    payload.linked_project_id = metadata.linked_project_id;
+  }
+  if (metadata.linked_project_title) {
+    payload.linked_project_title = metadata.linked_project_title;
+  }
+  const teamMembers = normalizeTeamMembers(metadata.team_members) || [];
+  if (teamMembers.length > 0) {
+    payload.team_members = teamMembers;
   }
 
   if (Object.keys(payload).length === 0) {
@@ -124,6 +167,9 @@ export function decodeHackathonRecordNotes(rawNotes: string | null | undefined) 
       contribution_areas: normalizeContributionAreas(parsed?.contribution_areas),
       contribution_other: String(parsed?.contribution_other || '').trim(),
       proof_image_url: String(parsed?.proof_image_url || '').trim(),
+      linked_project_id: String(parsed?.linked_project_id || '').trim(),
+      linked_project_title: String(parsed?.linked_project_title || '').trim(),
+      team_members: normalizeTeamMembers(parsed?.team_members),
     };
   } catch {
     return {
@@ -131,6 +177,9 @@ export function decodeHackathonRecordNotes(rawNotes: string | null | undefined) 
       contribution_areas: [] as string[],
       contribution_other: '',
       proof_image_url: '',
+      linked_project_id: '',
+      linked_project_title: '',
+      team_members: [] as NonNullable<HackathonRecordMetadata['team_members']>,
     };
   }
 }

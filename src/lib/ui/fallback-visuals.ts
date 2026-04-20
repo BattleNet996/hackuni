@@ -1,34 +1,60 @@
+function hashSeed(seed: string) {
+  return seed.split('').reduce((sum, char, index) => sum + char.charCodeAt(0) * (index + 1), 0);
+}
+
+function buildSeededPhotoUrl(seed: string, width: number, height: number, category: 'avatar' | 'project' | 'poster') {
+  const hash = hashSeed(seed);
+
+  if (category === 'avatar') {
+    return `https://picsum.photos/seed/avatar_${hash}/${width}/${height}`;
+  }
+
+  if (category === 'project') {
+    return `https://picsum.photos/seed/project_${hash}/${width}/${height}`;
+  }
+
+  return `https://picsum.photos/seed/poster_${hash}/${width}/${height}`;
+}
+
 export function getPosterPalette(seed: string) {
   const palettes = [
     {
-      base: 'linear-gradient(135deg, #ff7a18 0%, #24120b 46%, #00ff41 100%)',
-      glow: 'radial-gradient(circle at 28% 20%, rgba(255,255,255,0.34), transparent 30%)',
+      base: 'linear-gradient(135deg, #2d1f16 0%, #4d311d 48%, #c98342 100%)',
+      glow: 'radial-gradient(circle at 24% 18%, rgba(255,255,255,0.14), transparent 32%)',
     },
     {
-      base: 'linear-gradient(145deg, #0a1b2f 0%, #123b4a 42%, #f5c84b 100%)',
-      glow: 'radial-gradient(circle at 78% 18%, rgba(255,255,255,0.28), transparent 28%)',
+      base: 'linear-gradient(145deg, #0f1722 0%, #21384f 42%, #7bb9f0 100%)',
+      glow: 'radial-gradient(circle at 78% 18%, rgba(255,255,255,0.16), transparent 30%)',
     },
     {
-      base: 'linear-gradient(150deg, #101010 0%, #3b1d11 45%, #ff4f2e 100%)',
-      glow: 'radial-gradient(circle at 22% 82%, rgba(255,255,255,0.22), transparent 34%)',
+      base: 'linear-gradient(150deg, #1d1512 0%, #513220 45%, #ef8f59 100%)',
+      glow: 'radial-gradient(circle at 22% 82%, rgba(255,255,255,0.14), transparent 34%)',
     },
     {
-      base: 'linear-gradient(135deg, #07171a 0%, #164e45 48%, #a7f070 100%)',
-      glow: 'radial-gradient(circle at 72% 74%, rgba(255,255,255,0.24), transparent 32%)',
+      base: 'linear-gradient(135deg, #13231d 0%, #235342 48%, #90d9a3 100%)',
+      glow: 'radial-gradient(circle at 72% 74%, rgba(255,255,255,0.14), transparent 32%)',
     },
   ];
 
-  const hash = seed.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const hash = hashSeed(seed);
   return palettes[hash % palettes.length];
 }
 
 export function getPosterSurfaceStyle(seed: string, options?: { width?: string; height?: string }) {
+  const width = options?.width || '200px';
+  const height = options?.height || '200px';
+  const numericWidth = parseInt(width, 10) || 200;
+  const numericHeight = parseInt(height, 10) || 200;
   const posterPalette = getPosterPalette(seed);
+  const imageUrl = buildSeededPhotoUrl(seed, numericWidth * 2, numericHeight * 2, 'poster');
 
   return {
-    width: options?.width || '200px',
-    height: options?.height || '200px',
-    background: `${posterPalette.glow}, ${posterPalette.base}`,
+    width,
+    height,
+    backgroundImage: `${posterPalette.glow}, url(${imageUrl}), ${posterPalette.base}`,
+    backgroundSize: 'cover, cover, cover',
+    backgroundPosition: 'center, center, center',
+    backgroundBlendMode: 'screen, normal, normal' as const,
     border: '1px solid var(--border-base)',
     position: 'relative' as const,
     overflow: 'hidden' as const,
@@ -39,16 +65,38 @@ export function getPosterSurfaceStyle(seed: string, options?: { width?: string; 
 }
 
 export function getAvatarFallbackStyle(seed: string, size: string = '40px') {
-  const palette = getPosterPalette(seed);
+  const numericSize = parseInt(size, 10) || 40;
+  const imageUrl = buildSeededPhotoUrl(seed, numericSize * 2, numericSize * 2, 'avatar');
 
   return {
     width: size,
     height: size,
-    background: `${palette.glow}, ${palette.base}`,
+    backgroundImage: `url(${imageUrl})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
     border: '1px solid var(--border-base)',
     borderRadius: '50%',
     flexShrink: 0,
     boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
+  };
+}
+
+export function getProjectImageFallbackStyle(seed: string, options?: { width?: string; height?: string }) {
+  const width = options?.width || '160px';
+  const height = options?.height || '160px';
+  const numericWidth = parseInt(width, 10) || 160;
+  const numericHeight = parseInt(height, 10) || 160;
+  const imageUrl = buildSeededPhotoUrl(seed, numericWidth * 2, numericHeight * 2, 'project');
+
+  return {
+    width,
+    height,
+    backgroundImage: `url(${imageUrl})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    border: '1px solid var(--border-base)',
+    flexShrink: 0,
+    filter: 'grayscale(12%) contrast(1.04)',
   };
 }
 

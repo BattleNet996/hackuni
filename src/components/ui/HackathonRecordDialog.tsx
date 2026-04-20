@@ -11,6 +11,29 @@ interface HackathonOption {
   title: string;
 }
 
+interface ProjectSearchResult {
+  id: string;
+  title: string;
+  short_desc: string;
+  like_count: number;
+}
+
+interface BuilderSearchResult {
+  id: string;
+  display_name: string;
+  school?: string;
+  company?: string;
+  position?: string;
+  avatar?: string;
+}
+
+interface TeamMemberEntry {
+  name: string;
+  user_id?: string;
+  invite_url?: string;
+  source?: 'manual' | 'platform' | 'invite';
+}
+
 interface HackathonRecordDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -41,14 +64,23 @@ export function HackathonRecordDialog({ isOpen, onClose, hackathons, onSuccess }
     contribution_other: '',
     project_name: '',
     project_url: '',
+    linked_project_id: '',
+    linked_project_title: '',
     award_text: '',
     proof_url: '',
     proof_image_url: '',
     notes: '',
+    team_members: [] as TeamMemberEntry[],
   });
   const [message, setMessage] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isUploadingProof, setIsUploadingProof] = React.useState(false);
+  const [projectQuery, setProjectQuery] = React.useState('');
+  const [projectResults, setProjectResults] = React.useState<ProjectSearchResult[]>([]);
+  const [isSearchingProjects, setIsSearchingProjects] = React.useState(false);
+  const [teamMemberDraft, setTeamMemberDraft] = React.useState('');
+  const [memberResults, setMemberResults] = React.useState<BuilderSearchResult[]>([]);
+  const [isSearchingMembers, setIsSearchingMembers] = React.useState(false);
 
   React.useEffect(() => {
     if (!isOpen) {
@@ -63,11 +95,18 @@ export function HackathonRecordDialog({ isOpen, onClose, hackathons, onSuccess }
         contribution_other: '',
         project_name: '',
         project_url: '',
+        linked_project_id: '',
+        linked_project_title: '',
         award_text: '',
         proof_url: '',
         proof_image_url: '',
         notes: '',
+        team_members: [],
       });
+      setProjectQuery('');
+      setProjectResults([]);
+      setTeamMemberDraft('');
+      setMemberResults([]);
     }
   }, [isOpen]);
 
@@ -147,6 +186,134 @@ export function HackathonRecordDialog({ isOpen, onClose, hackathons, onSuccess }
       setIsUploadingProof(false);
       event.target.value = '';
     }
+  };
+
+  React.useEffect(() => {
+    if (!isOpen || projectQuery.trim().length < 2) {
+      setProjectResults([]);
+      setIsSearchingProjects(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        setIsSearchingProjects(true);
+        const response = await fetch(`/api/projects/search?q=${encodeURIComponent(projectQuery.trim())}&limit=6`, {
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error?.message || 'Failed to search projects');
+        }
+        setProjectResults(data.data || []);
+      } catch (error: any) {
+        if (error?.name !== 'AbortError') {
+          setProjectResults([]);
+        }
+      } finally {
+        setIsSearchingProjects(false);
+      }
+    }, 220);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [isOpen, projectQuery]);
+
+  React.useEffect(() => {
+    const normalized = teamMemberDraft.trim();
+    if (!isOpen || !normalized.startsWith('@') || normalized.slice(1).trim().length < 1) {
+      setMemberResults([]);
+      setIsSearchingMembers(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        setIsSearchingMembers(true);
+        const response = await fetch(`/api/builders/search?q=${encodeURIComponent(normalized.slice(1).trim())}&limit=6`, {
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error?.message || 'Failed to search builders');
+        }
+        setMemberResults(data.data || []);
+      } catch (error: any) {
+        if (error?.name !== 'AbortError') {
+          setMemberResults([]);
+        }
+      } finally {
+        setIsSearchingMembers(false);
+      }
+    }, 180);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [isOpen, teamMemberDraft]);
+
+  const selectProject = (project: ProjectSearchResult) => {
+    setFormData((prev) => ({
+      ...prev,
+      linked_project_id: project.id,
+      linked_project_title: project.title,
+      project_name: prev.project_name || project.title,
+      project_url: prev.project_url,
+    }));
+    setProjectQuery(project.title);
+    setProjectResults([]);
+  };
+
+  const addTeamMember = (member: TeamMemberEntry) => {
+    setFormData((prev) => {
+      const exists = prev.team_members.some((item) => item.name === member.name && item.user_id === member.user_id);
+      if (exists) return prev;
+      return {
+        ...prev,
+        team_members: [...prev.team_members, member].slice(0, 12),
+      };
+    });
+    setTeamMemberDraft('');
+    setMemberResults([]);
+  };
+
+  const removeTeamMember = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      team_members: prev.team_members.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
+  const buildInviteUrl = (name: string) => {
+    const displayName = encodeURIComponent(name.trim().slice(0, 80));
+    return `/register?invite_name=${displayName}`;
+  };
+
+  const addDraftTeamMember = () => {
+    const normalized = teamMemberDraft.trim();
+    if (!normalized) return;
+
+    if (normalized.startsWith('@') && normalized.slice(1).trim()) {
+      const candidateName = normalized.slice(1).trim();
+      addTeamMember({
+        name: candidateName,
+        invite_url: buildInviteUrl(candidateName),
+        source: 'invite',
+      });
+      return;
+    }
+
+    addTeamMember({
+      name: normalized,
+      source: 'manual',
+    });
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -288,10 +455,139 @@ export function HackathonRecordDialog({ isOpen, onClose, hackathons, onSuccess }
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-3)' }}>
-          <input style={fieldStyle} value={formData.project_name} placeholder={language === 'zh' ? '项目名称' : 'Project name'} onChange={(e) => setFormData((prev) => ({ ...prev, project_name: e.target.value }))} />
-          <input style={fieldStyle} value={formData.project_url} placeholder={language === 'zh' ? '项目链接（可选）' : 'Project URL (optional)'} onChange={(e) => setFormData((prev) => ({ ...prev, project_url: e.target.value }))} />
+          <div style={{ position: 'relative' }}>
+            <input
+              style={fieldStyle}
+              value={projectQuery}
+              placeholder={language === 'zh' ? '绑定平台已有项目（可检索）' : 'Link an existing platform project'}
+              onChange={(e) => {
+                const value = e.target.value;
+                setProjectQuery(value);
+                if (!value.trim()) {
+                  setFormData((prev) => ({ ...prev, linked_project_id: '', linked_project_title: '' }));
+                }
+              }}
+            />
+            {(projectResults.length > 0 || isSearchingProjects) && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'var(--bg-surface)', border: '1px solid var(--border-base)', zIndex: 20, maxHeight: '220px', overflowY: 'auto' }}>
+                {isSearchingProjects && (
+                  <div style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    {language === 'zh' ? '检索项目中...' : 'Searching projects...'}
+                  </div>
+                )}
+                {projectResults.map((project) => (
+                  <button
+                    key={project.id}
+                    type="button"
+                    onClick={() => selectProject(project)}
+                    style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--bg-elevated)', cursor: 'pointer', color: 'var(--text-main)' }}
+                  >
+                    <div style={{ fontSize: '13px', fontWeight: 600 }}>{project.title}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>{project.short_desc}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <input
+            style={fieldStyle}
+            value={formData.project_name}
+            placeholder={language === 'zh' ? '项目名称，例如你在黑客松里做出的作品' : 'Project name, for example what you built at the hackathon'}
+            onChange={(e) => setFormData((prev) => ({ ...prev, project_name: e.target.value }))}
+          />
+          <input
+            style={fieldStyle}
+            value={formData.project_url}
+            placeholder={language === 'zh' ? '项目链接（可选），如 Demo / GitHub / 项目页，方便审核核验' : 'Project URL (optional), such as demo, GitHub, or product page for review'}
+            onChange={(e) => setFormData((prev) => ({ ...prev, project_url: e.target.value }))}
+          />
           <input style={fieldStyle} value={formData.award_text} placeholder={language === 'zh' ? '奖项（可选）' : 'Award (optional)'} onChange={(e) => setFormData((prev) => ({ ...prev, award_text: e.target.value }))} />
-          <input style={fieldStyle} value={formData.proof_url} placeholder={language === 'zh' ? '证明链接（可选）' : 'Proof URL (optional)'} onChange={(e) => setFormData((prev) => ({ ...prev, proof_url: e.target.value }))} />
+          <input
+            style={fieldStyle}
+            value={formData.proof_url}
+            placeholder={language === 'zh' ? '证明链接（可选），如获奖公告、活动相册、现场照片页、作品展示页' : 'Proof URL (optional), such as award announcement, event gallery, live demo page, or portfolio page'}
+            onChange={(e) => setFormData((prev) => ({ ...prev, proof_url: e.target.value }))}
+          />
+        </div>
+
+        <div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)', marginBottom: 'var(--sp-2)' }}>
+            {language === 'zh' ? '团队成员' : 'Team Members'}
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'stretch' }}>
+            <input
+              style={fieldStyle}
+              value={teamMemberDraft}
+              placeholder={language === 'zh' ? '输入名字添加，或输入 @昵称 检索平台已有用户' : 'Type a name to add, or use @name to search platform users'}
+              onChange={(e) => setTeamMemberDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addDraftTeamMember();
+                }
+              }}
+            />
+            <Button type="button" variant="ghost" onClick={addDraftTeamMember}>
+              {language === 'zh' ? '添加' : 'Add'}
+            </Button>
+          </div>
+          {(memberResults.length > 0 || isSearchingMembers || teamMemberDraft.trim().startsWith('@')) && (
+            <div style={{ marginTop: '8px', border: '1px solid var(--border-base)', background: 'var(--bg-card)' }}>
+              {isSearchingMembers && (
+                <div style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {language === 'zh' ? '检索队友中...' : 'Searching teammates...'}
+                </div>
+              )}
+              {memberResults.map((member) => (
+                <button
+                  key={member.id}
+                  type="button"
+                  onClick={() => addTeamMember({ name: member.display_name, user_id: member.id, source: 'platform' })}
+                  style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--bg-elevated)', cursor: 'pointer', color: 'var(--text-main)' }}
+                >
+                  <div style={{ fontSize: '13px', fontWeight: 600 }}>{member.display_name}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                    {[member.school, member.company, member.position].filter(Boolean).join(' / ')}
+                  </div>
+                </button>
+              ))}
+              {teamMemberDraft.trim().startsWith('@') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const inviteName = teamMemberDraft.trim().slice(1).trim();
+                    if (!inviteName) return;
+                    addTeamMember({
+                      name: inviteName,
+                      invite_url: buildInviteUrl(inviteName),
+                      source: 'invite',
+                    });
+                  }}
+                  style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: 'rgba(125, 211, 160, 0.08)', border: 'none', cursor: 'pointer', color: 'var(--brand-green)' }}
+                >
+                  {language === 'zh'
+                    ? `没有找到？邀请 ${teamMemberDraft.trim().slice(1).trim() || '队友'} 注册`
+                    : `Not found? Invite ${teamMemberDraft.trim().slice(1).trim() || 'teammate'} to register`}
+                </button>
+              )}
+            </div>
+          )}
+
+          {formData.team_members.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-2)', marginTop: 'var(--sp-3)' }}>
+              {formData.team_members.map((member, index) => (
+                <div key={`${member.name}-${index}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '999px', border: '1px solid var(--border-base)', background: 'var(--bg-elevated)', fontSize: '12px' }}>
+                  <span>{member.source === 'platform' ? '@' : ''}{member.name}</span>
+                  {member.invite_url && (
+                    <a href={member.invite_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-coral)' }}>
+                      {language === 'zh' ? '邀请链接' : 'Invite link'}
+                    </a>
+                  )}
+                  <button type="button" onClick={() => removeTeamMember(index)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>

@@ -52,6 +52,8 @@ export async function POST(request: NextRequest) {
     const role = normalizeRole(data.role);
     const contributionAreas = normalizeContributionAreas(data.contribution_areas);
     const contributionOther = normalizeString(data.contribution_other, 120);
+    const linkedProjectId = normalizeString(data.linked_project_id, 120);
+    const linkedProjectTitle = normalizeString(data.linked_project_title, 160);
 
     if (!hackathonTitle) {
       return NextResponse.json(
@@ -82,6 +84,9 @@ export async function POST(request: NextRequest) {
         contribution_areas: contributionAreas,
         contribution_other: contributionOther,
         proof_image_url: normalizeString(data.proof_image_url, 500),
+        linked_project_id: linkedProjectId,
+        linked_project_title: linkedProjectTitle,
+        team_members: Array.isArray(data.team_members) ? data.team_members : [],
       }) || null,
       status: 'pending',
       created_at: now,

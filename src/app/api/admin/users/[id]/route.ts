@@ -118,6 +118,9 @@ export async function GET(
                 contribution_areas: decoded.contribution_areas,
                 contribution_other: decoded.contribution_other,
                 proof_image_url: decoded.proof_image_url,
+                linked_project_id: decoded.linked_project_id,
+                linked_project_title: decoded.linked_project_title,
+                team_members: decoded.team_members,
               };
             }),
       }

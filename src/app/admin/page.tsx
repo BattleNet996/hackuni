@@ -74,6 +74,9 @@ interface HackathonRecord {
   role?: string | null;
   contribution_areas?: string[];
   contribution_other?: string | null;
+  linked_project_id?: string | null;
+  linked_project_title?: string | null;
+  team_members?: Array<{ name: string; user_id?: string; invite_url?: string; source?: string }>;
   project_name?: string | null;
   award_text?: string | null;
   proof_url?: string | null;
@@ -1234,6 +1237,7 @@ export default function AdminDashboard() {
                               <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                                 {language === 'zh' ? '提交人' : 'User'}: {record.user_name || record.user_id}
                                 {record.role ? ` | ${language === 'zh' ? '角色' : 'Role'}: ${record.role === 'captain' ? (language === 'zh' ? '队长' : 'Captain') : (language === 'zh' ? '队员' : 'Member')}` : ''}
+                                {record.linked_project_title ? ` | ${language === 'zh' ? '绑定项目' : 'Linked Project'}: ${record.linked_project_title}` : ''}
                                 {record.project_name ? ` | ${language === 'zh' ? '项目' : 'Project'}: ${record.project_name}` : ''}
                                 {record.award_text ? ` | ${language === 'zh' ? '奖项' : 'Award'}: ${record.award_text}` : ''}
                               </div>
@@ -1252,6 +1256,11 @@ export default function AdminDashboard() {
                               {record.notes && (
                                 <div style={{ fontSize: '12px', color: 'var(--text-main)', marginTop: '6px', lineHeight: 1.5 }}>
                                   {record.notes}
+                                </div>
+                              )}
+                              {record.team_members && record.team_members.length > 0 && (
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', lineHeight: 1.5 }}>
+                                  {language === 'zh' ? '团队成员' : 'Team'}: {record.team_members.map((member: any) => member.name).join(' / ')}
                                 </div>
                               )}
                               <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap', fontSize: '11px', marginTop: '6px' }}>
@@ -1596,9 +1605,15 @@ export default function AdminDashboard() {
                             ].join(' / ')}
                           </span>
                         )}
+                        {record.linked_project_title && <span>{language === 'zh' ? '绑定项目' : 'Linked Project'}: {record.linked_project_title}</span>}
                         {record.project_name && <span>{language === 'zh' ? '项目' : 'Project'}: {record.project_name}</span>}
                         {record.award_text && <span>{language === 'zh' ? '奖项' : 'Award'}: {record.award_text}</span>}
                       </div>
+                      {record.team_members && record.team_members.length > 0 && (
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          {language === 'zh' ? '团队成员' : 'Team'}: {record.team_members.map((member: any) => member.name).join(' / ')}
+                        </div>
+                      )}
                     </div>
                   ))}
                   {(selectedUserDetail.hackathonRecords || []).length === 0 && (

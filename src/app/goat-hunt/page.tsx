@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { useLike } from '@/contexts/LikeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { fetchJsonWithCache, getCachedJson, prefetchJsonWithCache } from '@/lib/client-cache';
-import { getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
+import { getProjectImageFallbackStyle } from '@/lib/ui/fallback-visuals';
 
 interface Project {
   id: string;
@@ -114,9 +114,8 @@ export default function GoatHuntPage() {
                   #{index + 1}
                 </div>
                 <div style={{
-                  ...getPosterSurfaceStyle(proj.id, { width: '80px', height: '80px' }),
+                  ...getProjectImageFallbackStyle(proj.id, { width: '80px', height: '80px' }),
                   flexShrink: 0,
-                  filter: 'grayscale(80%)'
                 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <Link href={`/goat-hunt/${proj.id}`} onMouseEnter={() => prefetchJsonWithCache(`/api/projects/${proj.id}`)}>

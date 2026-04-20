@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useComment } from '@/contexts/CommentContext';
 import { ensureTagsArray } from '@/lib/utils/data';
 import { fetchJsonWithCache, getCachedJson } from '@/lib/client-cache';
-import { getAvatarFallbackStyle, getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
+import { getAvatarFallbackStyle, getPosterSurfaceStyle, getProjectImageFallbackStyle } from '@/lib/ui/fallback-visuals';
 
 interface ProjectDetail {
   id: string;
@@ -202,7 +202,7 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
                     border: '2px solid var(--brand-coral)',
                   }
                 : {
-                    ...getPosterSurfaceStyle(project.id, { width: '160px', height: '160px' }),
+                    ...getProjectImageFallbackStyle(project.id, { width: '160px', height: '160px' }),
                     border: '2px solid var(--brand-coral)',
                   }),
               display: 'flex', alignItems: 'center', justifyContent: 'center'
@@ -281,7 +281,7 @@ export default function GoatItemDetailPage({ params }: { params: Promise<{ id: s
                     background: `url(${project.images[0]}) center/cover`,
                   }
                 : {
-                    ...getPosterSurfaceStyle(`${project.id}-hero`, { width: '100%', height: '400px' }),
+                    ...getProjectImageFallbackStyle(`${project.id}-hero`, { width: '100%', height: '400px' }),
                   }),
               border: '1px solid var(--border-base)',
               marginBottom: 'var(--sp-6)',

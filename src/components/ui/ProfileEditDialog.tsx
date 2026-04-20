@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { UserProfile } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api-client';
 import { clearJsonCacheByPrefix } from '@/lib/client-cache';
-import { getPosterSurfaceStyle } from '@/lib/ui/fallback-visuals';
+import { getAvatarFallbackStyle } from '@/lib/ui/fallback-visuals';
 
 interface ProfileEditDialogProps {
   isOpen: boolean;
@@ -191,11 +191,9 @@ export function ProfileEditDialog({ isOpen, onClose, onSaved }: ProfileEditDialo
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-4)' }}>
               <div style={{
-                width: '100px',
-                height: '100px',
                 ...(avatarPreview
                   ? { backgroundImage: `url(${avatarPreview})` }
-                  : { background: getPosterSurfaceStyle(user.id, { width: '100px', height: '100px' }).background }),
+                  : getAvatarFallbackStyle(user.id, '100px')),
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
                 backgroundSize: 'cover',
