@@ -27,6 +27,14 @@ function normalizeRole(value: unknown) {
   return '';
 }
 
+async function refreshPostgrestSchemaCache() {
+  try {
+    await supabase.rpc('exec_sql', { sql: 'NOTIFY pgrst, \'reload schema\';' });
+  } catch {
+    // Best effort only. Some environments do not expose exec_sql.
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const token = getAuthToken(request);
@@ -107,6 +115,7 @@ export async function POST(request: NextRequest) {
 
     if (error && shouldRepairHackathonRecordSchema(error)) {
       await ensureHackathonRecordSchema();
+      await refreshPostgrestSchemaCache();
       const retryResult = await supabase
         .from('user_hackathon_records')
         .insert(record)

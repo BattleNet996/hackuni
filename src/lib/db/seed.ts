@@ -39,10 +39,10 @@ export function seedDatabase(): void {
     // Seed users
     const insertUser = db.prepare(`
       INSERT OR IGNORE INTO users (
-        id, email, password_hash, display_name, bio, looking_for,
+        id, email, password_hash, display_name, bio, school, major, company, position, coolest_thing, current_build, looking_for,
         total_hackathon_count, total_work_count, total_award_count,
         badge_count, certification_count
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     // Create mock user with a default password hash
@@ -55,6 +55,12 @@ export function seedDatabase(): void {
       passwordHash,
       MOCK_USER.display_name,
       MOCK_USER.bio,
+      MOCK_USER.school,
+      MOCK_USER.major,
+      MOCK_USER.company,
+      MOCK_USER.position,
+      MOCK_USER.coolest_thing,
+      MOCK_USER.current_build,
       JSON.stringify(MOCK_USER.looking_for),
       MOCK_USER.total_hackathon_count,
       MOCK_USER.total_work_count,

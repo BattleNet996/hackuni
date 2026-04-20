@@ -81,6 +81,7 @@ export function HackathonRecordDialog({ isOpen, onClose, hackathons, onSuccess }
   const [teamMemberDraft, setTeamMemberDraft] = React.useState('');
   const [memberResults, setMemberResults] = React.useState<BuilderSearchResult[]>([]);
   const [isSearchingMembers, setIsSearchingMembers] = React.useState(false);
+  const hasInviteCandidate = teamMemberDraft.trim().startsWith('@') && Boolean(teamMemberDraft.trim().slice(1).trim());
 
   React.useEffect(() => {
     if (!isOpen) {
@@ -551,7 +552,7 @@ export function HackathonRecordDialog({ isOpen, onClose, hackathons, onSuccess }
                   </div>
                 </button>
               ))}
-              {teamMemberDraft.trim().startsWith('@') && (
+              {hasInviteCandidate && (
                 <button
                   type="button"
                   onClick={() => {
@@ -566,8 +567,8 @@ export function HackathonRecordDialog({ isOpen, onClose, hackathons, onSuccess }
                   style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: 'rgba(125, 211, 160, 0.08)', border: 'none', cursor: 'pointer', color: 'var(--brand-green)' }}
                 >
                   {language === 'zh'
-                    ? `没有找到？邀请 ${teamMemberDraft.trim().slice(1).trim() || '队友'} 注册`
-                    : `Not found? Invite ${teamMemberDraft.trim().slice(1).trim() || 'teammate'} to register`}
+                    ? `没有找到？邀请 ${teamMemberDraft.trim().slice(1).trim()} 注册`
+                    : `Not found? Invite ${teamMemberDraft.trim().slice(1).trim()} to register`}
                 </button>
               )}
             </div>

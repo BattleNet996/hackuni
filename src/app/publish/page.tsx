@@ -32,6 +32,7 @@ export default function PublishProjectPage() {
   });
   const [submitting, setSubmitting] = React.useState(false);
   const [uploadedImages, setUploadedImages] = React.useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = React.useState(false);
   const [message, setMessage] = React.useState('');
   const [hackathons, setHackathons] = React.useState<HackathonOption[]>([]);
 
@@ -129,17 +130,38 @@ export default function PublishProjectPage() {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach(file => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (event.target?.result) {
-            setUploadedImages(prev => [...prev, event.target!.result as string]);
+    void (async () => {
+      setUploadingImages(true);
+      setMessage('');
+
+      try {
+        for (const file of Array.from(files)) {
+          if (!file.type.startsWith('image/')) {
+            continue;
           }
-        };
-        reader.readAsDataURL(file);
+
+          const body = new FormData();
+          body.append('file', file);
+
+          const response = await apiFetch('/api/projects/upload', {
+            method: 'POST',
+            body,
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error?.message || 'Failed to upload project image');
+          }
+
+          setUploadedImages((prev) => [...prev, data.data?.url || '']);
+        }
+      } catch (error: any) {
+        setMessage(String(error?.message || (language === 'zh' ? '图片上传失败，请重试' : 'Failed to upload image')));
+      } finally {
+        setUploadingImages(false);
+        e.target.value = '';
       }
-    });
+    })();
   };
 
   const insertImageAtCursor = (imageIndex: number) => {
@@ -283,10 +305,12 @@ export default function PublishProjectPage() {
                 e.currentTarget.style.color = 'var(--brand-coral)';
               }}
             >
-              📷 {language === 'zh' ? '上传图片' : 'Upload Images'}
+              📷 {uploadingImages
+                ? (language === 'zh' ? '上传中...' : 'Uploading...')
+                : (language === 'zh' ? '上传图片' : 'Upload Images')}
             </label>
             <span style={{ marginLeft: 'var(--sp-2)', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-              {language === 'zh' ? '支持单张或多张图片' : 'Support single or multiple images'}
+              {language === 'zh' ? '支持单张或多张图片，走真实上传' : 'Supports one or multiple images via real upload'}
             </span>
           </div>
 
@@ -583,7 +607,7 @@ export default function PublishProjectPage() {
           <Button
             type="submit"
             variant="primary"
-            disabled={submitting}
+            disabled={submitting || uploadingImages}
             style={{ cursor: submitting ? 'not-allowed' : 'pointer', flex: 1, minWidth: '120px' }}
           >
             {submitting ? t('publish.publishing') : t('common.submit')}

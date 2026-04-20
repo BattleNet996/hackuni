@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/Button';
+import { apiFetch } from '@/lib/api-client';
 
 interface Project {
   id: string;
@@ -31,6 +32,7 @@ export function EditProjectDialog({ isOpen, onClose, project, onSuccess, submitU
   const { t, language } = useLanguage();
   const [formData, setFormData] = useState<Partial<Project>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [message, setMessage] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
@@ -98,17 +100,38 @@ export function EditProjectDialog({ isOpen, onClose, project, onSuccess, submitU
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach(file => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (event.target?.result) {
-            setUploadedImages(prev => [...prev, event.target!.result as string]);
+    void (async () => {
+      setIsUploadingImages(true);
+      setMessage('');
+
+      try {
+        for (const file of Array.from(files)) {
+          if (!file.type.startsWith('image/')) {
+            continue;
           }
-        };
-        reader.readAsDataURL(file);
+
+          const body = new FormData();
+          body.append('file', file);
+
+          const response = await apiFetch('/api/projects/upload', {
+            method: 'POST',
+            body,
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error?.message || 'Failed to upload project image');
+          }
+
+          setUploadedImages((prev) => [...prev, data.data?.url || '']);
+        }
+      } catch (error: any) {
+        setMessage(String(error?.message || (language === 'zh' ? '图片上传失败，请重试' : 'Failed to upload image')));
+      } finally {
+        setIsUploadingImages(false);
+        e.target.value = '';
       }
-    });
+    })();
   };
 
   const removeImage = (index: number) => {
@@ -217,8 +240,14 @@ export function EditProjectDialog({ isOpen, onClose, project, onSuccess, submitU
               accept="image/*"
               multiple
               onChange={handleImageUpload}
+              disabled={isUploadingImages}
               style={{ marginBottom: 'var(--sp-2)' }}
             />
+            <div style={{ marginBottom: 'var(--sp-2)', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+              {isUploadingImages
+                ? (language === 'zh' ? '图片上传中...' : 'Uploading images...')
+                : (language === 'zh' ? '上传后会保存真实图片地址' : 'Uploads are saved as real image URLs')}
+            </div>
             {uploadedImages.length > 0 && (
               <div style={{
                 display: 'grid',
@@ -406,20 +435,24 @@ export function EditProjectDialog({ isOpen, onClose, project, onSuccess, submitU
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isUploadingImages}
             style={{
               padding: 'var(--sp-2) var(--sp-4)',
-              background: isSubmitting ? 'var(--text-muted)' : 'var(--brand-coral)',
+              background: (isSubmitting || isUploadingImages) ? 'var(--text-muted)' : 'var(--brand-coral)',
               color: '#fff',
               border: 'none',
               borderRadius: '4px',
-              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              cursor: (isSubmitting || isUploadingImages) ? 'not-allowed' : 'pointer',
               fontSize: '14px',
               fontFamily: 'var(--font-mono)',
-              opacity: isSubmitting ? 0.7 : 1,
+              opacity: (isSubmitting || isUploadingImages) ? 0.7 : 1,
             }}
           >
-            {isSubmitting ? (language === 'zh' ? '提交中...' : 'Submitting...') : t('common.save')}
+            {isSubmitting
+              ? (language === 'zh' ? '提交中...' : 'Submitting...')
+              : isUploadingImages
+                ? (language === 'zh' ? '上传图片中...' : 'Uploading images...')
+                : t('common.save')}
           </button>
         </div>
       </div>
